@@ -1,0 +1,241 @@
+// Gigwright database schema.
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Auth.js models (magic-link email flow)
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts  Account[]
+  sessions  Session[]
+  venues    Venue[]
+  musicians Musician[]
+  gigs      Gig[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Gigwright domain
+// ═══════════════════════════════════════════════════════════════
+
+enum CalendarProvider {
+  ICLOUD
+  GOOGLE
+  OUTLOOK
+  NONE
+}
+
+enum PaymentMethod {
+  VENMO
+  PAYPAL
+  ZELLE
+  CASHAPP
+  CASH
+  CHECK
+  DIRECT_DEPOSIT
+  OTHER
+}
+
+enum GigStatus {
+  INQUIRY
+  HOLD
+  CONFIRMED
+  PLAYED
+  CANCELLED
+}
+
+model Venue {
+  id         String  @id @default(cuid())
+  name       String
+  addressL1  String?
+  addressL2  String?
+  city       String?
+  state      String?
+  postalCode String?
+  country    String  @default("US")
+  phone      String?
+  contactName  String?
+  contactEmail String?
+  notes      String?
+  timezone   String  @default("America/New_York")
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  gigs Gig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Musician {
+  id       String  @id @default(cuid())
+  name     String
+  email    String?
+  phone    String?
+  initials String? // e.g. "DR" — overrideable, otherwise derived from name
+
+  // Roles, freeform — e.g. ["Drums"], ["Sax", "Arranger"]
+  roles String[]
+
+  isLeader Boolean @default(false)
+
+  calendarProvider CalendarProvider @default(NONE)
+  paymentMethod    PaymentMethod?
+
+  notifyBySms   Boolean @default(true)
+  notifyByEmail Boolean @default(true)
+
+  notes String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  gigPersonnel GigPersonnel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Gig {
+  id String @id @default(cuid())
+
+  // Core date/time fields
+  // startAt is the authoritative "when is this gig" field (downbeat time).
+  // The detail screen also tracks optional load-in, soundcheck, and end times.
+  startAt      DateTime // Downbeat
+  loadInAt     DateTime?
+  soundcheckAt DateTime?
+  callTimeAt   DateTime?
+  endAt        DateTime? // null = "open"
+
+  status GigStatus @default(CONFIRMED)
+
+  // Money — all values stored in cents.
+  clientPayCents     Int? // What the client pays leader
+  clientDepositCents Int? // Deposit collected so far
+
+  // Tech & logistics (mirrors the mockup)
+  sound      String? // e.g. "House FOH"
+  lights     String? // e.g. "House"
+  attire     String? // e.g. "Black on black"
+  meal       String? // e.g. "After check · green room"
+
+  notes String?
+
+  venueId String?
+  venue   Venue?  @relation(fields: [venueId], references: [id])
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  personnel GigPersonnel[]
+  activity  Activity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId, startAt])
+}
+
+model GigPersonnel {
+  id String @id @default(cuid())
+
+  gigId      String
+  gig        Gig      @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  musicianId String
+  musician   Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+
+  roleLabel String? // Override of musician.roles for this specific gig, optional
+  payCents  Int     @default(0)
+  position  Int     @default(0)
+
+  paidAt         DateTime?
+  paidMethod     PaymentMethod?
+
+  calendarSynced Boolean   @default(false)
+  calendarSyncedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gigId, musicianId])
+  @@index([gigId])
+  @@index([musicianId])
+}
+
+// Timeline of changes on a gig — the foundation for "diff-aware notifications"
+// and the activity feed shown in the mockup's gig detail page.
+model Activity {
+  id String @id @default(cuid())
+
+  gigId String
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  // Structured action + human-readable summary
+  action  String // e.g. "gig_alert_sent", "time_updated", "personnel_added"
+  summary String // e.g. "Gig alert sent to 3", "Time updated · diff text sent"
+
+  // Optional machine-readable diff payload
+  payload Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([gigId, createdAt])
+}

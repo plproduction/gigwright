@@ -1,0 +1,1733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gigwright — v3 · dense, elegant, email-ready</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..600&family=Inter:wght@400;450;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #FBFAF6;
+    --paper-warm: #F3EFE6;
+    --paper-deep: #EDE7DA;
+    --surface: #FFFFFF;
+    --ink: #0E0C09;
+    --ink-soft: #494336;
+    --ink-mute: #857F72;
+    --line: rgba(14, 12, 9, 0.10);
+    --line-strong: rgba(14, 12, 9, 0.18);
+    --accent: #7E2418;
+    --accent-soft: #F4E1DB;
+    --success: #2E6B3B;
+    --warn: #8B6914;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* No italics anywhere — explicit override for browser defaults on em / i / cite */
+  em, i, cite, .serif-i, .serif-italic { font-style: normal; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    letter-spacing: -0.002em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .serif { font-family: 'Fraunces', Georgia, serif; font-variation-settings: "opsz" 72; }
+  .serif-i { font-family: 'Fraunces', Georgia, serif; font-style: normal; }
+  .micro {
+    font-size: 10px; font-weight: 500;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 32px; }
+  a { color: inherit; text-decoration: none; }
+
+  /* Intro strip */
+  .strip {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .strip .logo { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .strip .logo em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .strip .tagline { font-family: 'Fraunces', serif; font-style: normal; font-weight: 300; font-size: 14px; color: var(--ink-soft); }
+
+  /* Section heading — tight */
+  .sec {
+    display: flex; align-items: baseline; gap: 16px;
+    padding: 56px 0 24px;
+  }
+  .sec .n {
+    font-family: 'Fraunces', serif; font-style: normal;
+    font-size: 18px; color: var(--accent); font-weight: 300;
+  }
+  .sec h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px; font-weight: 400; letter-spacing: -0.02em;
+  }
+  .sec .desc {
+    margin-left: auto;
+    font-size: 13px; color: var(--ink-soft);
+    max-width: 440px; text-align: right;
+  }
+
+  /* ============================================
+     SIGN IN — compact single-row
+  ============================================ */
+  .signin {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 24px;
+    align-items: center;
+  }
+  .signin h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px; font-weight: 350; letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .signin h3 em { font-style: normal; color: var(--accent); font-weight: 300; }
+  .signin .sub { font-size: 13px; color: var(--ink-soft); margin-top: 6px; }
+  .signin .form { display: flex; gap: 8px; }
+  .signin input {
+    flex: 1;
+    font-family: inherit; font-size: 14px;
+    padding: 11px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line-strong);
+    border-radius: 6px;
+    color: var(--ink);
+    outline: none;
+  }
+  .signin input:focus { border-color: var(--accent); }
+  .btn {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 11px 18px;
+    background: var(--ink); color: var(--paper);
+    border: none; border-radius: 6px;
+    cursor: pointer; letter-spacing: 0.005em;
+    display: inline-flex; align-items: center; gap: 8px;
+    white-space: nowrap;
+  }
+  .btn:hover { background: #000; }
+  .btn.accent { background: var(--accent); }
+  .btn.accent:hover { background: #611B11; }
+  .btn.ghost {
+    background: transparent; color: var(--ink);
+    border: 1px solid var(--line-strong);
+    font-weight: 500;
+  }
+  .btn.ghost:hover { background: var(--paper-warm); }
+  .btn.sm { padding: 7px 12px; font-size: 12px; }
+  .btn .arr { font-family: 'Fraunces', serif; font-style: normal; font-size: 16px; font-weight: 300; opacity: 0.85; }
+  .signin .alt { font-size: 12px; color: var(--ink-mute); }
+  .signin .alt a { color: var(--ink); border-bottom: 1px solid var(--line-strong); padding-bottom: 1px; }
+
+  /* ============================================
+     DASHBOARD — app chrome + gig list
+  ============================================ */
+  .app {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .app-nav {
+    display: flex; align-items: center;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-warm);
+  }
+  .app-nav .brand {
+    font-family: 'Fraunces', serif;
+    font-size: 17px; font-weight: 500; letter-spacing: -0.02em;
+    margin-right: 36px;
+  }
+  .app-nav .brand em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .app-nav nav { display: flex; gap: 24px; }
+  .app-nav nav a {
+    font-size: 13px; font-weight: 500;
+    color: var(--ink-soft);
+    padding: 6px 0;
+    border-bottom: 1px solid transparent;
+  }
+  .app-nav nav a.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .app-nav nav a:hover { color: var(--ink); }
+  .app-nav .right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+  .app-nav .search {
+    font-size: 12px; color: var(--ink-mute);
+    padding: 7px 12px 7px 30px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    width: 220px;
+    position: relative;
+  }
+  .app-nav .user {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+
+  .app-body { padding: 28px 32px 36px; }
+
+  /* Dashboard top row — Tonight + stats */
+  .dash-row {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 18px;
+    margin-bottom: 28px;
+  }
+
+  /* Tonight card — compact, dense */
+  .tonight-card {
+    background: var(--ink); color: var(--paper);
+    border-radius: 10px;
+    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 16px;
+    align-items: stretch;
+  }
+  .tonight-card .tag {
+    font-size: 10px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: #D49B84;
+    font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .tonight-card .tag .bullet { color: var(--accent); margin-right: 6px; }
+  .tonight-card h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px; font-weight: 350; letter-spacing: -0.02em;
+    line-height: 1.05;
+  }
+  .tonight-card h3 em { font-style: normal; font-weight: 300; }
+  .tonight-card .addr {
+    font-size: 12px; color: #B5AFA2;
+    margin-top: 6px; margin-bottom: 16px;
+  }
+  .tonight-card .meta {
+    display: flex; gap: 28px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+  }
+  .tonight-card .meta .m .k {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: #8A8373; margin-bottom: 4px; font-weight: 500;
+  }
+  .tonight-card .meta .m .v {
+    font-family: 'Fraunces', serif;
+    font-size: 17px; font-weight: 400;
+  }
+  .tonight-card .actions {
+    display: flex; flex-direction: column; gap: 6px;
+    justify-content: space-between;
+    min-width: 160px;
+  }
+  .tonight-card .actions a {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 12px;
+    font-size: 12px; font-weight: 500;
+    color: var(--paper);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 6px;
+    transition: all 0.15s;
+  }
+  .tonight-card .actions a:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.28); }
+  .tonight-card .actions a.primary {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .tonight-card .actions a.primary:hover { background: #9B2D1E; border-color: #9B2D1E; }
+  .tonight-card .actions a .a { font-family: 'Fraunces', serif; font-style: normal; opacity: 0.75; font-size: 15px; }
+
+  /* Stat grid */
+  .stats {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .stat {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat .k { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mute); font-weight: 500; margin-bottom: 8px; }
+  .stat .v { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 350; letter-spacing: -0.025em; line-height: 1; }
+  .stat .v em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .stat .note { font-size: 11px; color: var(--ink-mute); margin-top: 6px; }
+
+  /* Dashboard toolbar */
+  .d-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 0 10px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 4px;
+  }
+  .d-toolbar h4 {
+    font-family: 'Fraunces', serif;
+    font-size: 20px; font-weight: 400; letter-spacing: -0.01em;
+  }
+  .d-toolbar .count {
+    font-size: 12px; color: var(--ink-mute); letter-spacing: 0.06em;
+  }
+  .d-toolbar .tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .d-toolbar .filter {
+    font-size: 12px; font-weight: 500; color: var(--ink-soft);
+    padding: 6px 10px; border: 1px solid var(--line);
+    border-radius: 100px; cursor: pointer;
+  }
+  .d-toolbar .filter.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  /* Gig list — dense, WTG-inspired table */
+  .glist {
+    font-size: 13px;
+  }
+  .glist .h {
+    display: grid;
+    grid-template-columns: 90px 2fr 1fr 90px 110px 120px 80px;
+    gap: 14px;
+    padding: 10px 6px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .glist .r {
+    display: grid;
+    grid-template-columns: 90px 2fr 1fr 90px 110px 120px 80px;
+    gap: 14px;
+    padding: 14px 6px;
+    border-bottom: 1px solid var(--line);
+    align-items: center;
+    transition: background 0.12s;
+  }
+  .glist .r:hover { background: var(--paper-warm); }
+  .glist .r.today { background: var(--paper-deep); }
+  .glist .r .d {
+    font-family: 'Fraunces', serif;
+    line-height: 1;
+  }
+  .glist .r .d .day { font-size: 22px; font-weight: 400; letter-spacing: -0.02em; }
+  .glist .r .d .mo { font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); margin-top: 3px; font-weight: 500; }
+  .glist .r .v {
+    font-family: 'Fraunces', serif;
+    font-size: 17px; font-weight: 400; letter-spacing: -0.01em;
+  }
+  .glist .r .v .city {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px; font-weight: 400; color: var(--ink-mute);
+    letter-spacing: 0; margin-top: 2px;
+  }
+  .glist .r .p { font-size: 12px; color: var(--ink-soft); }
+  .glist .r .t {
+    font-family: 'Fraunces', serif;
+    font-size: 14px; color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .glist .r .pay {
+    font-family: 'Fraunces', serif;
+    font-size: 14px; color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .glist .r .pay .split { font-size: 11px; color: var(--ink-mute); margin-top: 2px; font-family: 'Inter', sans-serif; }
+  .glist .r .s { display: flex; justify-content: flex-end; }
+
+  .pill {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px;
+    border-radius: 100px;
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--line-strong);
+    white-space: nowrap;
+  }
+  .pill.confirmed { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .pill.hold { color: var(--warn); border-color: rgba(139, 105, 20, 0.3); }
+  .pill.inquiry { color: var(--ink-mute); font-style: normal; }
+  .pill.paid { color: var(--success); border-color: rgba(46, 107, 59, 0.3); background: rgba(46, 107, 59, 0.05); }
+  .pill.unpaid { color: var(--accent); border-color: rgba(126, 36, 24, 0.3); }
+
+  /* ============================================
+     GIG DETAIL — dense, single screen
+  ============================================ */
+  .gd {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .gd-head {
+    padding: 22px 28px;
+    background: var(--paper-warm);
+    border-bottom: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 28px;
+    align-items: center;
+  }
+  .gd-head .date-big {
+    font-family: 'Fraunces', serif;
+    text-align: center;
+    line-height: 0.95;
+    padding-right: 28px;
+    border-right: 1px solid var(--line);
+  }
+  .gd-head .date-big .dow { font-size: 10px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); font-family: 'Inter', sans-serif; margin-bottom: 4px; }
+  .gd-head .date-big .num { font-size: 52px; font-weight: 300; letter-spacing: -0.04em; display: block; }
+  .gd-head .date-big .mo { font-size: 12px; color: var(--ink-soft); font-style: normal; }
+  .gd-head .title .crumb { font-size: 11px; color: var(--ink-mute); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 500; margin-bottom: 6px; }
+  .gd-head .title h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 30px; font-weight: 400; letter-spacing: -0.022em;
+    line-height: 1.05;
+  }
+  .gd-head .title h2 em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .gd-head .title .where { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+  .gd-head .title .where .dot { color: var(--ink-mute); margin: 0 6px; }
+  .gd-head .actions { display: flex; gap: 6px; }
+
+  /* Body layout — 3 columns */
+  .gd-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+  }
+  .gd-col { padding: 20px 24px; border-right: 1px solid var(--line); }
+  .gd-col:last-child { border-right: none; }
+  .gd-section { padding-bottom: 18px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .gd-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .gd-section h5 {
+    font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .gd-section h5 .edit {
+    font-family: 'Fraunces', serif;
+    font-style: normal;
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    cursor: pointer;
+  }
+
+  /* Personnel list — compact */
+  .per { display: flex; flex-direction: column; gap: 10px; }
+  .per .row {
+    display: grid;
+    grid-template-columns: 24px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+  }
+  .per .av {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--paper-deep); color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  }
+  .per .av.leader { background: var(--accent-soft); color: var(--accent); }
+  .per .who { font-family: 'Fraunces', serif; font-size: 14px; font-weight: 500; }
+  .per .role { font-size: 11px; color: var(--ink-mute); }
+  .per .pay {
+    font-family: 'Fraunces', serif; font-size: 14px;
+    color: var(--ink); font-variant-numeric: tabular-nums;
+  }
+  .per .paid-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--success);
+  }
+  .per .paid-dot.unpaid { background: var(--line-strong); }
+
+  /* Times grid */
+  .tg {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .tg .t .k { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-mute); font-weight: 500; margin-bottom: 3px; }
+  .tg .t .v {
+    font-family: 'Fraunces', serif;
+    font-size: 18px; font-weight: 400;
+    letter-spacing: -0.015em;
+  }
+  .tg .t.muted .v { color: var(--ink-mute); font-style: normal; }
+
+  /* Small KV */
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 13px; }
+  .kv .k { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); font-weight: 500; padding-top: 3px; }
+  .kv .v { color: var(--ink); }
+  .kv .v em { font-family: 'Fraunces', serif; font-style: normal; color: var(--accent); font-weight: 400; }
+
+  .bignote {
+    font-family: 'Fraunces', serif;
+    font-size: 17px; font-weight: 400;
+    line-height: 1.35; letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .smnote {
+    font-size: 13px; color: var(--ink-soft);
+    line-height: 1.5;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .chip .live { width: 5px; height: 5px; background: var(--success); border-radius: 50%; }
+  .chip em { font-family: 'Fraunces', serif; font-style: normal; color: var(--ink); font-size: 12px; }
+
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .toggle-row .lab { font-size: 12px; font-weight: 500; }
+  .toggle-row .hint { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .toggle { width: 34px; height: 20px; background: var(--line-strong); border-radius: 100px; position: relative; flex-shrink: 0; cursor: pointer; }
+  .toggle .knob { position: absolute; width: 14px; height: 14px; background: #fff; border-radius: 50%; top: 3px; left: 3px; transition: all 0.18s; }
+  .toggle.on { background: var(--ink); }
+  .toggle.on .knob { left: auto; right: 3px; }
+
+  /* ============================================
+     ROSTER (band members)
+  ============================================ */
+  .roster {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .roster-top {
+    display: flex; align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper-warm);
+  }
+  .roster-top h4 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 400; letter-spacing: -0.01em; }
+  .roster-top .count { font-size: 12px; color: var(--ink-mute); margin-left: 8px; }
+  .roster-top .tools { margin-left: auto; display: flex; gap: 8px; }
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--line);
+  }
+  .member {
+    background: var(--surface);
+    padding: 14px 24px;
+    display: grid;
+    grid-template-columns: 36px 1fr auto auto auto;
+    gap: 14px;
+    align-items: center;
+  }
+  .member .pay-pref {
+    font-size: 10px; color: var(--ink-mute);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 600;
+    text-align: right;
+    min-width: 75px;
+  }
+  .member .pay-pref .dot-pay {
+    display: inline-block; width: 6px; height: 6px;
+    background: var(--accent); border-radius: 50%;
+    margin-right: 5px; vertical-align: middle;
+  }
+  .member:hover { background: var(--paper-warm); }
+  .member .av {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    background: var(--paper-deep); color: var(--ink-soft);
+  }
+  .member .av.leader { background: var(--accent); color: var(--paper); }
+  .member .who {
+    font-family: 'Fraunces', serif;
+    font-size: 17px; font-weight: 500; letter-spacing: -0.01em;
+  }
+  .member .roles { font-size: 11px; color: var(--ink-mute); margin-top: 2px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .member .roles .r { padding: 1px 7px; border: 1px solid var(--line-strong); border-radius: 100px; font-weight: 500; letter-spacing: 0.02em; }
+  .member .contact { font-size: 11px; color: var(--ink-soft); text-align: right; line-height: 1.45; }
+  .member .contact .lbl { color: var(--ink-mute); letter-spacing: 0.08em; text-transform: uppercase; font-size: 9px; margin-right: 4px; }
+  .member .cal-pref {
+    font-size: 10px; color: var(--ink-mute);
+    letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 600;
+  }
+  .member .cal-pref .dot { display: inline-block; width: 6px; height: 6px; background: var(--success); border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+  /* ============================================
+     EMAIL GIG SHEET PREVIEW
+  ============================================ */
+  .email-wrap {
+    background: var(--paper-warm);
+    padding: 32px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .email-copy .micro { margin-bottom: 16px; }
+  .email-copy h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px; font-weight: 400; letter-spacing: -0.022em;
+    line-height: 1.08; margin-bottom: 14px;
+  }
+  .email-copy h3 em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .email-copy p { font-size: 14px; color: var(--ink-soft); line-height: 1.55; max-width: 440px; margin-bottom: 12px; }
+  .email-copy .points { margin-top: 16px; border-top: 1px solid var(--line); }
+  .email-copy .points li {
+    list-style: none;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-soft);
+    display: grid; grid-template-columns: 30px 1fr; gap: 8px;
+  }
+  .email-copy .points li em {
+    font-family: 'Fraunces', serif;
+    font-style: normal; color: var(--accent);
+    font-weight: 400; font-size: 14px;
+  }
+  .email-copy .points li b { color: var(--ink); font-weight: 600; }
+
+  /* Actual email rendering */
+  .email {
+    background: #FFFFFF;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    max-width: 560px;
+    font-family: 'Inter', -apple-system, Helvetica, Arial, sans-serif;
+    color: #111111;
+    box-shadow: 0 20px 40px -20px rgba(14,12,9,0.15);
+  }
+  .email-header {
+    padding: 14px 20px;
+    background: #F5F4EF;
+    border-bottom: 1px solid #E5E2D8;
+    font-size: 11px; color: #666;
+    letter-spacing: 0.04em;
+    display: flex; justify-content: space-between;
+  }
+  .email-header .from { color: #111; font-weight: 600; }
+  .email-body { padding: 28px 28px 32px; }
+  .email-body .brand {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 16px; font-weight: 500; letter-spacing: -0.02em;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #E5E2D8;
+    margin-bottom: 20px;
+    color: #111;
+  }
+  .email-body .brand em { font-style: normal; font-weight: 300; color: #7E2418; }
+  .email-body .greeting { font-size: 14px; color: #111; margin-bottom: 8px; }
+  .email-body h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 26px; font-weight: 400; letter-spacing: -0.02em;
+    line-height: 1.1;
+    margin-bottom: 4px;
+    color: #111;
+  }
+  .email-body h1 em { font-style: normal; font-weight: 300; color: #7E2418; }
+  .email-body .subhead {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: normal;
+    font-size: 15px; color: #555;
+    margin-bottom: 22px;
+  }
+  .email-body .block {
+    padding: 14px 0;
+    border-top: 1px solid #E5E2D8;
+  }
+  .email-body .block:last-of-type { border-bottom: 1px solid #E5E2D8; }
+  .email-body .block h4 {
+    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: #888; font-weight: 600; margin-bottom: 8px;
+  }
+  .email-body .block .row {
+    display: grid; grid-template-columns: 90px 1fr auto;
+    gap: 12px;
+    font-size: 13px;
+    padding: 4px 0;
+    align-items: baseline;
+  }
+  .email-body .block .row .k { color: #555; font-weight: 500; }
+  .email-body .block .row .v { color: #111; }
+  .email-body .block .row .v em { font-family: 'Fraunces', serif; font-style: normal; font-weight: 400; font-size: 14px; color: #7E2418; }
+  .email-body .block .row .p { color: #111; font-variant-numeric: tabular-nums; }
+  .email-body .address {
+    background: #F8F7F2;
+    padding: 14px 16px;
+    border-radius: 4px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+  .email-body .address .line1 { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500; color: #111; margin-bottom: 2px; }
+  .email-body .address .line2 { color: #555; }
+  .email-body .address .map {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 12px; font-weight: 600;
+    color: #7E2418;
+    border-bottom: 1px solid #7E2418;
+    padding-bottom: 1px;
+  }
+  .email-body .cta {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 11px 18px;
+    background: #0E0C09;
+    color: #FBFAF6;
+    font-size: 13px; font-weight: 600;
+    border-radius: 4px;
+    text-decoration: none;
+  }
+  .email-body .foot {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid #E5E2D8;
+    font-size: 11px; color: #888; line-height: 1.5;
+  }
+  .email-body .foot em { font-family: 'Fraunces', serif; font-style: normal; color: #555; }
+
+  /* ============================================
+     Phone / SMS (compact)
+  ============================================ */
+  .phone-block {
+    display: grid; grid-template-columns: 280px 1fr; gap: 40px;
+    align-items: start;
+    padding: 0;
+  }
+  .phone {
+    width: 280px;
+    background: #0a0908;
+    border-radius: 42px;
+    padding: 10px;
+    box-shadow: 0 30px 60px -30px rgba(14,12,9,0.35);
+  }
+  .phone-scr {
+    background: #EEECE7;
+    border-radius: 34px;
+    overflow: hidden;
+    min-height: 540px;
+    position: relative;
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 90px; height: 22px;
+    background: #0a0908; border-radius: 0 0 14px 14px;
+    z-index: 2;
+  }
+  .phone-status {
+    display: flex; justify-content: space-between;
+    padding: 14px 26px 6px;
+    font-size: 12px; font-weight: 600; color: #111;
+  }
+  .thread-h {
+    padding: 16px 0 14px;
+    display: flex; flex-direction: column; align-items: center;
+    border-bottom: 0.5px solid rgba(0,0,0,0.06);
+  }
+  .thread-h .a {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--accent); color: #EEECE7;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Fraunces', serif; font-style: normal; font-size: 16px;
+  }
+  .thread-h .n { margin-top: 6px; font-size: 13px; font-weight: 600; color: #111; }
+  .thread-h .s { font-size: 10px; color: #888; }
+  .th { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+  .th .ts { font-size: 9px; color: #888; text-align: center; margin: 10px 0 2px; font-weight: 500; letter-spacing: 0.02em; }
+  .bub {
+    max-width: 82%;
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-size: 13px; line-height: 1.4;
+    background: #DEDBD4; color: #111;
+    align-self: flex-start;
+  }
+  .bub b { font-weight: 600; }
+  .bub.alert { background: var(--accent-soft); color: #5A1010; }
+
+  .phone-copy-side .micro { margin-bottom: 14px; }
+  .phone-copy-side h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 26px; font-weight: 400; letter-spacing: -0.02em;
+    line-height: 1.1; margin-bottom: 14px;
+  }
+  .phone-copy-side h3 em { font-style: normal; font-weight: 300; color: var(--accent); }
+  .phone-copy-side p { font-size: 14px; color: var(--ink-soft); line-height: 1.55; max-width: 420px; margin-bottom: 14px; }
+  .phone-copy-side .pts { margin-top: 12px; }
+  .phone-copy-side .pts li {
+    list-style: none;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px; color: var(--ink-soft);
+    display: grid; grid-template-columns: 24px 1fr; gap: 6px;
+  }
+  .phone-copy-side .pts li em {
+    font-family: 'Fraunces', serif; font-style: normal; color: var(--accent);
+    font-weight: 400;
+  }
+  .phone-copy-side .pts li b { color: var(--ink); font-weight: 600; }
+
+  /* Footer */
+  .bottom {
+    padding: 48px 0 24px;
+    margin-top: 40px;
+    border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--ink-mute);
+    letter-spacing: 0.12em; text-transform: uppercase;
+  }
+
+  @media (max-width: 960px) {
+    .wrap { padding: 0 20px; }
+    .signin { grid-template-columns: 1fr; }
+    .dash-row { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr 1fr; }
+    .tonight-card { grid-template-columns: 1fr; }
+    .tonight-card .actions { flex-direction: row; flex-wrap: wrap; }
+    .gd-body { grid-template-columns: 1fr; }
+    .gd-col { border-right: none; border-bottom: 1px solid var(--line); }
+    .gd-col:last-child { border-bottom: none; }
+    .roster-grid { grid-template-columns: 1fr; }
+    .member { grid-template-columns: 36px 1fr; }
+    .member .contact, .member .cal-pref, .member .pay-pref { display: none; }
+    .email-wrap { grid-template-columns: 1fr; }
+    .phone-block { grid-template-columns: 1fr; }
+    .glist .h, .glist .r { grid-template-columns: 70px 1fr 80px 80px; gap: 8px; }
+    .glist .p, .glist .pay { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div class="strip">
+    <div class="logo">Gig<em>wright</em></div>
+    <div class="tagline">A quiet spine for working bandleaders · Mockup v3</div>
+  </div>
+
+  <!-- ================ SIGN IN ================ -->
+  <div class="sec">
+    <span class="n">i.</span>
+    <h2>Sign in</h2>
+    <div class="desc">One email field, one link. No password. Musicians never sign in at all.</div>
+  </div>
+
+  <section class="signin">
+    <div>
+      <h3>Welcome back, <em>Patrick.</em></h3>
+      <div class="sub">We'll email you a one-time sign-in link.</div>
+    </div>
+    <div class="form">
+      <input type="email" value="patrick@patricklamb.com" />
+      <button class="btn accent"><span>Send link</span><span class="arr">→</span></button>
+    </div>
+    <div class="alt">or <a href="#">Apple</a> · <a href="#">Google</a></div>
+  </section>
+
+  <!-- ================ DASHBOARD ================ -->
+  <div class="sec">
+    <span class="n">ii.</span>
+    <h2>Dashboard</h2>
+    <div class="desc">Tonight's gig front and center. Next twenty up for scanning. Everything in one screen.</div>
+  </div>
+
+  <section class="app">
+    <div class="app-nav">
+      <div class="brand">Gig<em>wright</em></div>
+      <nav>
+        <a href="#" class="active">Gigs</a>
+        <a href="#">Roster</a>
+        <a href="#">Venues</a>
+        <a href="#">Finance</a>
+        <a href="#">Settings</a>
+      </nav>
+      <div class="right">
+        <div class="search">⌕  Search gigs, venues, people…</div>
+        <div class="user">PL</div>
+      </div>
+    </div>
+
+    <div class="app-body">
+
+      <div class="dash-row">
+        <!-- TONIGHT -->
+        <div class="tonight-card">
+          <div>
+            <div class="tag"><span class="bullet">●</span>Tonight · Saturday, April 18</div>
+            <h3>The Funky <em>Biscuit</em></h3>
+            <div class="addr">303 Southeast Mizner Boulevard · Boca Raton, FL</div>
+            <div class="meta">
+              <div class="m"><div class="k">Call</div><div class="v">6:00 PM</div></div>
+              <div class="m"><div class="k">Downbeat</div><div class="v">7:30</div></div>
+              <div class="m"><div class="k">On stage</div><div class="v">3</div></div>
+              <div class="m"><div class="k">Pay out</div><div class="v">$700</div></div>
+            </div>
+          </div>
+          <div class="actions">
+            <a href="#" class="primary"><span>Send gig alert</span><span class="a">→</span></a>
+            <a href="#"><span>Email gig sheet</span><span class="a">→</span></a>
+            <a href="#"><span>Open record</span><span class="a">→</span></a>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats">
+          <div class="stat">
+            <div class="k">This month</div>
+            <div class="v">7 <em>gigs</em></div>
+            <div class="note">3 confirmed · 2 holds · 2 inquiries</div>
+          </div>
+          <div class="stat">
+            <div class="k">Holds to confirm</div>
+            <div class="v">2 <em>open</em></div>
+            <div class="note">Arts Garage May 9 · Boca West follow-up</div>
+          </div>
+          <div class="stat">
+            <div class="k">Next open weekend</div>
+            <div class="v">May <em>23</em></div>
+            <div class="note">Saturday · no hold</div>
+          </div>
+          <div class="stat">
+            <div class="k">Year to date</div>
+            <div class="v">42 <em>gigs</em></div>
+            <div class="note">Up 18% vs. 2025</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GIG LIST -->
+      <div class="d-toolbar">
+        <h4 class="serif">Gigs</h4>
+        <span class="count">· 7 upcoming</span>
+        <div class="tools">
+          <div class="filter active">Upcoming</div>
+          <div class="filter">This month</div>
+          <div class="filter">Past</div>
+          <div class="filter">Needs attention</div>
+          <button class="btn sm">+ New gig</button>
+        </div>
+      </div>
+
+      <div class="glist">
+        <div class="h">
+          <div>Date</div>
+          <div>Venue</div>
+          <div>Personnel</div>
+          <div>Downbeat</div>
+          <div>Pay</div>
+          <div>Status</div>
+          <div></div>
+        </div>
+
+        <div class="r today">
+          <div class="d"><div class="day">18</div><div class="mo">Apr · Sat</div></div>
+          <div class="v">The Funky Biscuit<div class="city">Boca Raton, FL</div></div>
+          <div class="p">Patrick · Dave · Tim</div>
+          <div class="t">7:30 PM</div>
+          <div class="pay">$700<div class="split">2 × $350</div></div>
+          <div class="s"><span class="pill confirmed">Tonight</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+
+        <div class="r">
+          <div class="d"><div class="day">24</div><div class="mo">Apr · Fri</div></div>
+          <div class="v">The Kelsey Theater<div class="city">Lake Park, FL</div></div>
+          <div class="p">Patrick, Dave, Tim, +2 horns</div>
+          <div class="t">7:30 PM</div>
+          <div class="pay">$2,100<div class="split">5 × varied</div></div>
+          <div class="s"><span class="pill confirmed">Confirmed</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+
+        <div class="r">
+          <div class="d"><div class="day">02</div><div class="mo">May · Sat</div></div>
+          <div class="v">Private · Trump Int'l Beach<div class="city">Sunny Isles, FL</div></div>
+          <div class="p">Patrick · Dave · Tim</div>
+          <div class="t">9:00 PM</div>
+          <div class="pay">$3,000<div class="split">Split TBD</div></div>
+          <div class="s"><span class="pill confirmed">Confirmed</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+
+        <div class="r">
+          <div class="d"><div class="day">09</div><div class="mo">May · Sat</div></div>
+          <div class="v">Arts Garage<div class="city">Delray Beach, FL</div></div>
+          <div class="p">Patrick + 4 TBD</div>
+          <div class="t">8:00 PM</div>
+          <div class="pay">$1,800<div class="split">Split TBD</div></div>
+          <div class="s"><span class="pill hold">Hold</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+
+        <div class="r">
+          <div class="d"><div class="day">15</div><div class="mo">May · Fri</div></div>
+          <div class="v">Wedding · The Breakers<div class="city">Palm Beach, FL</div></div>
+          <div class="p">Patrick + 5</div>
+          <div class="t">6:30 PM</div>
+          <div class="pay">$4,500<div class="split">Split TBD</div></div>
+          <div class="s"><span class="pill inquiry">Inquiry</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+
+        <div class="r">
+          <div class="d"><div class="day">08</div><div class="mo">Apr · Fri</div></div>
+          <div class="v">Private Event · Boca West CC<div class="city">Boca Raton, FL</div></div>
+          <div class="p">Patrick · Dave · Tim</div>
+          <div class="t">8:00 PM</div>
+          <div class="pay">$1,400 <span class="pill unpaid" style="margin-left:4px">Unpaid</span><div class="split">Reminder sent 3d ago</div></div>
+          <div class="s"><span class="pill confirmed" style="opacity: 0.5;">Played</span></div>
+          <div class="s"><a class="btn ghost sm">Open</a></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ GIG DETAIL ================ -->
+  <div class="sec">
+    <span class="n">iii.</span>
+    <h2>A gig, opened</h2>
+    <div class="desc">Every detail on one screen, three columns, no scroll. Personnel, times, pay, venue, tech, notes — at a glance.</div>
+  </div>
+
+  <section class="gd">
+    <div class="gd-head">
+      <div class="date-big">
+        <div class="dow">Saturday</div>
+        <span class="num">18</span>
+        <div class="mo">April 2026</div>
+      </div>
+      <div class="title">
+        <div class="crumb">Gigs <span style="color:var(--accent)">·</span> Saturday</div>
+        <h2>The Funky <em>Biscuit</em></h2>
+        <div class="where">Boca Raton, FL <span class="dot">·</span> <span class="pill confirmed" style="margin-left:4px">Confirmed</span> <span style="color: var(--ink-mute); margin-left: 8px;">Live on 3 calendars</span></div>
+      </div>
+      <div class="actions">
+        <a class="btn ghost sm">Edit</a>
+        <a class="btn ghost sm">Gig sheet</a>
+        <a class="btn sm">Send alert</a>
+      </div>
+    </div>
+
+    <div class="gd-body">
+
+      <!-- Column 1: Personnel + Pay -->
+      <div class="gd-col">
+        <div class="gd-section">
+          <h5>Personnel · 3 on <span class="edit">edit</span></h5>
+          <div class="per">
+            <div class="row">
+              <div class="av leader">PL</div>
+              <div>
+                <div class="who">Patrick Lamb</div>
+                <div class="role">Leader · Sax, Vocals</div>
+              </div>
+              <div class="pay">—</div>
+              <div class="paid-dot unpaid" title="N/A"></div>
+            </div>
+            <div class="row">
+              <div class="av">DR</div>
+              <div>
+                <div class="who">Dave Reinhardt</div>
+                <div class="role">Drums · <span style="color: var(--ink-soft)">Venmo</span></div>
+              </div>
+              <div class="pay">$350</div>
+              <div class="paid-dot unpaid" title="Unpaid"></div>
+            </div>
+            <div class="row">
+              <div class="av">TG</div>
+              <div>
+                <div class="who">Tim George</div>
+                <div class="role">Bass · <span style="color: var(--ink-soft)">PayPal</span></div>
+              </div>
+              <div class="pay">$350</div>
+              <div class="paid-dot unpaid" title="Unpaid"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Reconciliation <span class="edit">mark paid</span></h5>
+          <div class="kv" style="gap: 10px 14px;">
+            <div class="k">Client pays</div><div class="v"><em>$1,200</em> <span style="color: var(--ink-mute); font-size: 11px;">· half deposit received</span></div>
+            <div class="k">Band total</div><div class="v">$700 <span style="color: var(--ink-mute); font-size: 11px;">· 0 of 2 paid</span></div>
+            <div class="k" style="color: var(--accent); font-weight: 600;">Your net</div><div class="v"><em style="font-size: 17px;">$500</em></div>
+          </div>
+          <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line-strong); font-size: 11px; color: var(--ink-mute); line-height: 1.5;">
+            <span style="font-family: 'Fraunces', serif; font-style: normal; color: var(--ink-soft); font-size: 12px;">Reconcile after gig:</span> mark each musician paid → method → date. Totals roll up automatically. Year-end, export all unmatched amounts for 1099s.
+          </div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Ask band to confirm</h5>
+          <div class="toggle-row">
+            <div>
+              <div class="lab">SMS reply prompt</div>
+              <div class="hint">Off for this gig — you called them. Flip on for new hires.</div>
+            </div>
+            <div class="toggle"><div class="knob"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Times + Venue + Tech -->
+      <div class="gd-col">
+        <div class="gd-section">
+          <h5>Times <span class="edit">edit</span></h5>
+          <div class="tg">
+            <div class="t"><div class="k">Load in</div><div class="v">5:30 PM</div></div>
+            <div class="t">
+              <div class="k">Sound check</div>
+              <div class="v">6:00</div>
+              <div style="font-size: 10px; color: var(--ink-mute); margin-top: 4px; letter-spacing: 0; text-transform: none; font-weight: 400; line-height: 1.35;">All lines run · everyone set up and ready to play</div>
+            </div>
+            <div class="t"><div class="k">Downbeat</div><div class="v">7:30</div></div>
+            <div class="t muted"><div class="k">End</div><div class="v">Open</div></div>
+          </div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Venue</h5>
+          <div class="bignote">The Funky Biscuit</div>
+          <div class="smnote" style="margin-top:6px">303 SE Mizner Blvd<br/>Boca Raton, FL 33432<br/>(561) 465-3946</div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Tech &amp; attire</h5>
+          <div class="kv">
+            <div class="k">Sound</div><div class="v">House FOH</div>
+            <div class="k">Lights</div><div class="v">House</div>
+            <div class="k">Attire</div><div class="v"><em>Black on black</em></div>
+            <div class="k">Meal</div><div class="v">After check · green room</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 3: Notes + Sync + Attachments -->
+      <div class="gd-col">
+        <div class="gd-section">
+          <h5>Notes <span class="edit">edit</span></h5>
+          <div class="smnote">Parking in back off Mizner. Load in through stage-right door. Green room has a fridge. Audience skews 40+ — lean into blues-funk set. Soundcheck mic stands already up; just dial tones.</div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Calendar sync · live</h5>
+          <div class="chips">
+            <span class="chip"><span class="live"></span><em>Patrick</em> iCloud</span>
+            <span class="chip"><span class="live"></span><em>Dave</em> iCloud</span>
+            <span class="chip"><span class="live"></span><em>Tim</em> Google</span>
+          </div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Attachments <span style="text-transform: none; letter-spacing: 0; color: var(--ink-mute); font-size: 10px; font-weight: 500; margin-left: 6px;">· band auto-notified on change</span></h5>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="padding: 9px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 11px; color: var(--ink-mute); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">1 · Set list</div>
+                <div style="font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Setlist_Funky_Biscuit_4-18.pdf</div>
+              </div>
+              <a style="font-size: 11px; color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 1px; font-weight: 600; cursor: pointer; white-space: nowrap;">Replace</a>
+            </div>
+
+            <div style="padding: 9px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 11px; color: var(--ink-mute); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">2 · Gig materials link</div>
+                <div style="font-size: 12px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">drive.google.com/d/.../funkybiscuit</div>
+              </div>
+              <a style="font-size: 11px; color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 1px; font-weight: 600; cursor: pointer; white-space: nowrap;">Edit link</a>
+            </div>
+
+            <div style="padding: 9px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 5px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+              <div style="min-width: 0;">
+                <div style="font-size: 11px; color: var(--ink-mute); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">3 · Add-on charts</div>
+                <div style="font-size: 12px; color: var(--ink-mute);">None attached · optional</div>
+              </div>
+              <a style="font-size: 11px; color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 1px; font-weight: 600; cursor: pointer; white-space: nowrap;">+ Add</a>
+            </div>
+          </div>
+          <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line-strong); font-size: 11px; color: var(--ink-mute); line-height: 1.45;">Any change to these — set list swap, link edit, new chart added — fires an SMS and email update to everyone on the gig.</div>
+        </div>
+
+        <div class="gd-section">
+          <h5>Activity</h5>
+          <div class="smnote" style="font-size:12px;">
+            <span style="color:var(--ink-mute)">9:04 AM Tue</span> · Gig alert sent to 3<br/>
+            <span style="color:var(--ink-mute)">4:12 PM Fri</span> · Time updated · diff text sent<br/>
+            <span style="color:var(--ink-mute)">7:30 AM Today</span> · Morning reminder sent
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ ROSTER ================ -->
+  <div class="sec">
+    <span class="n">iv.</span>
+    <h2>Band members</h2>
+    <div class="desc">Same information WTG kept, arranged for the eye. Roles as tags. Inline contact. Calendar preference and preferred payment method stored per musician — method auto-carries to Finance when it's time to pay.</div>
+  </div>
+
+  <section class="roster">
+    <div class="roster-top">
+      <h4 class="serif">Roster</h4>
+      <span class="count">· 87 members</span>
+      <div class="tools">
+        <button class="btn ghost sm">Filter</button>
+        <button class="btn ghost sm">Import CSV</button>
+        <button class="btn sm">+ New member</button>
+      </div>
+    </div>
+    <div class="roster-grid">
+      <div class="member">
+        <div class="av leader">PL</div>
+        <div>
+          <div class="who">Patrick Lamb</div>
+          <div class="roles"><span class="r">Leader</span><span class="r">Sax</span><span class="r">Vocals</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>patrick@patricklamb.com<br/><span class="lbl">PH</span>On file</div>
+        <div class="cal-pref"><span class="dot"></span>iCloud</div>
+        <div class="pay-pref" style="color: var(--ink-mute); font-weight: 400;">—</div>
+      </div>
+      <div class="member">
+        <div class="av">DR</div>
+        <div>
+          <div class="who">Dave Reinhardt</div>
+          <div class="roles"><span class="r">Drums</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>davidhreinhardt@…<br/><span class="lbl">PH</span>On file</div>
+        <div class="cal-pref"><span class="dot"></span>iCloud</div>
+        <div class="pay-pref"><span class="dot-pay"></span>Zelle</div>
+      </div>
+      <div class="member">
+        <div class="av">TG</div>
+        <div>
+          <div class="who">Tim George</div>
+          <div class="roles"><span class="r">Bass</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>pappytim@…<br/><span class="lbl">PH</span>On file</div>
+        <div class="cal-pref"><span class="dot"></span>Google</div>
+        <div class="pay-pref"><span class="dot-pay"></span>Venmo</div>
+      </div>
+      <div class="member">
+        <div class="av">AB</div>
+        <div>
+          <div class="who">Alex Budman</div>
+          <div class="roles"><span class="r">Sax</span><span class="r">Arranger</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>bigbandtheory@…<br/><span class="lbl">PH</span>—</div>
+        <div class="cal-pref"><span class="dot"></span>Google</div>
+        <div class="pay-pref"><span class="dot-pay"></span>PayPal</div>
+      </div>
+      <div class="member">
+        <div class="av">AC</div>
+        <div>
+          <div class="who">Adam Carlson</div>
+          <div class="roles"><span class="r">Drums</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>swingsticks@…<br/><span class="lbl">PH</span>On file</div>
+        <div class="cal-pref"><span class="dot"></span>iCloud</div>
+        <div class="pay-pref"><span class="dot-pay"></span>Venmo</div>
+      </div>
+      <div class="member">
+        <div class="av">AM</div>
+        <div>
+          <div class="who">Alexis Mather</div>
+          <div class="roles"><span class="r">Vocals</span></div>
+        </div>
+        <div class="contact"><span class="lbl">EMAIL</span>alexismariemather@…<br/><span class="lbl">PH</span>On file</div>
+        <div class="cal-pref"><span class="dot"></span>Google</div>
+        <div class="pay-pref"><span class="dot-pay"></span>Cash App</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ FINANCE / BOOKS ================ -->
+  <div class="sec">
+    <span class="n">v.</span>
+    <h2>Finance · the books</h2>
+    <div class="desc">A separate tab in the same app — same login, no extra password. Sensitive numbers live here on purpose, not on the front page where someone glancing at your screen can read them.</div>
+  </div>
+
+  <section class="app">
+    <div class="app-nav">
+      <div class="brand">Gig<em>wright</em></div>
+      <nav>
+        <a href="#">Gigs</a>
+        <a href="#">Roster</a>
+        <a href="#">Venues</a>
+        <a href="#" class="active">Finance</a>
+        <a href="#">Settings</a>
+      </nav>
+      <div class="right">
+        <span style="font-size: 12px; color: var(--ink-soft);">Patrick Lamb</span>
+        <div class="user">PL</div>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 26px; padding-bottom: 18px; border-bottom: 1px solid var(--line);">
+        <div>
+          <div class="micro" style="margin-bottom: 6px;">Books · for your eyes only</div>
+          <h3 class="serif" style="font-size: 30px; font-weight: 400; letter-spacing: -0.022em;">Payouts &amp; reconciliation</h3>
+        </div>
+        <div style="text-align: right; font-size: 13px; color: var(--ink-soft); line-height: 1.6;">
+          <div><span class="serif" style="font-size: 18px; color: var(--accent);">$1,400</span> outstanding to band</div>
+          <div style="font-size: 11px; color: var(--ink-mute); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; margin-top: 2px;">YTD net &nbsp;·&nbsp; <span class="serif" style="text-transform: none; font-size: 14px; color: var(--ink); letter-spacing: 0;">$42,800</span></div>
+        </div>
+      </div>
+
+      <!-- Excel-mirror payout tracker -->
+      <div style="border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden;">
+
+        <!-- GIG 1 — Boca West (unpaid) -->
+        <div style="padding: 14px 18px; background: var(--paper-deep); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="serif" style="font-size: 17px; font-weight: 500;">Boca West Country Club <span style="font-size: 12px; color: var(--ink-mute); font-weight: 400;">· private event</span></div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px; letter-spacing: 0.04em;">Apr 8, 2026 · played · <span style="color: var(--accent); font-weight: 600;">11 days outstanding</span></div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <a class="btn ghost sm" style="font-size: 11px;">Contract.pdf</a>
+            <a class="btn ghost sm" style="font-size: 11px;">+ Note</a>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 9px 18px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); font-weight: 600; border-bottom: 1px solid var(--line); background: #FAF7F0;">
+          <div>Musician</div><div>Role</div><div>Amount</div><div>Method</div><div>Date paid</div><div style="text-align: right;">Status</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Dave Reinhardt</div>
+          <div style="color: var(--ink-soft);">Drums</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$400</div>
+          <div><span style="color: var(--ink);">Zelle</span> <span style="color: var(--ink-mute); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 2px;">default</span></div>
+          <div style="color: var(--ink-mute); font-size: 12px;">—</div>
+          <div style="text-align: right;"><span class="pill unpaid" style="font-size: 9px; padding: 2px 7px;">Unpaid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Tim George</div>
+          <div style="color: var(--ink-soft);">Bass</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$400</div>
+          <div><span style="color: var(--ink);">Venmo</span> <span style="color: var(--ink-mute); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; margin-left: 2px;">default</span></div>
+          <div style="color: var(--ink-mute); font-size: 12px;">—</div>
+          <div style="text-align: right;"><span class="pill unpaid" style="font-size: 9px; padding: 2px 7px;">Unpaid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 14px 18px; font-size: 13px; align-items: center; background: var(--paper-warm); font-weight: 500;">
+          <div style="color: var(--ink-soft); letter-spacing: 0.04em; font-size: 11px; text-transform: uppercase;">Vendor cost</div>
+          <div></div>
+          <div class="serif" style="font-variant-numeric: tabular-nums; font-size: 16px;">$800</div>
+          <div style="color: var(--ink-soft); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;">Client paid</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums; font-size: 16px;">$2,200</div>
+          <div style="text-align: right;"><span class="serif" style="color: var(--accent); font-variant-numeric: tabular-nums; font-size: 16px;">Net $1,400</span></div>
+        </div>
+
+        <!-- GIG 2 — Sounds of Christmas Hood River (settled) -->
+        <div style="padding: 14px 18px; background: var(--paper-deep); border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div class="serif" style="font-size: 17px; font-weight: 500;">Sounds of Christmas <span style="font-size: 12px; color: var(--ink-mute); font-weight: 400;">· Hood River</span></div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px; letter-spacing: 0.04em;">Dec 17, 2025 · played &amp; settled</div>
+          </div>
+          <div style="display: flex; gap: 6px;">
+            <a class="btn ghost sm" style="font-size: 11px;">Contract.pdf</a>
+            <a class="btn ghost sm" style="font-size: 11px;">+ Note</a>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 9px 18px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-mute); font-weight: 600; border-bottom: 1px solid var(--line); background: #FAF7F0;">
+          <div>Musician</div><div>Role</div><div>Amount</div><div>Method</div><div>Date paid</div><div style="text-align: right;">Status</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Dan Balmer</div>
+          <div style="color: var(--ink-soft);">Guitar</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$350</div>
+          <div style="color: var(--ink);">Venmo</div>
+          <div style="color: var(--ink-soft); font-size: 12px;">Dec 17</div>
+          <div style="text-align: right;"><span class="pill paid" style="font-size: 9px; padding: 2px 7px;">Paid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Ed Bennett</div>
+          <div style="color: var(--ink-soft);">Bass</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$350</div>
+          <div style="color: var(--ink);">Venmo</div>
+          <div style="color: var(--ink-soft); font-size: 12px;">Dec 17</div>
+          <div style="text-align: right;"><span class="pill paid" style="font-size: 9px; padding: 2px 7px;">Paid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Steve Christofferson</div>
+          <div style="color: var(--ink-soft);">Keys</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$350</div>
+          <div style="color: var(--ink-mute); font-size: 12px;">— select —</div>
+          <div style="color: var(--ink-mute); font-size: 12px;">—</div>
+          <div style="text-align: right;"><span class="pill unpaid" style="font-size: 9px; padding: 2px 7px;">Unpaid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Austin Klein</div>
+          <div style="color: var(--ink-soft);">Trumpet</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$450</div>
+          <div style="color: var(--ink);">Venmo</div>
+          <div style="color: var(--ink-soft); font-size: 12px;">Dec 17</div>
+          <div style="text-align: right;"><span class="pill paid" style="font-size: 9px; padding: 2px 7px;">Paid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 12px 18px; font-size: 13px; align-items: center; border-bottom: 1px solid var(--line);">
+          <div class="serif" style="font-weight: 500;">Ron Steen</div>
+          <div style="color: var(--ink-soft);">Drums</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums;">$350</div>
+          <div style="color: var(--ink);">PayPal</div>
+          <div style="color: var(--ink-soft); font-size: 12px;">Dec 17</div>
+          <div style="text-align: right;"><span class="pill paid" style="font-size: 9px; padding: 2px 7px;">Paid</span></div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.6fr 0.8fr 90px 110px 100px 90px; gap: 12px; padding: 14px 18px; font-size: 13px; align-items: center; background: var(--paper-warm); font-weight: 500;">
+          <div style="color: var(--ink-soft); letter-spacing: 0.04em; font-size: 11px; text-transform: uppercase;">Vendor cost</div>
+          <div></div>
+          <div class="serif" style="font-variant-numeric: tabular-nums; font-size: 16px;">$1,850</div>
+          <div style="color: var(--ink-soft); font-size: 11px; letter-spacing: 0.04em; text-transform: uppercase;">Client paid</div>
+          <div class="serif" style="font-variant-numeric: tabular-nums; font-size: 16px;">$5,000</div>
+          <div style="text-align: right;"><span class="serif" style="color: var(--accent); font-variant-numeric: tabular-nums; font-size: 16px;">Net $3,150</span></div>
+        </div>
+      </div>
+
+      <div style="margin-top: 18px; padding: 14px 18px; background: var(--paper-deep); border: 1px dashed var(--line-strong); border-radius: 6px; font-size: 13px; color: var(--ink-soft); line-height: 1.55;">
+        <span class="serif" style="color: var(--ink); font-weight: 500;">Same shape as your Sounds of Christmas spreadsheet.</span> Payment methods auto-fill from each musician's roster preference (Zelle, Venmo, PayPal, Cash App, Check, Cash) — overridable per-gig if needed. Click any "Unpaid" pill to mark it paid. Gig-level totals — vendor cost, client paid, net — roll up automatically. Contracts attach per gig. Year-end, export everything for taxes.
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ EMAIL GIG SHEET ================ -->
+  <div class="sec">
+    <span class="n">vi.</span>
+    <h2>Gig sheet · email</h2>
+    <div class="desc">The one-tap email that goes out when you hit "Send gig alert." Full gig sheet — times, address, attire, personnel, notes — minus pay. Pay stays a private conversation between you and each musician.</div>
+  </div>
+
+  <section class="email-wrap">
+    <div class="email-copy">
+      <div class="micro">Email · part of "send gig alert"</div>
+      <h3>One tap sends this to the whole band.</h3>
+      <p>When you hit "Send gig alert" in the app, every musician on the gig gets a clean, email-client-safe version of the gig sheet — times, address as tap-to-Maps, attire, personnel, notes, set list link. No pay amounts. Pay stays between you and each musician.</p>
+      <ul class="points">
+        <li><em>i.</em><span><b>Pay-free.</b> Money never goes through this channel. The musician knows their rate from the phone call you made before booking them.</span></li>
+        <li><em>ii.</em><span><b>Email-client safe.</b> Inline CSS, table-based layout, system font fallbacks. Renders in Gmail, Apple Mail, Outlook, iPhone Mail.</span></li>
+        <li><em>iii.</em><span><b>Printable.</b> Same template exports clean as PDF if someone wants a paper copy.</span></li>
+        <li><em>iv.</em><span><b>Diff-aware.</b> If you've updated the gig since last send, the email flags what changed at the top.</span></li>
+      </ul>
+    </div>
+
+    <div class="email">
+      <div class="email-header">
+        <span><span class="from">Gigwright</span> &lt;gigs@patricklamb.com&gt;</span>
+        <span>to Dave Reinhardt</span>
+      </div>
+      <div class="email-body">
+        <div class="brand">Gig<em>wright</em></div>
+        <div class="greeting">Hey Dave —</div>
+        <h1>Sat · The Funky <em>Biscuit</em></h1>
+        <div class="subhead">April 18, 2026 · Boca Raton, FL</div>
+
+        <div class="block">
+          <h4>Times</h4>
+          <div class="row"><div class="k">Load in</div><div class="v">5:30 PM</div></div>
+          <div class="row"><div class="k">Sound check</div><div class="v">6:00 PM</div></div>
+          <div class="row"><div class="k">Downbeat</div><div class="v"><em>7:30 PM</em></div></div>
+          <div class="row"><div class="k">End</div><div class="v">Open</div></div>
+        </div>
+
+        <div class="block">
+          <h4>Your role</h4>
+          <div class="row"><div class="k">Role</div><div class="v">Drums</div></div>
+          <div class="row"><div class="k">Attire</div><div class="v">Black on black</div></div>
+        </div>
+
+        <div class="block">
+          <h4>Venue</h4>
+          <div class="address">
+            <div class="line1">The Funky Biscuit</div>
+            <div class="line2">303 SE Mizner Boulevard<br/>Boca Raton, FL 33432 · (561) 465-3946</div>
+            <a class="map" href="#">Open in Maps →</a>
+          </div>
+        </div>
+
+        <div class="block">
+          <h4>Notes from Patrick</h4>
+          <div style="font-size:13px; color:#444; line-height:1.55;">Parking in back off Mizner. Load in stage-right. Green room has a fridge. Audience skews 40+ — lean into blues-funk set.</div>
+        </div>
+
+        <a class="cta" href="#">View full gig sheet →</a>
+
+        <div class="foot">
+          <em>Sent automatically from Gigwright on behalf of Patrick Lamb.</em><br/>
+          This gig is on your calendar. You'll get one reminder Saturday morning at 7:30 AM.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================ PHONE / SMS ================ -->
+  <div class="sec">
+    <span class="n">vii.</span>
+    <h2>What the band sees — SMS</h2>
+    <div class="desc">Full gig sheet info via text — same content as the email, minus pay. Pay stays a private conversation. Diffs only when something changes.</div>
+  </div>
+
+  <section class="phone-block">
+    <div class="phone">
+      <div class="phone-scr">
+        <div class="notch"></div>
+        <div class="phone-status"><span>9:41</span><span>5G · 87%</span></div>
+        <div class="thread-h">
+          <div class="a">G</div>
+          <div class="n">Gigwright</div>
+          <div class="s">Text · +1 (561) 555-0142</div>
+        </div>
+        <div class="th">
+          <div class="ts">Tue · 9:04 AM</div>
+          <div class="bub">
+            Hey Dave — you're on for <b>The Funky Biscuit</b>, Sat Apr 18.<br/><br/>
+            303 SE Mizner Blvd, Boca Raton, FL<br/>
+            (tap to open in Maps)<br/><br/>
+            LOAD IN 5:30 PM<br/>
+            SOUND CHECK 6:00 (all lines run)<br/>
+            DOWNBEAT 7:30<br/>
+            END open<br/><br/>
+            Role: Drums<br/>
+            Attire: Black on black, no tie<br/>
+            Meal: after check, green room<br/><br/>
+            Also playing: Patrick Lamb (leader, sax/vocals), Tim George (bass)<br/><br/>
+            Notes: Parking in back off Mizner. Load in stage-right. Green room has a fridge. Audience skews 40+ — lean into blues-funk.<br/><br/>
+            Set list &amp; charts: gp.co/g/9a2f<br/>
+            On your calendar now.
+          </div>
+
+          <div class="ts">Fri · 4:12 PM</div>
+          <div class="bub alert">
+            <b>UPDATE</b> · Funky Biscuit Sat:<br/>
+            Downbeat now <b>8:00 PM</b> (was 7:30). Call still 6:00. Calendar updated.
+          </div>
+
+          <div class="ts">Sat · 7:30 AM</div>
+          <div class="bub">
+            Good morning. <b>Tonight at The Funky Biscuit.</b><br/>
+            Call 6:00 · Downbeat 8:00 · 303 SE Mizner, Boca Raton.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-copy-side">
+      <div class="micro">The band · SMS</div>
+      <h3>No app. No login.<br/>Just the details.</h3>
+      <p>The text carries the same information as the email — full gig sheet, in their hand, on the device they actually check. Times, address, attire, who else is playing, notes, and a link to the set list and add-on charts. No pay amounts — that stays a private conversation between you and each musician.</p>
+      <ul class="pts">
+        <li><em>i.</em><span><b>Booked.</b> One full-detail text with everything from the gig sheet, plus a tap-to-Maps address and a link to the set list and charts.</span></li>
+        <li><em>ii.</em><span><b>Changed.</b> If anything moves — time, attire, set list, charts — only the diff goes out, not the whole message again. "Downbeat now 8:00 (was 7:30)" stands on its own.</span></li>
+        <li><em>iii.</em><span><b>Attachment changed.</b> If the set list is swapped or the gig-materials link is updated, the band gets an auto-notification.</span></li>
+        <li><em>iv.</em><span><b>Morning of.</b> Quiet reminder with the address and call time.</span></li>
+        <li><em>v.</em><span><b>Ask to confirm, optional.</b> Flip on per-gig. Default is info-only — you already called them.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================ MEMBER VIEW ================ -->
+  <div class="sec">
+    <span class="n">viii.</span>
+    <h2>Member view</h2>
+    <div class="desc">What Dave sees when he logs in. Narrower than yours. No pay amounts at all — pay stays a private conversation between you and the musician. He sees where, when, what to wear, who else is on. Nothing about money.</div>
+  </div>
+
+  <section class="app" style="background: #FAF6EE;">
+    <div class="app-nav" style="background: #EFE8D6;">
+      <div class="brand">Gig<em>wright</em></div>
+      <nav>
+        <a href="#" class="active">My Gigs</a>
+        <a href="#">Profile</a>
+        <a href="#">Preferences</a>
+      </nav>
+      <div class="right">
+        <span style="font-size: 12px; color: var(--ink-soft);">Dave Reinhardt · Drums</span>
+        <div class="user" style="background: var(--ink); color: var(--paper);">DR</div>
+      </div>
+    </div>
+
+    <div class="app-body">
+      <div style="margin-bottom: 22px; display: flex; justify-content: space-between; align-items: baseline;">
+        <div>
+          <div class="micro" style="margin-bottom: 6px;">Welcome · member</div>
+          <h3 class="serif" style="font-size: 26px; letter-spacing: -0.02em; font-weight: 400;">Hey <em class="serif-i" style="color: var(--accent); font-weight: 300;">Dave.</em></h3>
+        </div>
+        <div style="font-size: 12px; color: var(--ink-soft); text-align: right;">
+          5 upcoming gigs · 1 played, awaiting settlement
+        </div>
+      </div>
+
+      <!-- Two-column: My Gigs list + Dave's gig detail -->
+      <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 18px;">
+
+        <!-- My Gigs (Dave's scope only) -->
+        <div style="border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden;">
+          <div style="padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-mute); font-weight: 600;">Your upcoming gigs</div>
+
+          <div style="padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--paper-deep);">
+            <div style="display: flex; justify-content: space-between; align-items: baseline;">
+              <div class="serif" style="font-size: 16px; font-weight: 500;">Funky Biscuit</div>
+              <div style="font-size: 10px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600;">Tonight</div>
+            </div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px; letter-spacing: 0.02em;">Call 6:00 · Downbeat 7:30 · Boca Raton</div>
+          </div>
+
+          <div style="padding: 14px 16px; border-bottom: 1px solid var(--line);">
+            <div class="serif" style="font-size: 16px; font-weight: 500;">The Kelsey Theater</div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px;">Fri Apr 24 · Downbeat 7:30 · Lake Park</div>
+          </div>
+
+          <div style="padding: 14px 16px; border-bottom: 1px solid var(--line);">
+            <div class="serif" style="font-size: 16px; font-weight: 500;">Trump Int'l Beach</div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px;">Sat May 2 · Private · 9:00 PM · Sunny Isles</div>
+          </div>
+
+          <div style="padding: 14px 16px; border-bottom: 1px solid var(--line);">
+            <div class="serif" style="font-size: 15px; font-weight: 500;">Wedding · Breakers</div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px;">Fri May 15 · 6:30 PM · Palm Beach</div>
+          </div>
+
+          <div style="padding: 14px 16px;">
+            <div class="serif" style="font-size: 15px; font-weight: 500; color: var(--ink-soft);">Boca West CC</div>
+            <div style="font-size: 11px; color: var(--ink-mute); margin-top: 3px;">Apr 8 · Played</div>
+          </div>
+        </div>
+
+        <!-- Dave's gig detail -->
+        <div style="border: 1px solid var(--line); border-radius: 8px; background: var(--surface); padding: 22px 26px;">
+          <div style="padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px;">
+            <div class="micro" style="color: var(--accent); margin-bottom: 6px;">Tonight</div>
+            <h4 class="serif" style="font-size: 24px; font-weight: 400; letter-spacing: -0.02em; line-height: 1.05;">The Funky <em class="serif-i" style="color: var(--accent); font-weight: 300;">Biscuit</em></h4>
+            <div style="font-size: 12px; color: var(--ink-soft); margin-top: 6px;">
+              Sat Apr 18 · Boca Raton, FL
+              <span class="pill confirmed" style="font-size: 9px; margin-left: 6px; padding: 2px 7px;">Confirmed</span>
+            </div>
+          </div>
+
+          <!-- Your role banner — no pay, that stays between you and Patrick -->
+          <div style="padding: 14px 16px; background: var(--paper-deep); border-radius: 6px; margin-bottom: 20px;">
+            <div class="micro" style="margin-bottom: 4px;">Your role</div>
+            <div class="serif" style="font-size: 17px; font-weight: 500;">Drums</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px;">
+            <div>
+              <div class="micro" style="margin-bottom: 8px;">Times</div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;">
+                <div>
+                  <div style="font-size: 9px; color: var(--ink-mute); letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;">Load in</div>
+                  <div class="serif" style="font-size: 15px; margin-top: 2px;">5:30 PM</div>
+                </div>
+                <div>
+                  <div style="font-size: 9px; color: var(--ink-mute); letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;">Sound check</div>
+                  <div class="serif" style="font-size: 15px; margin-top: 2px;">6:00</div>
+                  <div style="font-size: 9px; color: var(--ink-mute); margin-top: 3px; line-height: 1.35;">All lines run · ready to play</div>
+                </div>
+                <div>
+                  <div style="font-size: 9px; color: var(--ink-mute); letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;">Downbeat</div>
+                  <div class="serif" style="font-size: 15px; margin-top: 2px;">7:30</div>
+                </div>
+                <div>
+                  <div style="font-size: 9px; color: var(--ink-mute); letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;">End</div>
+                  <div class="serif" style="font-size: 15px; color: var(--ink-mute); font-style: normal; margin-top: 2px;">Open</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="micro" style="margin-bottom: 8px;">Venue</div>
+              <div class="serif" style="font-size: 16px; font-weight: 500;">The Funky Biscuit</div>
+              <div style="font-size: 12px; color: var(--ink-soft); margin-top: 4px; line-height: 1.45;">303 SE Mizner Blvd<br/>Boca Raton, FL 33432</div>
+              <a style="display: inline-block; margin-top: 8px; font-size: 11px; color: var(--accent); border-bottom: 1px solid var(--accent); padding-bottom: 1px; font-weight: 600; cursor: pointer;">Open in Maps →</a>
+            </div>
+
+            <div>
+              <div class="micro" style="margin-bottom: 8px;">Who else is playing</div>
+              <div style="font-size: 13px; line-height: 1.7;">
+                <div style="font-family: 'Fraunces', serif; font-weight: 500;">Patrick Lamb</div>
+                <div style="color: var(--ink-mute); font-size: 11px; margin-top: -2px;">Leader · Sax, Vocals</div>
+                <div style="font-family: 'Fraunces', serif; font-weight: 500; margin-top: 6px;">Tim George</div>
+                <div style="color: var(--ink-mute); font-size: 11px; margin-top: -2px;">Bass</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="micro" style="margin-bottom: 8px;">Attire &amp; tech</div>
+              <div style="font-size: 13px; line-height: 1.6;">
+                <span class="serif-i" style="font-weight: 400;">Black on black.</span> No tie.<br/>
+                House sound &amp; lights.<br/>
+                Meal after check · green room.
+              </div>
+            </div>
+
+            <div style="grid-column: span 2; padding-top: 14px; border-top: 1px solid var(--line);">
+              <div class="micro" style="margin-bottom: 8px;">Notes from Patrick</div>
+              <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.55;">Parking in back off Mizner. Load in through stage-right door. Green room has a fridge. Audience skews 40+ — lean into blues-funk set.</div>
+            </div>
+
+            <div style="grid-column: span 2; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+              <div style="font-size: 11px; color: var(--success); letter-spacing: 0.08em; font-weight: 600;">
+                <span style="display: inline-block; width: 6px; height: 6px; background: var(--success); border-radius: 50%; margin-right: 6px; vertical-align: middle;"></span>
+                On your iCloud calendar
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <a class="btn ghost sm">Gig sheet PDF</a>
+                <a class="btn sm">Text Patrick</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- The wall -->
+      <div style="margin-top: 22px; padding: 16px 20px; background: var(--paper-deep); border: 1px dashed var(--line-strong); border-radius: 6px;">
+        <div style="font-size: 10px; color: var(--ink-mute); letter-spacing: 0.24em; text-transform: uppercase; font-weight: 600; margin-bottom: 10px;">The wall · hidden from member view</div>
+        <div style="font-size: 13px; color: var(--ink-soft); line-height: 1.65;">
+          All pay amounts (including Dave's own) · all payment methods · client payment · reconciliation · the net · the full band roster · any other gig Dave's not on · every finance view · admin settings.
+          <span class="serif-i" style="color: var(--ink); font-size: 14px; font-weight: 400; display: block; margin-top: 6px;">Musicians see their own gigs, where, when, what to wear, who else is on. Money stays a private conversation between Patrick and the musician.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="bottom">
+    <span>Gigwright · Mockup v3</span>
+    <span>April 2026 · for Patrick Lamb</span>
+  </div>
+
+</div>
+
+</body>
+</html>

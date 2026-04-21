@@ -1,26 +1,59 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Color palette — taken from the Gigwright mockup */
+  --color-paper: #FBFAF6;
+  --color-paper-warm: #F3EFE6;
+  --color-paper-deep: #EDE7DA;
+  --color-surface: #FFFFFF;
+
+  --color-ink: #0E0C09;
+  --color-ink-soft: #494336;
+  --color-ink-mute: #857F72;
+
+  --color-line: rgb(14 12 9 / 0.10);
+  --color-line-strong: rgb(14 12 9 / 0.18);
+
+  --color-accent: #7E2418;
+  --color-accent-soft: #F4E1DB;
+  --color-success: #2E6B3B;
+  --color-warn: #8B6914;
+
+  /* Font families wired to next/font CSS variables set in layout.tsx */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-fraunces), Georgia, serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: -0.002em;
 }
+
+/* Mockup convention: no italics anywhere. */
+em, i, cite {
+  font-style: normal;
+}
+
+/* Shared input styling for form fields */
+.input {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
+  color: var(--color-ink);
+  outline: none;
+  line-height: 1.4;
+}
+.input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgb(126 36 24 / 0.12);
+}
+textarea.input { resize: vertical; min-height: 72px; }
+select.input { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23857F72' stroke-width='1.5'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 34px; }
