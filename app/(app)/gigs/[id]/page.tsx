@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
+import { SetlistUpload } from "@/components/SetlistUpload";
 import {
   formatDayNum,
   formatLongDate,
   formatMoneyCents,
   formatTime,
   formatYear,
+  mapLink,
 } from "@/lib/format";
 
 type Params = { id: string };
@@ -41,18 +43,31 @@ export default async function GigDetailPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const gig = await db.gig.findFirst({
-    where: { id, ownerId: user.id },
-    include: {
-      venue: true,
-      personnel: {
-        include: { musician: true },
-        orderBy: { position: "asc" },
+  const [gig, roster] = await Promise.all([
+    db.gig.findFirst({
+      where: { id, ownerId: user.id },
+      include: {
+        venue: true,
+        personnel: {
+          include: { musician: true },
+          orderBy: { position: "asc" },
+        },
+        expenses: { orderBy: { position: "asc" } },
+        activity: { orderBy: { createdAt: "desc" } },
       },
-      expenses: { orderBy: { position: "asc" } },
-      activity: { orderBy: { createdAt: "desc" } },
-    },
-  });
+    }),
+    db.musician.findMany({
+      where: { ownerId: user.id, isLeader: false },
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        paymentMethod: true,
+        payoutAddress: true,
+        isLeader: true,
+      },
+    }),
+  ]);
 
   if (!gig) notFound();
 
@@ -229,6 +244,19 @@ export default async function GigDetailPage({
                 )}
                 {gig.venue.phone}
               </div>
+              {(() => {
+                const href = mapLink(gig.venue);
+                return href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                  >
+                    Open in Maps →
+                  </a>
+                ) : null;
+              })()}
             </Section>
           )}
 
@@ -264,13 +292,10 @@ export default async function GigDetailPage({
           </Section>
 
           <Section title="Set list">
-            <InlineField
+            <SetlistUpload
               gigId={gig.id}
-              field="setlistUrl"
-              initialValue={gig.setlistUrl}
-              placeholder="Paste set list link"
-              displayAs="link"
-              linkLabel={gig.setlistFileName}
+              initialUrl={gig.setlistUrl}
+              initialFileName={gig.setlistFileName}
             />
             <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
               If this changes you will all get a text and email.
@@ -368,6 +393,13 @@ export default async function GigDetailPage({
             amountCents: e.amountCents,
             position: e.position,
             paidAt: e.paidAt,
+          }))}
+          roster={roster.map((m) => ({
+            id: m.id,
+            name: m.name,
+            paymentMethod: m.paymentMethod ?? null,
+            payoutAddress: m.payoutAddress ?? null,
+            isLeader: m.isLeader,
           }))}
         />
       </div>

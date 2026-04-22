@@ -193,6 +193,12 @@ export async function savePayout(
     clientPayCents: number | null;
     clientDepositCents: number | null;
     personnel: Array<{ id: string; payCents: number; paidAt?: Date | null }>;
+    newPersonnel?: Array<{
+      musicianId: string;
+      payCents: number;
+      paidAt?: Date | null;
+      position: number;
+    }>;
     deletedPersonnelIds?: string[];
     expenses: Array<{
       id?: string;
@@ -234,6 +240,31 @@ export async function savePayout(
           paidAt: p.paidAt ?? null,
         },
       });
+    }
+
+    // Create personnel rows added via the worksheet typeahead
+    for (const np of payload.newPersonnel ?? []) {
+      // Skip if already on the gig (prevents a unique-constraint violation if
+      // the same musician was typed twice)
+      const existing = await tx.gigPersonnel.findFirst({
+        where: { gigId, musicianId: np.musicianId },
+      });
+      if (existing) {
+        await tx.gigPersonnel.update({
+          where: { id: existing.id },
+          data: { payCents: np.payCents, paidAt: np.paidAt ?? null },
+        });
+      } else {
+        await tx.gigPersonnel.create({
+          data: {
+            gigId,
+            musicianId: np.musicianId,
+            payCents: np.payCents,
+            paidAt: np.paidAt ?? null,
+            position: np.position,
+          },
+        });
+      }
     }
 
     const existing = await tx.gigExpense.findMany({ where: { gigId } });

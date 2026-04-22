@@ -85,3 +85,28 @@ export function gigVenueLabel(venue: {
     sub: locationParts.join(", "),
   };
 }
+
+// Canonical map link for a venue. Uses Google Maps search URL format so it
+// opens in the user's native maps app (iOS asks Apple Maps vs. Google Maps;
+// Android opens Google Maps directly). Works as a plain hyperlink in SMS,
+// email, or the web UI — no URL scheme tricks needed.
+export function mapLink(venue: {
+  name?: string | null;
+  addressL1?: string | null;
+  addressL2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+}): string | null {
+  const parts = [
+    venue.name,
+    venue.addressL1,
+    venue.addressL2,
+    venue.city,
+    venue.state,
+    venue.postalCode,
+  ].filter((s): s is string => !!s && s.trim() !== "");
+  if (parts.length === 0) return null;
+  const q = parts.join(", ");
+  return `https://maps.google.com/?q=${encodeURIComponent(q)}`;
+}

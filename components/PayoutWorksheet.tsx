@@ -43,12 +43,25 @@ type Row = {
   payoutAddress?: string | null;
 };
 
+// Lightweight roster entry used for typeahead on the worksheet's expense rows.
+// When a user types a freeform label and it exactly matches one of these
+// names, we convert the row from 'expense' to 'personnel' and pull in the
+// musician's payment method/address for the pay pill.
+export type RosterOption = {
+  id: string;
+  name: string;
+  paymentMethod: string | null;
+  payoutAddress: string | null;
+  isLeader: boolean;
+};
+
 export function PayoutWorksheet({
   gigId,
   gigTitle,
   initialClientPayCents,
   personnel,
   expenses,
+  roster = [],
 }: {
   gigId: string;
   gigTitle?: string;
@@ -56,6 +69,7 @@ export function PayoutWorksheet({
   initialClientDepositCents?: number | null;
   personnel: PersonnelIn[];
   expenses: ExpenseIn[];
+  roster?: RosterOption[];
 }) {
   const initialRows: Row[] = [
     ...personnel
@@ -115,12 +129,24 @@ export function PayoutWorksheet({
 
   function save() {
     startTransition(async () => {
-      const personnelPayload = rows
-        .filter((r) => r.kind === "personnel")
+      // Existing personnel (have DB id) → update
+      const existingPersonnel = rows
+        .filter((r) => r.kind === "personnel" && r.id)
         .map((r) => ({
           id: r.id!,
           payCents: fieldToCents(r.amountField),
           paidAt: fieldToDate(r.paidDate),
+        }));
+
+      // Rows converted from expense→personnel via the typeahead (no DB id yet)
+      // → create fresh GigPersonnel rows
+      const newPersonnel = rows
+        .filter((r) => r.kind === "personnel" && !r.id && r.musicianId)
+        .map((r, i) => ({
+          musicianId: r.musicianId!,
+          payCents: fieldToCents(r.amountField),
+          paidAt: fieldToDate(r.paidDate),
+          position: i,
         }));
 
       const deletedPersonnelIds = personnel
@@ -141,7 +167,8 @@ export function PayoutWorksheet({
       await savePayout(gigId, {
         clientPayCents,
         clientDepositCents: null,
-        personnel: personnelPayload,
+        personnel: existingPersonnel,
+        newPersonnel,
         deletedPersonnelIds,
         expenses: expensePayload,
       });
@@ -149,11 +176,27 @@ export function PayoutWorksheet({
     });
   }
 
+  // Roster members not already attached to this gig are the candidates for
+  // the label typeahead. Hide anyone already on the worksheet so we don't
+  // suggest duplicates.
+  const attachedIds = new Set(
+    rows.filter((r) => r.kind === "personnel").map((r) => r.musicianId),
+  );
+  const rosterCandidates = roster.filter((m) => !attachedIds.has(m.id));
+
   return (
     <section
       id="payout"
       className="overflow-hidden rounded-[10px] border border-line bg-surface shadow-sm"
     >
+      {/* Shared roster datalist, referenced by every expense row's input */}
+      <datalist id="gw-roster-options">
+        {rosterCandidates.map((m) => (
+          <option key={m.id} value={m.name}>
+            {m.paymentMethod ? paymentLabel(m.paymentMethod) : ""}
+          </option>
+        ))}
+      </datalist>
       {/* Header */}
       <header className="flex items-center justify-between gap-4 border-b border-line bg-paper-warm px-6 py-4">
         <div>
@@ -234,8 +277,31 @@ export function PayoutWorksheet({
               ) : (
                 <input
                   value={row.label}
-                  onChange={(e) => updateRow(idx, { label: e.target.value })}
-                  placeholder="e.g. Hotel, Flights, Facebook ads…"
+                  list="gw-roster-options"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    // If the typed value exactly matches a roster member,
+                    // convert this row to a personnel row and pull in their
+                    // payment method + address for the pay pill.
+                    const match = roster.find(
+                      (m) => m.name.toLowerCase() === v.toLowerCase(),
+                    );
+                    if (match) {
+                      updateRow(idx, {
+                        kind: "personnel",
+                        musicianId: match.id,
+                        isLeader: match.isLeader,
+                        label: match.name,
+                        paymentMethod: match.paymentMethod,
+                        payoutAddress: match.payoutAddress,
+                        // Strip the old freeform id — it's a new personnel row
+                        id: undefined,
+                      });
+                    } else {
+                      updateRow(idx, { label: v });
+                    }
+                  }}
+                  placeholder="Type a name from your roster, or any expense…"
                   className="w-full bg-transparent font-serif text-[15px] text-ink placeholder-ink-mute focus:outline-none"
                 />
               )}
