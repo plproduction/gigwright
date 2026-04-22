@@ -321,7 +321,17 @@ export async function savePayout(
 // SMS/email fanouts to personnel).
 export async function updateGigField(
   gigId: string,
-  field: "notes" | "materialsUrl" | "setlistUrl" | "setlistFileName",
+  field:
+    | "notes"
+    | "materialsUrl"
+    | "setlistUrl"
+    | "setlistFileName"
+    | "sound"
+    | "soundContactName"
+    | "soundContactPhone"
+    | "lights"
+    | "attire"
+    | "meal",
   value: string | null,
 ) {
   const user = await requireUser();

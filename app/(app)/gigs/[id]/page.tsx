@@ -261,21 +261,50 @@ export default async function GigDetailPage({
           )}
 
           <Section title="Tech & attire">
-            <KV>
-              {gig.sound && <Row k="Sound">{gig.sound}</Row>}
-              {gig.lights && <Row k="Lights">{gig.lights}</Row>}
-              {gig.attire && (
-                <Row k="Attire">
-                  <em className="font-serif text-accent not-italic">
-                    {gig.attire}
-                  </em>
-                </Row>
-              )}
-              {gig.meal && <Row k="Meal">{gig.meal}</Row>}
-              {!gig.sound && !gig.lights && !gig.attire && !gig.meal && (
-                <div className="text-[12px] text-ink-mute">Not specified</div>
-              )}
-            </KV>
+            <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+              <Label>Sound</Label>
+              <InlineField
+                gigId={gig.id}
+                field="sound"
+                initialValue={gig.sound}
+                placeholder="House FOH, band sound, etc."
+              />
+              <Label>Sound guy</Label>
+              <InlineField
+                gigId={gig.id}
+                field="soundContactName"
+                initialValue={gig.soundContactName}
+                placeholder="Name of the house engineer"
+              />
+              <Label>Phone</Label>
+              <InlineField
+                gigId={gig.id}
+                field="soundContactPhone"
+                initialValue={gig.soundContactPhone}
+                placeholder="(555) 555-5555"
+              />
+              <Label>Lights</Label>
+              <InlineField
+                gigId={gig.id}
+                field="lights"
+                initialValue={gig.lights}
+                placeholder="House, band, DJ…"
+              />
+              <Label>Attire</Label>
+              <InlineField
+                gigId={gig.id}
+                field="attire"
+                initialValue={gig.attire}
+                placeholder="Black on black, jacket no tie…"
+              />
+              <Label>Meal</Label>
+              <InlineField
+                gigId={gig.id}
+                field="meal"
+                initialValue={gig.meal}
+                placeholder="After check · green room"
+              />
+            </div>
           </Section>
         </div>
 

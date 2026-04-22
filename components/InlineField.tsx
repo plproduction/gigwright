@@ -1,9 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { updateGigField } from "@/lib/actions/gigs";
 
-type Field = "notes" | "materialsUrl" | "setlistUrl";
+type Field =
+  | "notes"
+  | "materialsUrl"
+  | "setlistUrl"
+  | "sound"
+  | "soundContactName"
+  | "soundContactPhone"
+  | "lights"
+  | "attire"
+  | "meal";
 
 // Click-to-edit inline field. Blur or ⌘↵ saves; Escape cancels.
 // Renders the current value as display text when not editing.
@@ -30,6 +40,7 @@ export function InlineField({
   const [value, setValue] = useState(initialValue ?? "");
   const [saved, setSaved] = useState<string | null>(initialValue);
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const commit = () => {
     const trimmed = value.trim();
@@ -41,6 +52,7 @@ export function InlineField({
       await updateGigField(gigId, field, trimmed === "" ? null : trimmed);
       setSaved(trimmed === "" ? null : trimmed);
       setEditing(false);
+      router.refresh();
     });
   };
 

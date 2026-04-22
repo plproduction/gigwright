@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { savePayout } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
 
@@ -104,6 +105,21 @@ export function PayoutWorksheet({
   const [clientPay, setClientPay] = useState(centsToField(initialClientPayCents));
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const router = useRouter();
+  // Index of a row whose label input should receive focus on next render
+  // (used after the typeahead converts a row to personnel and auto-appends
+  // a fresh empty row for the next contractor).
+  const [pendingFocus, setPendingFocus] = useState<number | null>(null);
+  const rowInputRefs = useRef<Map<number, HTMLInputElement | null>>(new Map());
+
+  useEffect(() => {
+    if (pendingFocus == null) return;
+    const el = rowInputRefs.current.get(pendingFocus);
+    if (el) {
+      el.focus();
+      setPendingFocus(null);
+    }
+  }, [pendingFocus, rows.length]);
 
   const vendorTotalCents = rows.reduce(
     (s, r) => s + fieldToCents(r.amountField),
@@ -173,6 +189,10 @@ export function PayoutWorksheet({
         expenses: expensePayload,
       });
       setSavedAt(new Date());
+      // Force the gig page's server components (Personnel block, Money at a
+      // glance, Activity log) to re-fetch so typeahead-added contractors
+      // appear immediately at the top of the page.
+      router.refresh();
     });
   }
 
@@ -276,27 +296,46 @@ export function PayoutWorksheet({
                 </div>
               ) : (
                 <input
+                  ref={(el) => {
+                    rowInputRefs.current.set(idx, el);
+                  }}
                   value={row.label}
                   list="gw-roster-options"
                   onChange={(e) => {
                     const v = e.target.value;
                     // If the typed value exactly matches a roster member,
                     // convert this row to a personnel row and pull in their
-                    // payment method + address for the pay pill.
+                    // payment method + address for the pay pill, then append
+                    // a fresh empty row below and move focus there so the
+                    // user can keep typing the next contractor's name.
                     const match = roster.find(
                       (m) => m.name.toLowerCase() === v.toLowerCase(),
                     );
                     if (match) {
-                      updateRow(idx, {
-                        kind: "personnel",
-                        musicianId: match.id,
-                        isLeader: match.isLeader,
-                        label: match.name,
-                        paymentMethod: match.paymentMethod,
-                        payoutAddress: match.payoutAddress,
-                        // Strip the old freeform id — it's a new personnel row
-                        id: undefined,
+                      setRows((prev) => {
+                        const next = prev.map((r, i) =>
+                          i === idx
+                            ? {
+                                ...r,
+                                kind: "personnel" as const,
+                                musicianId: match.id,
+                                isLeader: match.isLeader,
+                                label: match.name,
+                                paymentMethod: match.paymentMethod,
+                                payoutAddress: match.payoutAddress,
+                                id: undefined,
+                              }
+                            : r,
+                        );
+                        next.push({
+                          kind: "expense",
+                          label: "",
+                          amountField: "",
+                          paidDate: "",
+                        });
+                        return next;
                       });
+                      setPendingFocus(idx + 1);
                     } else {
                       updateRow(idx, { label: v });
                     }

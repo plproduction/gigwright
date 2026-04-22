@@ -201,10 +201,12 @@ model Gig {
   clientDepositCents Int? // Deposit collected so far
 
   // Tech & logistics (mirrors the mockup)
-  sound      String? // e.g. "House FOH"
-  lights     String? // e.g. "House"
-  attire     String? // e.g. "Black on black"
-  meal       String? // e.g. "After check · green room"
+  sound             String? // e.g. "House FOH"
+  soundContactName  String? // e.g. "Joe the house engineer"
+  soundContactPhone String? // e.g. "(561) 555-1234"
+  lights            String? // e.g. "House"
+  attire            String? // e.g. "Black on black"
+  meal              String? // e.g. "After check · green room"
 
   // Clickable link to the folder/drive with all charts, arrangements, audio
   materialsUrl String?
