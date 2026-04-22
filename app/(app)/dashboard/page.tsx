@@ -45,6 +45,13 @@ export default async function DashboardPage() {
       g.startAt.getFullYear() === now.getFullYear() && g.status === "PLAYED",
   ).length;
 
+  // Brand-new account: nobody's added a gig yet. Show a welcoming onboarding
+  // block with the 4 things a new bandleader should do first, rather than a
+  // bunch of zero'd-out stat tiles.
+  if (gigs.length === 0) {
+    return <Onboarding firstName={(user.name ?? "").split(/\s+/)[0] || null} />;
+  }
+
   return (
     <>
       {/* Top row: Tonight card + Stats */}
@@ -395,4 +402,114 @@ async function getFakeType() {
       }>
     >
   >;
+}
+
+// First-run onboarding card — shown when the user has zero gigs. Walks
+// them through the 4 things a working bandleader does first so the app
+// doesn't feel empty and uninviting.
+function Onboarding({ firstName }: { firstName: string | null }) {
+  const steps: Array<{
+    n: string;
+    title: string;
+    body: string;
+    href: string;
+    cta: string;
+  }> = [
+    {
+      n: "01",
+      title: "Add your roster",
+      body:
+        "Drop in the musicians you hire — name, email, phone, and optional payment method. Once on the roster they're typeahead-available on every gig's payout worksheet.",
+      href: "/roster/new",
+      cta: "+ New musician",
+    },
+    {
+      n: "02",
+      title: "Add a venue or two",
+      body:
+        "Save the rooms you play regularly. Venue address + time zone carries over to every gig booked there, so you only type it once.",
+      href: "/venues/new",
+      cta: "+ New venue",
+    },
+    {
+      n: "03",
+      title: "Book your first gig",
+      body:
+        "Date, venue, call time, downbeat, personnel, pay. The worksheet lights up as you fill it in — every change shows up in the activity log and, once SMS goes live, fans out to the band.",
+      href: "/gigs/new",
+      cta: "+ New gig",
+    },
+    {
+      n: "04",
+      title: "Connect QuickBooks (optional)",
+      body:
+        "When a gig is fully paid, push the musician bills straight to QuickBooks Online as vendor bills. No re-keying at tax time.",
+      href: "/settings/integrations",
+      cta: "Connect QuickBooks",
+    },
+  ];
+  return (
+    <div className="mx-auto max-w-[880px] py-10">
+      <div className="mb-8 text-center">
+        <div className="mb-3 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">
+          Welcome to GigWright
+        </div>
+        <h1 className="font-serif text-[40px] font-light leading-[1.05] tracking-tight">
+          {firstName ? `Hey ${firstName}.` : "Welcome."}{" "}
+          <span className="text-accent">Let&rsquo;s set up your spine.</span>
+        </h1>
+        <p className="mx-auto mt-4 max-w-[540px] text-[15px] leading-[1.55] text-ink-soft">
+          A GigWright runs gigs — you need a roster, a venue, and a first gig to
+          see what the app actually feels like. About five minutes to be up and
+          running.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {steps.map((s) => (
+          <div
+            key={s.n}
+            className="rounded-[10px] border border-line bg-surface p-6"
+          >
+            <div className="flex items-start gap-3">
+              <span className="font-serif text-[22px] font-light leading-none text-accent/80">
+                {s.n}
+              </span>
+              <div>
+                <h3 className="mb-1.5 font-serif text-[18px] font-normal tracking-tight">
+                  {s.title}
+                </h3>
+                <p className="mb-4 text-[13px] leading-[1.55] text-ink-soft">
+                  {s.body}
+                </p>
+                <Link
+                  href={s.href}
+                  className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-1.5 text-[12px] font-semibold text-paper transition-colors hover:bg-black"
+                >
+                  {s.cta}
+                  <span className="font-serif text-[13px] font-light opacity-80">→</span>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-10 rounded-[10px] border border-dashed border-line-strong bg-paper-warm p-5 text-center">
+        <div className="mb-1 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">
+          Migrating from Where&rsquo;s The Gig?
+        </div>
+        <p className="mx-auto max-w-[540px] text-[13px] leading-[1.55] text-ink-soft">
+          Use the one-click importer to pull in your venues, roster, and gig
+          history. You&rsquo;ll be running on GigWright within an afternoon.
+        </p>
+        <Link
+          href="/settings/import"
+          className="mt-3 inline-flex items-center gap-2 rounded-md border border-line-strong bg-paper px-4 py-2 text-[12px] font-semibold text-ink transition-colors hover:border-accent hover:text-accent"
+        >
+          Start import
+        </Link>
+      </div>
+    </div>
+  );
 }

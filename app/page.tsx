@@ -633,7 +633,7 @@ function Footer() {
           <FooterCol
             heading="Company"
             links={[
-              ["About", "#"],
+              ["About", "/about"],
               ["Contact", "mailto:hello@gigwright.com"],
             ]}
           />

@@ -15,6 +15,7 @@ export default auth(function proxy(req) {
     pathname.startsWith("/signin") ||
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/terms") ||
+    pathname.startsWith("/about") ||
     // Public read-only gig pages for SMS/email click-throughs
     pathname.startsWith("/g/") ||
     pathname.startsWith("/api/") || // API routes handle their own auth
