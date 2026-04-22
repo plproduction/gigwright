@@ -21,14 +21,28 @@ export default async function SettingsPage() {
         </div>
         <div className="font-serif text-[18px]">{user.name ?? user.email}</div>
         <div className="mt-1 text-[12px] text-ink-soft">{user.email}</div>
-        <form action={doSignOut} className="mt-4">
-          <button
-            type="submit"
-            className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
+        <div className="mt-1 text-[11px] text-ink-mute">
+          Plan:{" "}
+          <span className="font-semibold text-ink">
+            {user.plan === "ADMIN" ? "Admin" : user.plan === "PRO" ? "Pro" : "Free"}
+          </span>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <a
+            href="/settings/billing"
+            className="rounded-md bg-accent px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-[#611B11]"
           >
-            Sign out
-          </button>
-        </form>
+            Billing
+          </a>
+          <form action={doSignOut}>
+            <button
+              type="submit"
+              className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
 
       <h5 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
