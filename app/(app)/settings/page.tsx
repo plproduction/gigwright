@@ -27,12 +27,18 @@ export default async function SettingsPage() {
             {user.plan === "ADMIN" ? "Admin" : user.plan === "PRO" ? "Pro" : "Free"}
           </span>
         </div>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <a
             href="/settings/billing"
             className="rounded-md bg-accent px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-[#611B11]"
           >
             Billing
+          </a>
+          <a
+            href="/settings/integrations"
+            className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
+          >
+            Integrations
           </a>
           <form action={doSignOut}>
             <button

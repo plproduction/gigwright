@@ -47,6 +47,30 @@ model User {
   venues    Venue[]
   musicians Musician[]
   gigs      Gig[]
+  qbo       QboConnection?
+}
+
+// QuickBooks Online OAuth tokens + company pointer. Access tokens expire in
+// ~1 hour; refresh tokens in 100 days (Intuit auto-rotates refresh tokens on
+// each use — we persist the new one each time we refresh).
+model QboConnection {
+  id      String @id @default(cuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  realmId      String  // QBO company ID
+  accessToken  String  @db.Text
+  refreshToken String  @db.Text
+  expiresAt    DateTime
+
+  // Which QBO account do band-pay bills post into? Defaults to the first
+  // account whose name contains "Contract" on connect; user can override in
+  // the Settings → Integrations page.
+  defaultExpenseAccountId   String?
+  defaultExpenseAccountName String?
+
+  connectedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Account {
@@ -220,6 +244,12 @@ model Gig {
 
   notes String?
 
+  // QuickBooks sync state. qboSyncedAt is set every time we push this gig's
+  // bills to QBO; if updatedAt > qboSyncedAt, the UI shows "Changes unsynced
+  // — Re-push" state. qboSyncError caches the last push error for display.
+  qboSyncedAt DateTime?
+  qboSyncError String?
+
   venueId String?
   venue   Venue?  @relation(fields: [venueId], references: [id])
 
@@ -274,6 +304,11 @@ model GigPersonnel {
 
   calendarSynced Boolean   @default(false)
   calendarSyncedAt DateTime?
+
+  // Per-row QBO pointers so we can update/void the exact bill if the pay
+  // amount changes post-push.
+  qboVendorId String?
+  qboBillId   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

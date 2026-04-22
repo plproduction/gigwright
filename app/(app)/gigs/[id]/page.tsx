@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
+import { PushToQboButton } from "@/components/PushToQboButton";
 import {
   formatDayNum,
   formatLongDate,
@@ -43,7 +44,7 @@ export default async function GigDetailPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const [gig, roster] = await Promise.all([
+  const [gig, roster, qboConn] = await Promise.all([
     db.gig.findFirst({
       where: { id, ownerId: user.id },
       include: {
@@ -67,9 +68,50 @@ export default async function GigDetailPage({
         isLeader: true,
       },
     }),
+    db.qboConnection.findUnique({
+      where: { userId: user.id },
+      select: { id: true, defaultExpenseAccountId: true },
+    }),
   ]);
 
   if (!gig) notFound();
+
+  // ── QBO push state machine ───────────────────────────────────
+  const sidePersonnel = gig.personnel.filter((p) => !p.musician.isLeader);
+  const paidSidePersonnel = sidePersonnel.filter((p) => p.paidAt);
+  const unpushedPaid = paidSidePersonnel.filter((p) => !p.qboBillId);
+
+  type QboState =
+    | { kind: "not-connected" }
+    | { kind: "no-account" }
+    | { kind: "partial"; paidCount: number; totalCount: number }
+    | { kind: "nothing-to-push" }
+    | { kind: "ready"; toPostCount: number }
+    | { kind: "stale"; lastSyncedAt: Date }
+    | { kind: "synced"; lastSyncedAt: Date };
+
+  let qboState: QboState;
+  if (!qboConn) {
+    qboState = { kind: "not-connected" };
+  } else if (!qboConn.defaultExpenseAccountId) {
+    qboState = { kind: "no-account" };
+  } else if (sidePersonnel.length === 0) {
+    qboState = { kind: "nothing-to-push" };
+  } else if (paidSidePersonnel.length < sidePersonnel.length) {
+    qboState = {
+      kind: "partial",
+      paidCount: paidSidePersonnel.length,
+      totalCount: sidePersonnel.length,
+    };
+  } else if (unpushedPaid.length > 0) {
+    qboState = { kind: "ready", toPostCount: unpushedPaid.length };
+  } else if (gig.qboSyncedAt && gig.updatedAt > gig.qboSyncedAt) {
+    qboState = { kind: "stale", lastSyncedAt: gig.qboSyncedAt };
+  } else if (gig.qboSyncedAt) {
+    qboState = { kind: "synced", lastSyncedAt: gig.qboSyncedAt };
+  } else {
+    qboState = { kind: "nothing-to-push" };
+  }
 
   const bandPayCents = gig.personnel
     .filter((p) => !p.musician.isLeader)
@@ -113,7 +155,7 @@ export default async function GigDetailPage({
             <StatusPill status={gig.status} />
           </div>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Link
             href={`/gigs/${gig.id}/edit`}
             className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
@@ -126,6 +168,7 @@ export default async function GigDetailPage({
           >
             Finance
           </a>
+          <PushToQboButton gigId={gig.id} state={qboState} />
           <button
             disabled
             className="cursor-not-allowed rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper opacity-50"
