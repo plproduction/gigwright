@@ -7,6 +7,7 @@ import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
 import { LoadingMapUpload } from "@/components/LoadingMapUpload";
+import { ShareGigButton } from "@/components/ShareGigButton";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import {
@@ -431,6 +432,10 @@ export default async function GigDetailPage({
                 />
               </div>
             </div>
+          </Section>
+
+          <Section title="Share gig sheet">
+            <ShareGigButton gigId={gig.id} />
           </Section>
 
           <Section title="Activity">
