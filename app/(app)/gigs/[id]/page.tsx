@@ -502,6 +502,9 @@ export default async function GigDetailPage({
             amountCents: e.amountCents,
             position: e.position,
             paidAt: e.paidAt,
+            kind: e.kind,
+            miles: e.miles,
+            days: e.days,
           }))}
           roster={roster.map((m) => ({
             id: m.id,

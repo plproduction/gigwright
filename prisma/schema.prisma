@@ -294,12 +294,31 @@ model GigExpense {
   category    String? // optional grouping (travel, promo, meals, etc.)
   position    Int @default(0)
 
+  // Tax-aware kind for year-end reporting. Defaults to GENERAL so existing
+  // rows are unaffected. MILEAGE rows carry `miles`; PER_DIEM rows carry
+  // `days`. Both are optional inputs that help compute amountCents, but the
+  // amount itself stays the source of truth once saved.
+  kind   ExpenseKind @default(GENERAL)
+  miles  Int?        // miles driven (when kind = MILEAGE)
+  days   Int?        // days (when kind = PER_DIEM)
+
   paidAt DateTime? // when the expense was paid / cleared
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([gigId])
+}
+
+// Tax-aware expense categories. GENERAL is the default freeform bucket;
+// MILEAGE / MEAL / PER_DIEM roll up separately for year-end 1099/Schedule C.
+enum ExpenseKind {
+  GENERAL
+  MILEAGE
+  MEAL      // Meals & entertainment (50% deductible on Schedule C)
+  PER_DIEM  // Federal per-diem
+  LODGING
+  TRAVEL    // Flights, ground transit, parking — 100% business
 }
 
 model GigPersonnel {

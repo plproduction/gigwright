@@ -4,6 +4,12 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { savePayout } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
+import {
+  IRS_MILEAGE_RATE_USD,
+  GSA_PER_DIEM_USD,
+  milesToCents,
+  daysToCents,
+} from "@/lib/tax-rates";
 
 // One unified line-item worksheet modeled on the Iridium Payout spreadsheet.
 // Contractors and freeform expenses live in the same ordered table. Each row
@@ -23,12 +29,23 @@ type PersonnelIn = {
   paidAt: Date | null;
 };
 
+type ExpenseKindT =
+  | "GENERAL"
+  | "MILEAGE"
+  | "MEAL"
+  | "PER_DIEM"
+  | "LODGING"
+  | "TRAVEL";
+
 type ExpenseIn = {
   id: string;
   label: string;
   amountCents: number;
   paidAt: Date | null;
   position: number;
+  kind?: ExpenseKindT;
+  miles?: number | null;
+  days?: number | null;
 };
 
 type Row = {
@@ -42,6 +59,10 @@ type Row = {
   hint?: string;         // role / payment method display
   paymentMethod?: string | null;
   payoutAddress?: string | null;
+  // Tax-aware expense fields (only meaningful when kind === "expense")
+  taxKind?: ExpenseKindT;
+  taxMiles?: number | null;
+  taxDays?: number | null;
 };
 
 // Lightweight roster entry used for typeahead on the worksheet's expense rows.
@@ -93,6 +114,9 @@ export function PayoutWorksheet({
       label: e.label,
       amountField: centsToField(e.amountCents),
       paidDate: dateToField(e.paidAt),
+      taxKind: e.kind ?? "GENERAL",
+      taxMiles: e.miles ?? null,
+      taxDays: e.days ?? null,
     })),
   ];
 
@@ -178,6 +202,9 @@ export function PayoutWorksheet({
           amountCents: fieldToCents(r.amountField),
           paidAt: fieldToDate(r.paidDate),
           position: i,
+          kind: r.taxKind ?? "GENERAL",
+          miles: r.taxMiles ?? null,
+          days: r.taxDays ?? null,
         }));
 
       await savePayout(gigId, {
@@ -373,8 +400,8 @@ export function PayoutWorksheet({
           </div>
         ))}
 
-        {/* + Add line */}
-        <div className="border-b border-line px-6 py-3">
+        {/* + Add line + tax-aware quick-add buttons */}
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-line px-6 py-3">
           <button
             type="button"
             onClick={addRow}
@@ -383,6 +410,104 @@ export function PayoutWorksheet({
             <span className="text-[14px]">＋</span>
             <span>Add line item</span>
           </button>
+          <span className="mx-1 text-[11px] text-ink-mute">Tax-tagged quick-adds:</span>
+          <QuickAddButton
+            label="Mileage"
+            title={`Add a mileage row at the IRS rate ($${IRS_MILEAGE_RATE_USD.toFixed(
+              2,
+            )}/mi)`}
+            onClick={() => {
+              const miles = promptNumber(
+                "How many miles? (round-trip)",
+              );
+              if (miles == null) return;
+              const cents = milesToCents(miles);
+              setRows((r) => [
+                ...r,
+                {
+                  kind: "expense",
+                  label: `Mileage — ${miles} mi @ $${IRS_MILEAGE_RATE_USD.toFixed(2)}/mi`,
+                  amountField: centsToField(cents),
+                  paidDate: "",
+                  taxKind: "MILEAGE",
+                  taxMiles: miles,
+                  taxDays: null,
+                },
+              ]);
+            }}
+          />
+          <QuickAddButton
+            label="Per-diem"
+            title={`Add a per-diem row at the CONUS rate ($${GSA_PER_DIEM_USD}/day M&IE)`}
+            onClick={() => {
+              const days = promptNumber("How many days?");
+              if (days == null) return;
+              const cents = daysToCents(days);
+              setRows((r) => [
+                ...r,
+                {
+                  kind: "expense",
+                  label: `Per-diem — ${days} day${days === 1 ? "" : "s"} @ $${GSA_PER_DIEM_USD}/day M&IE`,
+                  amountField: centsToField(cents),
+                  paidDate: "",
+                  taxKind: "PER_DIEM",
+                  taxMiles: null,
+                  taxDays: days,
+                },
+              ]);
+            }}
+          />
+          <QuickAddButton
+            label="Meals & ent."
+            onClick={() => {
+              setRows((r) => [
+                ...r,
+                {
+                  kind: "expense",
+                  label: "Meals & entertainment",
+                  amountField: "",
+                  paidDate: "",
+                  taxKind: "MEAL",
+                  taxMiles: null,
+                  taxDays: null,
+                },
+              ]);
+            }}
+          />
+          <QuickAddButton
+            label="Lodging"
+            onClick={() => {
+              setRows((r) => [
+                ...r,
+                {
+                  kind: "expense",
+                  label: "Lodging",
+                  amountField: "",
+                  paidDate: "",
+                  taxKind: "LODGING",
+                  taxMiles: null,
+                  taxDays: null,
+                },
+              ]);
+            }}
+          />
+          <QuickAddButton
+            label="Travel"
+            onClick={() => {
+              setRows((r) => [
+                ...r,
+                {
+                  kind: "expense",
+                  label: "Travel",
+                  amountField: "",
+                  paidDate: "",
+                  taxKind: "TRAVEL",
+                  taxMiles: null,
+                  taxDays: null,
+                },
+              ]);
+            }}
+          />
         </div>
 
         {/* Totals */}
@@ -430,6 +555,28 @@ export function PayoutWorksheet({
 
 // ── subcomponents ────────────────────────────────────────────
 
+function QuickAddButton({
+  label,
+  onClick,
+  title,
+}: {
+  label: string;
+  onClick: () => void;
+  title?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="inline-flex items-center gap-1 rounded-md border border-line bg-paper px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:border-accent hover:text-accent"
+    >
+      <span className="text-[12px]">＋</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
 function MoneyInput({
   value,
   onChange,
@@ -455,6 +602,19 @@ function MoneyInput({
 }
 
 // ── helpers ──────────────────────────────────────────────────
+
+// Small synchronous prompt helper used by the tax-row quick-adds. window.prompt
+// is the simplest way to get a number input without a full modal system and
+// works fine for these one-off numeric inputs. Returns null on cancel or
+// invalid input.
+function promptNumber(message: string): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.prompt(message);
+  if (raw == null) return null;
+  const n = Number.parseFloat(raw.trim());
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
 
 function fieldToCents(s: string): number {
   if (!s) return 0;

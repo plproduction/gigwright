@@ -206,6 +206,9 @@ export async function savePayout(
       amountCents: number;
       position: number;
       paidAt?: Date | null;
+      kind?: "GENERAL" | "MILEAGE" | "MEAL" | "PER_DIEM" | "LODGING" | "TRAVEL";
+      miles?: number | null;
+      days?: number | null;
     }>;
   },
 ) {
@@ -279,6 +282,11 @@ export async function savePayout(
     }
 
     for (const e of payload.expenses) {
+      const taxFields = {
+        kind: e.kind ?? "GENERAL",
+        miles: e.miles ?? null,
+        days: e.days ?? null,
+      };
       if (e.id) {
         await tx.gigExpense.update({
           where: { id: e.id },
@@ -287,6 +295,7 @@ export async function savePayout(
             amountCents: e.amountCents,
             position: e.position,
             paidAt: e.paidAt ?? null,
+            ...taxFields,
           },
         });
       } else {
@@ -297,6 +306,7 @@ export async function savePayout(
             amountCents: e.amountCents,
             position: e.position,
             paidAt: e.paidAt ?? null,
+            ...taxFields,
           },
         });
       }
