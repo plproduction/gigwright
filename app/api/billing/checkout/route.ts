@@ -1,18 +1,47 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
-import { stripe, STRIPE_PRICE_ID, TRIAL_DAYS } from "@/lib/stripe";
+import { stripe, resolvePriceId, TRIAL_DAYS } from "@/lib/stripe";
 
 // POST /api/billing/checkout → creates a Stripe Checkout session for Pro and
 // redirects the user to Stripe's hosted checkout. On success, Stripe sends
 // them back to /settings/billing?checkout=success and fires a webhook to
 // /api/stripe/webhook which flips the user's plan to PRO.
+//
+// Body / form: { plan?: "month" | "year" }. Defaults to monthly.
+// Accepts either JSON body or application/x-www-form-urlencoded (so the
+// /welcome page can post a plain <form>).
 export async function POST(req: Request) {
   const user = await requireUser();
 
-  if (!STRIPE_PRICE_ID) {
+  // Accept plan from form, JSON body, or querystring.
+  const url = new URL(req.url);
+  let plan: string | null = url.searchParams.get("plan");
+  if (!plan) {
+    const ct = req.headers.get("content-type") ?? "";
+    try {
+      if (ct.includes("application/json")) {
+        const body = (await req.json()) as { plan?: string };
+        plan = body.plan ?? null;
+      } else if (
+        ct.includes("application/x-www-form-urlencoded") ||
+        ct.includes("multipart/form-data")
+      ) {
+        const form = await req.formData();
+        plan = form.get("plan")?.toString() ?? null;
+      }
+    } catch {
+      /* no body — fine, default to monthly */
+    }
+  }
+
+  const priceId = resolvePriceId(plan);
+  if (!priceId) {
     return NextResponse.json(
-      { error: "STRIPE_PRICE_ID not configured" },
+      {
+        error:
+          "Stripe price not configured. Set STRIPE_PRICE_ID_MONTHLY (and optionally STRIPE_PRICE_ID_YEARLY).",
+      },
       { status: 500 },
     );
   }
@@ -40,10 +69,10 @@ export async function POST(req: Request) {
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
-    line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       trial_period_days: TRIAL_DAYS,
-      metadata: { gigwrightUserId: user.id },
+      metadata: { gigwrightUserId: user.id, plan: plan ?? "month" },
     },
     success_url: `${origin}/settings/billing?checkout=success`,
     cancel_url: `${origin}/settings/billing?checkout=cancelled`,
