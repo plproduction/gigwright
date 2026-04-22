@@ -16,8 +16,61 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "GigWright",
-  description: "A quiet spine for working bandleaders.",
+  metadataBase: new URL("https://gigwright.com"),
+  title: {
+    default: "GigWright · Booking management built by a working bandleader",
+    template: "%s · GigWright",
+  },
+  description:
+    "A playwright writes plays. A GigWright runs gigs. The bandleader's workbench — from the first call to the final payout. Two-way calendar sync, diff-aware SMS, QuickBooks push.",
+  keywords: [
+    "bandleader",
+    "booking management",
+    "gig management",
+    "musician roster",
+    "calendar sync",
+    "iCloud",
+    "SMS band updates",
+    "QuickBooks for bands",
+    "payout worksheet",
+    "set list",
+  ],
+  applicationName: "GigWright",
+  authors: [{ name: "Patrick Lamb Productions" }],
+  creator: "Patrick Lamb Productions",
+  publisher: "Patrick Lamb Productions",
+  category: "Business",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://gigwright.com",
+    siteName: "GigWright",
+    title: "GigWright · Booking management built by a working bandleader",
+    description:
+      "A playwright writes plays. A GigWright runs gigs. The bandleader's workbench — from the first call to the final payout.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GigWright · Booking management built by a working bandleader",
+    description:
+      "A playwright writes plays. A GigWright runs gigs. The bandleader's workbench — from the first call to the final payout.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: { canonical: "https://gigwright.com" },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

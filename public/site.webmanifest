@@ -1,0 +1,23 @@
+{
+  "name": "GigWright",
+  "short_name": "GigWright",
+  "description": "Booking management for working bandleaders.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBFAF6",
+  "theme_color": "#7E2418",
+  "icons": [
+    {
+      "src": "/icon?size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon?size=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

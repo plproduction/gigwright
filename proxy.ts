@@ -21,8 +21,15 @@ export default auth(function proxy(req) {
     // Static verification files served from public/ (Google Search Console,
     // Apple Pay domain verification, etc.)
     pathname.startsWith("/google") ||
+    pathname.startsWith("/.well-known") ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml";
+    pathname === "/sitemap.xml" ||
+    pathname === "/site.webmanifest" ||
+    // Next metadata routes (icon, apple-icon, opengraph-image, twitter-image)
+    pathname.startsWith("/icon") ||
+    pathname.startsWith("/apple-icon") ||
+    pathname.startsWith("/opengraph-image") ||
+    pathname.startsWith("/twitter-image");
 
   if (!req.auth && !isPublic) {
     const signInUrl = new URL("/signin", req.nextUrl.origin);
