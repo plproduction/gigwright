@@ -246,10 +246,8 @@ function renderText(c: Ctx): string {
       : "W-9: not yet received — please send one if you haven't.",
   );
   lines.push("");
-  lines.push(
-    `Full details (log in to see, or just keep getting these updates):`,
-  );
-  lines.push(`https://gigwright.vercel.app/my-gigs/${c.gigId}`);
+  lines.push(`Full gig sheet (no login needed):`);
+  lines.push(`https://gigwright.com/g/${c.gigId}`);
   lines.push("");
   lines.push(`— GigWright, on behalf of ${c.bandleader}`);
   return lines.join("\n");
@@ -321,7 +319,7 @@ function renderHtml(c: Ctx): string {
             : "W-9: not yet received — please send one if you haven't."
         }</p>
         <p style="margin:0">
-          <a href="https://gigwright.vercel.app/my-gigs/${c.gigId}" style="color:#7E2418">View full details on GigWright →</a>
+          <a href="https://gigwright.com/g/${c.gigId}" style="color:#7E2418">View the full gig sheet on GigWright →</a>
         </p>
         <p style="margin:8px 0 0">Sent on behalf of <strong>${c.bandleader}</strong>.</p>
       </div>
