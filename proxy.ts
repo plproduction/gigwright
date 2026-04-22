@@ -17,7 +17,12 @@ export default auth(function proxy(req) {
     pathname.startsWith("/terms") ||
     pathname.startsWith("/api/") || // API routes handle their own auth
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon");
+    pathname.startsWith("/favicon") ||
+    // Static verification files served from public/ (Google Search Console,
+    // Apple Pay domain verification, etc.)
+    pathname.startsWith("/google") ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml";
 
   if (!req.auth && !isPublic) {
     const signInUrl = new URL("/signin", req.nextUrl.origin);
