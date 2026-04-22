@@ -7,6 +7,7 @@ import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
 import { PushToQboButton } from "@/components/PushToQboButton";
+import { SendUpdateButton } from "@/components/SendUpdateButton";
 import {
   formatDayNum,
   formatLongDate,
@@ -169,13 +170,7 @@ export default async function GigDetailPage({
             Finance
           </a>
           <PushToQboButton gigId={gig.id} state={qboState} />
-          <button
-            disabled
-            className="cursor-not-allowed rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper opacity-50"
-            title="Coming soon"
-          >
-            Send alert
-          </button>
+          <SendUpdateButton gigId={gig.id} />
         </div>
       </div>
 
