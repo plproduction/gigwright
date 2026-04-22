@@ -44,12 +44,18 @@ export default function OpenGraphImage() {
               lineHeight: 1.05,
               letterSpacing: "-0.025em",
               maxWidth: 1040,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            A playwright writes plays.
-            <br />A{" "}
-            <span style={{ color: "#7E2418", fontWeight: 300 }}>GigWright</span>{" "}
-            runs gigs.
+            <span style={{ display: "block" }}>A playwright writes plays.</span>
+            <span
+              style={{ display: "flex", flexDirection: "row", gap: 16, flexWrap: "wrap" }}
+            >
+              <span>A</span>
+              <span style={{ color: "#7E2418", fontWeight: 300 }}>GigWright</span>
+              <span>runs gigs.</span>
+            </span>
           </div>
           <div
             style={{
