@@ -1,0 +1,3 @@
+ALTER TABLE "Musician"
+  ADD COLUMN "w9Received" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN "w9ReceivedAt" TIMESTAMP(3);

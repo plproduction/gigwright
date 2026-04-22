@@ -15,6 +15,8 @@ type M = {
   notifyBySms: boolean;
   notifyByEmail: boolean;
   notes: string | null;
+  w9Received: boolean;
+  w9ReceivedAt: Date | null;
 } | null;
 
 export function MusicianForm({ musician }: { musician: M }) {
@@ -156,6 +158,27 @@ export function MusicianForm({ musician }: { musician: M }) {
               defaultChecked={musician?.notifyByEmail ?? true}
             />
             <span>Notify by email</span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              name="w9Received"
+              defaultChecked={musician?.w9Received ?? false}
+            />
+            <span>
+              W-9 on file
+              {musician?.w9ReceivedAt && (
+                <span className="ml-1.5 text-[11px] text-ink-mute">
+                  (
+                  {musician.w9ReceivedAt.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                  )
+                </span>
+              )}
+            </span>
           </label>
         </div>
 

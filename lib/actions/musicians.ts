@@ -50,14 +50,33 @@ export async function upsertMusician(
     notes: nullIfEmpty(formData.get("notes")),
   };
 
+  const w9Received = formData.get("w9Received") === "on";
+
   if (id) {
+    const existing = await db.musician.findFirst({
+      where: { id, ownerId: user.id },
+    });
+    const transitioning = w9Received && !existing?.w9Received;
     await db.musician.update({
       where: { id, ownerId: user.id },
-      data,
+      data: {
+        ...data,
+        w9Received,
+        w9ReceivedAt: transitioning
+          ? new Date()
+          : w9Received
+            ? existing?.w9ReceivedAt ?? new Date()
+            : null,
+      },
     });
   } else {
     await db.musician.create({
-      data: { ...data, ownerId: user.id },
+      data: {
+        ...data,
+        ownerId: user.id,
+        w9Received,
+        w9ReceivedAt: w9Received ? new Date() : null,
+      },
     });
   }
 

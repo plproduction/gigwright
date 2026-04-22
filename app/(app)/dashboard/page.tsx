@@ -269,7 +269,7 @@ function GigList({
   // Column layout:
   //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Pay · Status · Open
   const cols =
-    "grid-cols-[70px_1.3fr_1.5fr_68px_170px_74px_90px_82px_64px]";
+    "grid-cols-[70px_1.3fr_1.5fr_94px_140px_94px_94px_86px_64px]";
 
   return (
     <div className="text-[13px]">
@@ -282,8 +282,8 @@ function GigList({
         <div>Load in</div>
         <div>
           Sound check
-          <div className="mt-0.5 font-normal normal-case tracking-normal text-[10px] leading-[1.3] text-ink-soft">
-            all lines run, instruments set up, ready to play at this time
+          <div className="mt-0.5 italic font-medium normal-case tracking-normal text-[10px] leading-[1.3] text-ink">
+            (all lines run, instruments set up, ready to play at this time)
           </div>
         </div>
         <div>Downbeat</div>

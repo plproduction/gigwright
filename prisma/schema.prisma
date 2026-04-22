@@ -164,6 +164,11 @@ model Musician {
   notifyBySms   Boolean @default(true)
   notifyByEmail Boolean @default(true)
 
+  // W-9 tracking — every outbound message auto-includes either a request
+  // (if not received) or a "W-9 received" confirmation (if received).
+  w9Received   Boolean   @default(false)
+  w9ReceivedAt DateTime?
+
   notes String?
 
   ownerId String

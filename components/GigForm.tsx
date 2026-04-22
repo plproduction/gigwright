@@ -90,7 +90,7 @@ export function GigForm({
         </Field>
         <Field
           label="Sound check"
-          help="all lines run, instruments set up, ready to play at this time"
+          help="(all lines run, instruments set up, ready to play at this time)"
         >
           <input type="time" name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} className="input" />
         </Field>
@@ -238,7 +238,7 @@ function Field({
       </span>
       {children}
       {help && (
-        <span className="text-[11px] leading-[1.35] text-ink-soft">
+        <span className="italic text-[11px] leading-[1.35] text-ink">
           {help}
         </span>
       )}
