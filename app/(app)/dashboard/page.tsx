@@ -282,8 +282,8 @@ function GigList({
         <div>Load in</div>
         <div>
           Sound check
-          <div className="mt-0.5 italic font-medium normal-case tracking-normal text-[10px] leading-[1.3] text-ink">
-            (all lines run, instruments set up, ready to play at this time)
+          <div className="mt-0.5 font-medium normal-case tracking-normal text-[10px] leading-[1.3] text-ink">
+            all lines run, instruments set up, ready to play at this time
           </div>
         </div>
         <div>Downbeat</div>
@@ -300,8 +300,9 @@ function GigList({
         const sideCount = g.personnel.filter((p) => !p.musician.isLeader).length;
 
         return (
-          <div
+          <Link
             key={g.id}
+            href={`/gigs/${g.id}`}
             className={`grid ${cols} items-center gap-3 border-b border-line px-1.5 py-3.5 transition-colors hover:bg-paper-warm ${
               today ? "bg-paper-deep" : ""
             }`}
@@ -343,15 +344,10 @@ function GigList({
             <div>
               <StatusPill status={today ? "TONIGHT" : g.status} />
             </div>
-            <div className="flex justify-end">
-              <Link
-                href={`/gigs/${g.id}`}
-                className="rounded-md border border-line-strong px-2.5 py-1 text-[11px] font-medium text-ink hover:bg-paper-warm"
-              >
-                Open
-              </Link>
+            <div className="flex justify-end text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
+              Open →
             </div>
-          </div>
+          </Link>
         );
       })}
     </div>

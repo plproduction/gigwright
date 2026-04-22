@@ -204,7 +204,7 @@ export default async function GigDetailPage({
               <TimeTile
                 label="Sound check"
                 value={formatTime(gig.soundcheckAt)}
-                sub="(all lines run, instruments set up, ready to play at this time)"
+                sub="all lines run, instruments set up, ready to play at this time"
               />
               <TimeTile label="Call" value={formatTime(gig.callTimeAt)} />
               <TimeTile label="Downbeat" value={formatTime(gig.startAt)} />
@@ -498,7 +498,7 @@ function TimeTile({
         {value}
       </div>
       {sub && (
-        <div className="mt-1 italic text-[11px] leading-[1.35] text-ink">
+        <div className="mt-1 text-[11px] leading-[1.35] text-ink">
           {sub}
         </div>
       )}
