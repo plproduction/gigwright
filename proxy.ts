@@ -13,6 +13,8 @@ export default auth(function proxy(req) {
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/signin") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
     pathname.startsWith("/api/") || // API routes handle their own auth
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon");
