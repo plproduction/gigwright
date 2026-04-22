@@ -186,12 +186,32 @@ model Gig {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   personnel GigPersonnel[]
+  expenses  GigExpense[]
   activity  Activity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId, startAt])
+}
+
+// Freeform line items for a gig — flights, hotels, ad spend, transportation,
+// food, anything that isn't musician pay. Modeled after the Iridium Payout
+// worksheet pattern: add rows as needed, everything rolls up into the net.
+model GigExpense {
+  id     String @id @default(cuid())
+  gigId  String
+  gig    Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  label       String
+  amountCents Int
+  category    String? // optional grouping (travel, promo, meals, etc.)
+  position    Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([gigId])
 }
 
 model GigPersonnel {

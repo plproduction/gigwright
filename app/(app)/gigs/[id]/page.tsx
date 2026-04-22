@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import {
   formatDayNum,
   formatLongDate,
@@ -28,6 +29,7 @@ export default async function GigDetailPage({
         include: { musician: true },
         orderBy: { position: "asc" },
       },
+      expenses: { orderBy: { position: "asc" } },
       activity: { orderBy: { createdAt: "desc" } },
     },
   });
@@ -147,46 +149,30 @@ export default async function GigDetailPage({
             </div>
           </Section>
 
-          <Section title="Reconciliation">
-            <div className="grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-2.5 text-[13px]">
-              <Label>Client pays</Label>
-              <div>
-                <em className="font-serif text-accent not-italic">
-                  {formatMoneyCents(gig.clientPayCents)}
-                </em>
-                {gig.clientDepositCents != null &&
-                  gig.clientDepositCents > 0 && (
-                    <span className="text-[11px] text-ink-mute">
-                      {" · "}
-                      {formatMoneyCents(gig.clientDepositCents)} deposit received
-                    </span>
-                  )}
+          <Section title="Money at a glance">
+            <div className="grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-2 text-[13px]">
+              <Label>Gross</Label>
+              <div className="font-serif tabular-nums text-ink">
+                {formatMoneyCents(gig.clientPayCents)}
               </div>
-              <Label>Band total</Label>
-              <div>
-                {formatMoneyCents(bandPayCents)}{" "}
-                <span className="text-[11px] text-ink-mute">
-                  · {paidCount} of {sideCount} paid
-                </span>
+              <Label>Band</Label>
+              <div className="font-serif tabular-nums text-ink-soft">
+                {formatMoneyCents(bandPayCents)}
+                {sideCount > 0 && (
+                  <span className="ml-2 text-[10px] text-ink-mute">
+                    {paidCount} / {sideCount} paid
+                  </span>
+                )}
               </div>
-              <Label className="text-accent font-semibold">Your net</Label>
+              <Label className="text-accent">Net</Label>
               <div>
-                <em className="font-serif text-[17px] text-accent not-italic">
+                <em className="font-serif text-[22px] font-light tabular-nums text-accent not-italic">
                   {formatMoneyCents(net)}
                 </em>
               </div>
             </div>
-          </Section>
-
-          <Section title="Ask band to confirm">
-            <div className="flex items-center justify-between gap-3 rounded-md border border-line bg-paper p-[10px_12px]">
-              <div>
-                <div className="text-[12px] font-medium">SMS reply prompt</div>
-                <div className="mt-0.5 text-[11px] text-ink-mute">
-                  Coming soon. SMS needs 10DLC registration.
-                </div>
-              </div>
-              <div className="h-5 w-[34px] rounded-full bg-line-strong opacity-50" />
+            <div className="mt-3 text-[11px] text-ink-mute">
+              Full payout worksheet below &mdash; edit every line.
             </div>
           </Section>
         </div>
@@ -300,6 +286,29 @@ export default async function GigDetailPage({
             )}
           </Section>
         </div>
+      </div>
+
+      {/* Full Payout Worksheet — live totaling, editable everything */}
+      <div className="border-t border-line bg-paper-warm/40 px-7 py-6">
+        <PayoutWorksheet
+          gigId={gig.id}
+          initialClientPayCents={gig.clientPayCents}
+          initialClientDepositCents={gig.clientDepositCents}
+          personnel={gig.personnel.map((p) => ({
+            id: p.id,
+            musicianName: p.musician.name,
+            isLeader: p.musician.isLeader,
+            roleLabel: p.roleLabel ?? null,
+            paymentMethod: p.musician.paymentMethod ?? null,
+            payCents: p.payCents,
+          }))}
+          expenses={gig.expenses.map((e) => ({
+            id: e.id,
+            label: e.label,
+            amountCents: e.amountCents,
+            position: e.position,
+          }))}
+        />
       </div>
 
       <div className="border-t border-line px-7 py-5">

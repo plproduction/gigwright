@@ -180,6 +180,78 @@ export async function removePersonnel(
   redirect(`/gigs/${gigId}/edit`);
 }
 
+// Save the full payout worksheet — income fields, per-musician pay, and the
+// list of expenses — in a single atomic write. Creates/updates/deletes expense
+// rows as needed so the UI can treat it as "replace everything" without
+// worrying about individual row IDs.
+export async function savePayout(
+  gigId: string,
+  payload: {
+    clientPayCents: number | null;
+    clientDepositCents: number | null;
+    personnel: Array<{ id: string; payCents: number }>;
+    expenses: Array<{ id?: string; label: string; amountCents: number; position: number }>;
+  },
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  await db.$transaction(async (tx) => {
+    await tx.gig.update({
+      where: { id: gigId },
+      data: {
+        clientPayCents: payload.clientPayCents,
+        clientDepositCents: payload.clientDepositCents,
+      },
+    });
+
+    for (const p of payload.personnel) {
+      await tx.gigPersonnel.update({
+        where: { id: p.id },
+        data: { payCents: p.payCents },
+      });
+    }
+
+    const existing = await tx.gigExpense.findMany({ where: { gigId } });
+    const keepIds = new Set(payload.expenses.map((e) => e.id).filter(Boolean) as string[]);
+    const toDelete = existing.filter((e) => !keepIds.has(e.id));
+    if (toDelete.length > 0) {
+      await tx.gigExpense.deleteMany({ where: { id: { in: toDelete.map((e) => e.id) } } });
+    }
+
+    for (const e of payload.expenses) {
+      if (e.id) {
+        await tx.gigExpense.update({
+          where: { id: e.id },
+          data: { label: e.label, amountCents: e.amountCents, position: e.position },
+        });
+      } else {
+        await tx.gigExpense.create({
+          data: {
+            gigId,
+            label: e.label,
+            amountCents: e.amountCents,
+            position: e.position,
+          },
+        });
+      }
+    }
+  });
+
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "payout_saved",
+      summary: "Payout worksheet updated",
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/dashboard`);
+}
+
 export async function markPaid(personnelId: string, method: string) {
   const user = await requireUser();
   const p = await db.gigPersonnel.findFirst({
