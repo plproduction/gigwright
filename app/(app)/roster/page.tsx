@@ -60,6 +60,7 @@ function MusicianRow({
     email: string | null;
     phone: string | null;
     initials: string | null;
+    avatarUrl: string | null;
     roles: string[];
     isLeader: boolean;
     calendarProvider: string;
@@ -73,11 +74,20 @@ function MusicianRow({
   return (
     <div className="group grid grid-cols-[36px_1fr_auto_auto_auto_auto] items-center gap-3.5 bg-surface px-6 py-3.5 transition-colors hover:bg-paper-warm/50">
       <div
-        className={`flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold ${
+        className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-[12px] font-semibold ${
           m.isLeader ? "bg-accent text-paper" : "bg-paper-deep text-ink-soft"
         }`}
       >
-        {initials}
+        {m.avatarUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={m.avatarUrl}
+            alt={m.name}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials
+        )}
       </div>
       <div>
         <div className="font-serif text-[17px] font-medium tracking-tight select-text">

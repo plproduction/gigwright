@@ -142,11 +142,12 @@ model Venue {
 }
 
 model Musician {
-  id       String  @id @default(cuid())
-  name     String
-  email    String?
-  phone    String?
-  initials String? // e.g. "DR" — overrideable, otherwise derived from name
+  id        String  @id @default(cuid())
+  name      String
+  email     String?
+  phone     String?
+  initials  String? // e.g. "DR" — overrideable, otherwise derived from name
+  avatarUrl String? // Vercel Blob URL — headshot shown on roster and gig personnel rows
 
   // Roles, freeform — e.g. ["Drums"], ["Sax", "Arranger"]
   roles String[]

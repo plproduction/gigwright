@@ -150,6 +150,8 @@ export default async function GigDetailPage({
                   <Avatar
                     initials={p.musician.initials ?? p.musician.name.slice(0, 2).toUpperCase()}
                     leader={p.musician.isLeader}
+                    avatarUrl={p.musician.avatarUrl}
+                    name={p.musician.name}
                   />
                   <div>
                     <div className="font-serif text-[14px] font-medium">
@@ -465,17 +467,30 @@ function Section({
 function Avatar({
   initials,
   leader,
+  avatarUrl,
+  name,
 }: {
   initials: string;
   leader?: boolean;
+  avatarUrl?: string | null;
+  name?: string;
 }) {
   return (
     <div
-      className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold ${
+      className={`flex h-6 w-6 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold ${
         leader ? "bg-accent-soft text-accent" : "bg-paper-deep text-ink-soft"
       }`}
     >
-      {initials}
+      {avatarUrl ? (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={avatarUrl}
+          alt={name ?? initials}
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 }

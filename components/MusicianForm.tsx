@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { upsertMusician, deleteMusician } from "@/lib/actions/musicians";
+import { AvatarUpload } from "@/components/AvatarUpload";
 
 type M = {
   id: string;
@@ -7,6 +8,7 @@ type M = {
   email: string | null;
   phone: string | null;
   initials: string | null;
+  avatarUrl: string | null;
   roles: string[];
   isLeader: boolean;
   calendarProvider: string;
@@ -37,6 +39,28 @@ export function MusicianForm({ musician }: { musician: M }) {
           ← Back to roster
         </Link>
       </div>
+
+      {isEdit && (
+        <div className="mb-5 rounded-[10px] border border-line bg-paper p-4">
+          <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+            Photo
+          </div>
+          <AvatarUpload
+            musicianId={musician!.id}
+            musicianName={musician!.name}
+            initialUrl={musician!.avatarUrl}
+            initials={
+              musician!.initials ??
+              musician!.name
+                .split(/\s+/)
+                .map((p) => p[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase()
+            }
+          />
+        </div>
+      )}
 
       <form action={upsert} className="grid max-w-[680px] grid-cols-2 gap-x-5 gap-y-4">
         <Field label="Name" required span>
