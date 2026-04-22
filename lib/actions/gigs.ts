@@ -42,6 +42,9 @@ export async function upsertGig(id: string | null, formData: FormData) {
     attire: nullIfEmpty(formData.get("attire")),
     meal: nullIfEmpty(formData.get("meal")),
     notes: nullIfEmpty(formData.get("notes")),
+    materialsUrl: nullIfEmpty(formData.get("materialsUrl")),
+    setlistUrl: nullIfEmpty(formData.get("setlistUrl")),
+    setlistFileName: nullIfEmpty(formData.get("setlistFileName")),
   };
 
   if (id) {
@@ -280,6 +283,44 @@ export async function savePayout(
   revalidatePath(`/gigs/${gigId}`);
   revalidatePath(`/finance`);
   revalidatePath(`/dashboard`);
+}
+
+// Inline edits from the gig detail page — notes, materials URL, setlist URL.
+// Each write produces an Activity entry (the foundation for future diff-aware
+// SMS/email fanouts to personnel).
+export async function updateGigField(
+  gigId: string,
+  field: "notes" | "materialsUrl" | "setlistUrl" | "setlistFileName",
+  value: string | null,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  const clean = value && value.trim() !== "" ? value.trim() : null;
+
+  const data: Record<string, unknown> = { [field]: clean };
+  if (field === "setlistUrl") {
+    data.setlistUpdatedAt = new Date();
+  }
+
+  await db.gig.update({ where: { id: gigId }, data });
+
+  const labels: Record<string, string> = {
+    notes: "Notes updated",
+    materialsUrl: "Gig materials link updated",
+    setlistUrl: "Set list updated — band will be notified on fanout",
+    setlistFileName: "Set list filename updated",
+  };
+  await db.activity.create({
+    data: {
+      gigId,
+      action: `field_updated:${field}`,
+      summary: labels[field] ?? "Updated",
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
 }
 
 export async function markPaid(personnelId: string, method: string) {

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { PayoutWorksheet } from "@/components/PayoutWorksheet";
+import { InlineField } from "@/components/InlineField";
 import {
   formatDayNum,
   formatLongDate,
@@ -12,6 +14,24 @@ import {
 } from "@/lib/format";
 
 type Params = { id: string };
+
+// Browser tab title = venue name. When you open Funky Biscuit, the tab reads
+// "The Funky Biscuit · Gigwright".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<Params>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const user = await requireUser().catch(() => null);
+  if (!user) return { title: "Gigwright" };
+  const gig = await db.gig.findFirst({
+    where: { id, ownerId: user.id },
+    include: { venue: true },
+  });
+  const name = gig?.venue?.name ?? "Gig";
+  return { title: `${name} · Gigwright` };
+}
 
 export default async function GigDetailPage({
   params,
@@ -231,15 +251,50 @@ export default async function GigDetailPage({
           </Section>
         </div>
 
-        {/* Column 3: Notes + Sync + Activity */}
+        {/* Column 3: Gig Materials + Set List + Activity */}
         <div className="px-6 py-5">
-          {gig.notes && (
-            <Section title="Notes">
-              <div className="text-[13px] leading-[1.5] text-ink-soft">
-                {gig.notes}
-              </div>
-            </Section>
-          )}
+          <Section title="Gig materials">
+            <InlineField
+              gigId={gig.id}
+              field="materialsUrl"
+              initialValue={gig.materialsUrl}
+              placeholder="Paste link (Google Drive, Dropbox, OneDrive…)"
+              renderDisplay={(value) => (
+                <a
+                  href={value}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                >
+                  {displayUrl(value)}
+                </a>
+              )}
+            />
+          </Section>
+
+          <Section title="Set list">
+            <InlineField
+              gigId={gig.id}
+              field="setlistUrl"
+              initialValue={gig.setlistUrl}
+              placeholder="Paste set list link"
+              renderDisplay={(value) => (
+                <a
+                  href={value}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                >
+                  {gig.setlistFileName ?? displayUrl(value)}
+                </a>
+              )}
+            />
+            <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
+              If this changes you will all get a text and email.
+            </div>
+          </Section>
 
           <Section title="Calendar sync · pending">
             <div className="flex flex-wrap gap-1.5">
@@ -289,6 +344,20 @@ export default async function GigDetailPage({
             )}
           </Section>
         </div>
+      </div>
+
+      {/* Notes — full width, click to edit */}
+      <div className="border-t border-line bg-surface px-7 py-5">
+        <h5 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
+          Notes
+        </h5>
+        <InlineField
+          gigId={gig.id}
+          field="notes"
+          initialValue={gig.notes}
+          multiline
+          placeholder="Parking, green room, audience vibe, anything worth remembering…"
+        />
       </div>
 
       {/* Full Payout Worksheet — live totaling, editable everything */}
@@ -383,6 +452,15 @@ function Label({
       {children}
     </div>
   );
+}
+
+function displayUrl(u: string): string {
+  try {
+    const url = new URL(u);
+    return url.host + (url.pathname.length > 1 ? url.pathname : "");
+  } catch {
+    return u;
+  }
 }
 
 function KV({ children }: { children: React.ReactNode }) {

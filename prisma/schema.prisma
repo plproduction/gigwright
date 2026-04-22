@@ -201,6 +201,15 @@ model Gig {
   attire     String? // e.g. "Black on black"
   meal       String? // e.g. "After check · green room"
 
+  // Clickable link to the folder/drive with all charts, arrangements, audio
+  materialsUrl String?
+
+  // Uploaded set list (Vercel Blob URL) + original filename + when last changed,
+  // so we can fire an SMS/email fanout on swap.
+  setlistUrl       String?
+  setlistFileName  String?
+  setlistUpdatedAt DateTime?
+
   notes String?
 
   venueId String?
