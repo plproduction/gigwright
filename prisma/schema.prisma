@@ -250,6 +250,13 @@ model Gig {
   setlistFileName  String?
   setlistUpdatedAt DateTime?
 
+  // Specific loading info for this gig — text notes ("enter through alley 2,
+  // knock on service door"), an optional uploaded map image, and an optional
+  // alternate map link (e.g. a Google Maps pin). All three optional.
+  loadingInfo    String?
+  loadingMapUrl  String? // Vercel Blob URL for the uploaded map image
+  loadingMapLink String? // external map link, e.g. https://maps.app.goo.gl/…
+
   notes String?
 
   // QuickBooks sync state. qboSyncedAt is set every time we push this gig's

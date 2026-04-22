@@ -331,7 +331,10 @@ export async function updateGigField(
     | "soundContactPhone"
     | "lights"
     | "attire"
-    | "meal",
+    | "meal"
+    | "loadingInfo"
+    | "loadingMapUrl"
+    | "loadingMapLink",
   value: string | null,
 ) {
   const user = await requireUser();
@@ -352,6 +355,9 @@ export async function updateGigField(
     materialsUrl: "Gig materials link updated",
     setlistUrl: "Set list updated — band will be notified on fanout",
     setlistFileName: "Set list filename updated",
+    loadingInfo: "Loading info updated",
+    loadingMapUrl: "Loading map uploaded",
+    loadingMapLink: "Alternate map link updated",
   };
   await db.activity.create({
     data: {

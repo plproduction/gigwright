@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/session";
 import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
+import { LoadingMapUpload } from "@/components/LoadingMapUpload";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import {
@@ -390,6 +391,45 @@ export default async function GigDetailPage({
             </div>
             <div className="mt-2.5 border-t border-dashed border-line-strong pt-2.5 text-[11px] leading-[1.45] text-ink-mute">
               Two-way iCloud and Google calendar sync is Phase 1 work. The plumbing is there; the providers are next.
+            </div>
+          </Section>
+
+          <Section title="Specific loading info">
+            <div className="space-y-3">
+              <div>
+                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+                  Notes
+                </div>
+                <InlineField
+                  gigId={gig.id}
+                  field="loadingInfo"
+                  initialValue={gig.loadingInfo}
+                  placeholder="e.g. Alley entrance, knock on service door, elevator to 3rd floor…"
+                  multiline
+                />
+              </div>
+              <div>
+                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+                  Map image
+                </div>
+                <LoadingMapUpload
+                  gigId={gig.id}
+                  initialUrl={gig.loadingMapUrl}
+                />
+              </div>
+              <div>
+                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+                  Alternate map link
+                </div>
+                <InlineField
+                  gigId={gig.id}
+                  field="loadingMapLink"
+                  initialValue={gig.loadingMapLink}
+                  placeholder="Paste a Google/Apple Maps pin link"
+                  displayAs="link"
+                  linkLabel="Open map ↗"
+                />
+              </div>
             </div>
           </Section>
 

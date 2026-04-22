@@ -13,7 +13,9 @@ type Field =
   | "soundContactPhone"
   | "lights"
   | "attire"
-  | "meal";
+  | "meal"
+  | "loadingInfo"
+  | "loadingMapLink";
 
 // Click-to-edit inline field. Blur or ⌘↵ saves; Escape cancels.
 // Renders the current value as display text when not editing.
