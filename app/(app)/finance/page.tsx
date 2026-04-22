@@ -117,72 +117,11 @@ export default async function FinancePage() {
         </div>
       )}
 
-      {/* All gigs */}
-      <h5 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
-        All gigs · {gigs.length}
-      </h5>
-      <div className="rounded-[10px] border border-line">
-        <div className="grid grid-cols-[100px_2fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-line bg-paper-warm px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-          <div>Date</div>
-          <div>Venue</div>
-          <div className="text-right">Gross</div>
-          <div className="text-right">Band + exp</div>
-          <div className="text-right">Net</div>
-          <div></div>
-        </div>
-        {gigs.length === 0 ? (
-          <div className="px-5 py-8 text-center text-[13px] text-ink-mute">
-            No gigs yet.
-          </div>
-        ) : (
-          gigs.slice(0, 50).map((g) => {
-            const band = g.personnel
-              .filter((p) => !p.musician.isLeader)
-              .reduce((s, p) => s + p.payCents, 0);
-            const exp = g.expenses.reduce((s, e) => s + e.amountCents, 0);
-            const cost = band + exp;
-            const net = (g.clientPayCents ?? 0) - cost;
-            return (
-              <Link
-                key={g.id}
-                href={`/gigs/${g.id}`}
-                className="grid grid-cols-[100px_2fr_1fr_1fr_1fr_auto] items-center gap-4 border-b border-line px-5 py-3 last:border-b-0 hover:bg-paper-warm"
-              >
-                <div className="font-serif text-[13px] tabular-nums">
-                  {g.startAt.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "2-digit",
-                  })}
-                </div>
-                <div className="font-serif text-[15px]">
-                  {g.venue?.name ?? "TBD"}
-                </div>
-                <div className="text-right font-serif tabular-nums text-ink-soft">
-                  {formatMoneyCents(g.clientPayCents)}
-                </div>
-                <div className="text-right font-serif tabular-nums text-ink-soft">
-                  {formatMoneyCents(cost)}
-                </div>
-                <div className="text-right font-serif text-[15px] tabular-nums text-accent">
-                  {formatMoneyCents(net)}
-                </div>
-                <div className="text-[12px] text-ink-mute">→</div>
-              </Link>
-            );
-          })
-        )}
-      </div>
-
-      {gigs.length > 50 && (
-        <p className="mt-3 text-[11px] text-ink-mute">
-          Showing the 50 most recent. Pagination coming.
-        </p>
-      )}
-
-      <p className="mt-8 text-[12px] leading-[1.5] text-ink-mute">
-        Mileage, meals &amp; entertainment, per-diem lookup, and QuickBooks sync
-        are coming to this view. Click any gig to open its payout worksheet.
+      <p className="mt-2 text-[12px] leading-[1.5] text-ink-mute">
+        Each gig has its own payout worksheet &mdash; open a gig from the
+        dashboard to edit income, band pay, expenses, and see net live.
+        Mileage, meals &amp; entertainment, per-diem lookup, and QuickBooks
+        sync land here next.
       </p>
     </>
   );
