@@ -14,6 +14,17 @@ datasource db {
 // Auth.js models (magic-link email flow)
 // ═══════════════════════════════════════════════════════════════
 
+enum UserRole {
+  ADMIN  // Patrick — sees all tenants, manages subscriptions, overrides limits
+  OWNER  // Paying subscriber — sees only their own data
+}
+
+enum Plan {
+  FREE
+  PRO
+  ADMIN
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -22,6 +33,14 @@ model User {
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  role UserRole @default(OWNER)
+  plan Plan     @default(FREE)
+
+  // Stripe wiring (populated once subscriptions are live)
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  currentPeriodEnd     DateTime?
 
   accounts  Account[]
   sessions  Session[]
