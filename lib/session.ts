@@ -19,6 +19,26 @@ export async function requireUser() {
   return user;
 }
 
+// Require a bandleader (OWNER/ADMIN/PRO). Musicians are bounced to their
+// own portal at /my-gigs — they can never reach admin pages.
+export async function requireBandleader() {
+  const user = await requireUser();
+  if (user.role === "MUSICIAN") redirect("/my-gigs");
+  return user;
+}
+
+// Require a musician (someone linked to at least one Musician record).
+// Bandleaders with no musician links get bounced to their /dashboard.
+export async function requireMusician() {
+  const user = await requireUser();
+  const linked = await db.musician.findFirst({
+    where: { userId: user.id },
+    select: { id: true },
+  });
+  if (!linked) redirect("/dashboard");
+  return user;
+}
+
 export function initialsFor(nameOrEmail?: string | null): string {
   if (!nameOrEmail) return "•";
   const trimmed = nameOrEmail.trim();

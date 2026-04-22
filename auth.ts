@@ -6,9 +6,58 @@ import authConfig from "./auth.config";
 
 // Full auth (Node runtime). Adds the Prisma adapter for user/token storage
 // and the Resend magic-link provider for sign-in emails.
+//
+// JWT callback also performs musician auto-linking on first sign-in:
+// if the email matches any Musician record, we mark this User as MUSICIAN
+// and attach every matching Musician row across all tenants to them. This
+// is the viral-growth hook (one Dave account → every bandleader's gig list).
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   adapter: PrismaAdapter(db),
+  callbacks: {
+    async jwt({ token, user }) {
+      // `user` is only present on initial sign-in
+      if (user?.id && user.email) {
+        const email = user.email.toLowerCase();
+        const existing = await db.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
+        // Don't demote an ADMIN back to MUSICIAN if they also happen
+        // to be on someone's roster. Admins stay as-is.
+        if (existing && existing.role === "ADMIN") {
+          token.role = existing.role;
+        } else {
+          const matches = await db.musician.findMany({
+            where: { email: { equals: email, mode: "insensitive" } },
+            select: { id: true },
+          });
+          if (matches.length > 0) {
+            await db.$transaction([
+              db.user.update({
+                where: { id: user.id },
+                data: { role: "MUSICIAN" },
+              }),
+              db.musician.updateMany({
+                where: { id: { in: matches.map((m) => m.id) } },
+                data: { userId: user.id },
+              }),
+            ]);
+            token.role = "MUSICIAN";
+          } else {
+            token.role = existing?.role ?? "OWNER";
+          }
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.role) {
+        (session.user as { role?: string }).role = token.role as string;
+      }
+      return session;
+    },
+  },
   providers: [
     Resend({
       from: process.env.EMAIL_FROM,

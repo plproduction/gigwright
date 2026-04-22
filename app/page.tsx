@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 
 export default async function Home() {
   const session = await auth();
-  if (session?.user) redirect("/dashboard");
+  if (session?.user) {
+    const role = (session.user as { role?: string }).role;
+    redirect(role === "MUSICIAN" ? "/my-gigs" : "/dashboard");
+  }
 
   return (
     <div className="flex flex-1 flex-col">

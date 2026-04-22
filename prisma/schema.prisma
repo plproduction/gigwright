@@ -15,8 +15,9 @@ datasource db {
 // ═══════════════════════════════════════════════════════════════
 
 enum UserRole {
-  ADMIN  // Patrick — sees all tenants, manages subscriptions, overrides limits
-  OWNER  // Paying subscriber — sees only their own data
+  ADMIN     // Patrick — sees all tenants, manages subscriptions, overrides limits
+  OWNER     // Paying bandleader — runs the app for their gigs
+  MUSICIAN  // Sideman — sees only gigs they're assigned to, read-only, no finances
 }
 
 enum Plan {
@@ -45,7 +46,8 @@ model User {
   accounts  Account[]
   sessions  Session[]
   venues    Venue[]
-  musicians Musician[]
+  musicians Musician[]                          // as owner (bandleader's roster)
+  playsAs   Musician[]  @relation("MusicianUser") // as musician (where they play)
   gigs      Gig[]
   qbo       QboConnection?
 }
@@ -172,6 +174,12 @@ model Musician {
   phone     String?
   initials  String? // e.g. "DR" — overrideable, otherwise derived from name
   avatarUrl String? // Vercel Blob URL — headshot shown on roster and gig personnel rows
+
+  // Linked User (nullable) — populated once the musician logs in via a matching
+  // email. One User can be linked to multiple Musician rows across tenants.
+  userId     String?
+  user       User?   @relation("MusicianUser", fields: [userId], references: [id])
+  invitedAt  DateTime? // when the admin sent them the login invite email
 
   // Roles, freeform — e.g. ["Drums"], ["Sax", "Arranger"]
   roles String[]

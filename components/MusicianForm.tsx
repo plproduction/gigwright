@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { upsertMusician, deleteMusician } from "@/lib/actions/musicians";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { InviteMusicianButton } from "@/components/InviteMusicianButton";
 
 type M = {
   id: string;
@@ -19,6 +20,7 @@ type M = {
   notes: string | null;
   w9Received: boolean;
   w9ReceivedAt: Date | null;
+  invitedAt: Date | null;
 } | null;
 
 export function MusicianForm({ musician }: { musician: M }) {
@@ -41,24 +43,41 @@ export function MusicianForm({ musician }: { musician: M }) {
       </div>
 
       {isEdit && (
-        <div className="mb-5 rounded-[10px] border border-line bg-paper p-4">
-          <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
-            Photo
+        <div className="mb-5 grid grid-cols-2 gap-5">
+          <div className="rounded-[10px] border border-line bg-paper p-4">
+            <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+              Photo
+            </div>
+            <AvatarUpload
+              musicianId={musician!.id}
+              musicianName={musician!.name}
+              initialUrl={musician!.avatarUrl}
+              initials={
+                musician!.initials ??
+                musician!.name
+                  .split(/\s+/)
+                  .map((p) => p[0])
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase()
+              }
+            />
           </div>
-          <AvatarUpload
-            musicianId={musician!.id}
-            musicianName={musician!.name}
-            initialUrl={musician!.avatarUrl}
-            initials={
-              musician!.initials ??
-              musician!.name
-                .split(/\s+/)
-                .map((p) => p[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase()
-            }
-          />
+          <div className="rounded-[10px] border border-line bg-paper p-4">
+            <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+              Login invite
+            </div>
+            <p className="mb-3 text-[12px] leading-[1.45] text-ink-soft">
+              Send them a one-time login so they can see their own gig sheet
+              (read-only), upload a photo, pick a calendar to sync, and set
+              their own text/email prefs.
+            </p>
+            <InviteMusicianButton
+              musicianId={musician!.id}
+              hasEmail={!!musician!.email}
+              invitedAt={musician!.invitedAt}
+            />
+          </div>
         </div>
       )}
 

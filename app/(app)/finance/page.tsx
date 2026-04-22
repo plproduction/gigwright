@@ -18,9 +18,9 @@ export default async function FinancePage() {
         <div className="font-serif text-[22px] font-normal tracking-tight">
           Finance is per-gig.
         </div>
-        <p className="mx-auto mt-3 max-w-[440px] text-[14px] leading-[1.55] text-ink-soft">
+        <p className="mx-auto mt-3 max-w-[520px] text-[14px] leading-[1.55] text-ink-soft">
           Every gig has its own Excel-style payout worksheet with contractors,
-          expenses, and running totals.
+          expenses, and running totals for admin subscribers.
         </p>
         <Link
           href="/dashboard"

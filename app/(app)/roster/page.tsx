@@ -137,7 +137,7 @@ function MusicianRow({
           <span className="font-normal text-ink-mute">—</span>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
         <span
           className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
             m.w9Received
@@ -146,7 +146,7 @@ function MusicianRow({
           }`}
           title={m.w9Received ? "W-9 received" : "W-9 not received — band will see a reminder on outbound messages"}
         >
-          W-9 {m.w9Received ? "✓" : "?"}
+          {m.w9Received ? "W-9 ✓" : "W-9"}
         </span>
         <Link
           href={`/roster/${m.id}/edit`}
