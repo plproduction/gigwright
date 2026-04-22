@@ -70,10 +70,7 @@ function MusicianRow({
     m.initials ?? m.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   return (
-    <Link
-      href={`/roster/${m.id}/edit`}
-      className="grid grid-cols-[36px_1fr_auto_auto_auto] items-center gap-3.5 bg-surface px-6 py-3.5 hover:bg-paper-warm"
-    >
+    <div className="group grid grid-cols-[36px_1fr_auto_auto_auto_auto] items-center gap-3.5 bg-surface px-6 py-3.5 transition-colors hover:bg-paper-warm/50">
       <div
         className={`flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold ${
           m.isLeader ? "bg-accent text-paper" : "bg-paper-deep text-ink-soft"
@@ -82,7 +79,7 @@ function MusicianRow({
         {initials}
       </div>
       <div>
-        <div className="font-serif text-[17px] font-medium tracking-tight">
+        <div className="font-serif text-[17px] font-medium tracking-tight select-text">
           {m.name}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1.5 text-[11px] text-ink-mute">
@@ -96,20 +93,24 @@ function MusicianRow({
           ))}
         </div>
       </div>
-      <div className="text-right text-[11px] leading-[1.45] text-ink-soft">
+      <div className="text-right text-[11px] leading-[1.45] text-ink-soft select-text">
         {m.email && (
           <>
             <span className="mr-1 text-[9px] uppercase tracking-[0.08em] text-ink-mute">
               EMAIL
             </span>
-            {truncate(m.email, 24)}
+            {m.email}
             <br />
           </>
         )}
         <span className="mr-1 text-[9px] uppercase tracking-[0.08em] text-ink-mute">
           PH
         </span>
-        {m.phone ? "On file" : "—"}
+        {m.phone ? (
+          <span>{m.phone}</span>
+        ) : (
+          <span>—</span>
+        )}
       </div>
       <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
         <span className="mr-1.5 inline-block h-1.5 w-1.5 rounded-full bg-success align-middle" />
@@ -125,7 +126,15 @@ function MusicianRow({
           <span className="font-normal text-ink-mute">—</span>
         )}
       </div>
-    </Link>
+      <div>
+        <Link
+          href={`/roster/${m.id}/edit`}
+          className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink hover:border-accent hover:bg-accent hover:text-paper"
+        >
+          Open
+        </Link>
+      </div>
+    </div>
   );
 }
 
