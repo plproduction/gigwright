@@ -181,7 +181,11 @@ export default async function GigDetailPage({
           <Section title="Times">
             <div className="grid grid-cols-2 gap-3">
               <TimeTile label="Load in" value={formatTime(gig.loadInAt)} />
-              <TimeTile label="Sound check" value={formatTime(gig.soundcheckAt)} />
+              <TimeTile
+                label="Sound check"
+                value={formatTime(gig.soundcheckAt)}
+                sub="all lines run, instruments set up, ready to play at this time"
+              />
               <TimeTile label="Call" value={formatTime(gig.callTimeAt)} />
               <TimeTile label="Downbeat" value={formatTime(gig.startAt)} />
             </div>
@@ -398,7 +402,15 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   );
 }
 
-function TimeTile({ label, value }: { label: string; value: string }) {
+function TimeTile({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+}) {
   return (
     <div>
       <div className="mb-1 text-[9px] font-medium uppercase tracking-[0.18em] text-ink-mute">
@@ -407,6 +419,11 @@ function TimeTile({ label, value }: { label: string; value: string }) {
       <div className="font-serif text-[18px] font-normal tracking-tight">
         {value}
       </div>
+      {sub && (
+        <div className="mt-1 text-[10px] leading-[1.35] text-ink-soft">
+          {sub}
+        </div>
+      )}
     </div>
   );
 }

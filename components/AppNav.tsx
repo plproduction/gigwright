@@ -31,10 +31,10 @@ export function AppNav({ userInitials }: { userInitials: string }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`py-1.5 text-[13px] font-medium border-b ${
+              className={`py-1.5 text-[14px] font-semibold border-b-2 transition-colors ${
                 active
-                  ? "text-ink border-ink"
-                  : "text-ink-soft border-transparent hover:text-ink"
+                  ? "text-ink border-accent"
+                  : "text-ink border-transparent hover:text-accent hover:border-accent/40"
               }`}
             >
               {item.label}

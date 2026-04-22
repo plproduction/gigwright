@@ -88,7 +88,10 @@ export function GigForm({
         <Field label="Load in">
           <input type="time" name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} className="input" />
         </Field>
-        <Field label="Sound check">
+        <Field
+          label="Sound check"
+          help="all lines run, instruments set up, ready to play at this time"
+        >
           <input type="time" name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} className="input" />
         </Field>
         <Field label="Call time">
@@ -219,11 +222,13 @@ function Field({
   children,
   required,
   span3,
+  help,
 }: {
   label: string;
   children: React.ReactNode;
   required?: boolean;
   span3?: boolean;
+  help?: string;
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${span3 ? "col-span-3" : ""}`}>
@@ -232,6 +237,11 @@ function Field({
         {required && <span className="ml-1 text-accent">*</span>}
       </span>
       {children}
+      {help && (
+        <span className="text-[11px] leading-[1.35] text-ink-soft">
+          {help}
+        </span>
+      )}
     </label>
   );
 }

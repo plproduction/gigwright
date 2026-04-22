@@ -56,35 +56,43 @@ export default async function FinancePage() {
         <Stat label="Your net" value={formatMoneyCents(ytdNet)} accent />
       </div>
 
-      {/* Inline tax references — sized to read, docked under the YTD row */}
-      <div className="mb-10 flex flex-wrap items-baseline gap-x-5 gap-y-2 px-1 text-[14px]">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
+      {/* Tax references — stacked vertically under the YTD row */}
+      <div className="mb-10 px-1">
+        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
           Tax references
-        </span>
-        <a
-          href="https://www.gsa.gov/travel/plan-book/per-diem-rates"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
-        >
-          GSA
-        </a>
-        <a
-          href="https://www.irs.gov/tax-professionals/standard-mileage-rates"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
-        >
-          IRS mileage
-        </a>
-        <a
-          href="https://www.irs.gov/forms-pubs/about-form-1099-nec"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
-        >
-          1099-NEC
-        </a>
+        </div>
+        <ul className="space-y-2 text-[15px]">
+          <li>
+            <a
+              href="https://www.gsa.gov/travel/plan-book/per-diem-rates"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
+            >
+              GSA
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.irs.gov/tax-professionals/standard-mileage-rates"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
+            >
+              IRS mileage
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.irs.gov/forms-pubs/about-form-1099-nec"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-ink underline decoration-accent/50 underline-offset-4 hover:text-accent hover:decoration-accent"
+            >
+              1099-NEC
+            </a>
+          </li>
+        </ul>
       </div>
 
       <p className="mt-2 text-[12px] leading-[1.5] text-ink-mute">

@@ -269,21 +269,22 @@ function GigList({
   // Column layout:
   //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Pay · Status · Open
   const cols =
-    "grid-cols-[72px_1.4fr_1.6fr_72px_78px_72px_96px_90px_70px]";
+    "grid-cols-[70px_1.3fr_1.5fr_68px_170px_74px_90px_82px_64px]";
 
   return (
     <div className="text-[13px]">
       <div
-        className={`grid ${cols} gap-3 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute`}
+        className={`grid ${cols} items-start gap-3 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute`}
       >
         <div>Date</div>
         <div>Venue</div>
         <div>Personnel</div>
         <div>Load in</div>
-        <div
-          title="All lines run, instruments set up, ready to play at this time"
-        >
+        <div>
           Sound check
+          <div className="mt-0.5 font-normal normal-case tracking-normal text-[10px] leading-[1.3] text-ink-soft">
+            all lines run, instruments set up, ready to play at this time
+          </div>
         </div>
         <div>Downbeat</div>
         <div>Pay</div>
