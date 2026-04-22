@@ -259,17 +259,7 @@ export default async function GigDetailPage({
               field="materialsUrl"
               initialValue={gig.materialsUrl}
               placeholder="Paste link (Google Drive, Dropbox, OneDrive…)"
-              renderDisplay={(value) => (
-                <a
-                  href={value}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
-                >
-                  {displayUrl(value)}
-                </a>
-              )}
+              displayAs="link"
             />
           </Section>
 
@@ -279,17 +269,8 @@ export default async function GigDetailPage({
               field="setlistUrl"
               initialValue={gig.setlistUrl}
               placeholder="Paste set list link"
-              renderDisplay={(value) => (
-                <a
-                  href={value}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
-                >
-                  {gig.setlistFileName ?? displayUrl(value)}
-                </a>
-              )}
+              displayAs="link"
+              linkLabel={gig.setlistFileName}
             />
             <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
               If this changes you will all get a text and email.

@@ -7,21 +7,24 @@ type Field = "notes" | "materialsUrl" | "setlistUrl";
 
 // Click-to-edit inline field. Blur or ⌘↵ saves; Escape cancels.
 // Renders the current value as display text when not editing.
+// For URL fields, pass displayAs="link" (+ optional linkLabel) so the saved
+// value renders as a clickable hyperlink. For plain text, omit displayAs.
 export function InlineField({
   gigId,
   field,
   initialValue,
   multiline,
   placeholder,
-  renderDisplay,
+  displayAs,
+  linkLabel,
 }: {
   gigId: string;
   field: Field;
   initialValue: string | null;
   multiline?: boolean;
   placeholder?: string;
-  // Optional custom renderer for the display state (e.g. render URL as a link)
-  renderDisplay?: (value: string) => React.ReactNode;
+  displayAs?: "text" | "link";
+  linkLabel?: string | null;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(initialValue ?? "");
@@ -84,11 +87,13 @@ export function InlineField({
 
   // Display state — clickable to enter edit mode
   const display = saved ?? "";
+  const enterEdit = () => setEditing(true);
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={() => setEditing(true)}
+      onClick={enterEdit}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
@@ -100,8 +105,16 @@ export function InlineField({
       }`}
     >
       {display ? (
-        renderDisplay ? (
-          renderDisplay(display)
+        displayAs === "link" ? (
+          <a
+            href={display}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+          >
+            {linkLabel ?? displayUrl(display)}
+          </a>
         ) : (
           <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">
             {display}
@@ -114,4 +127,13 @@ export function InlineField({
       )}
     </div>
   );
+}
+
+function displayUrl(u: string): string {
+  try {
+    const url = new URL(u);
+    return url.host + (url.pathname.length > 1 ? url.pathname : "");
+  } catch {
+    return u;
+  }
 }
