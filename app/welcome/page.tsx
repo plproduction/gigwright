@@ -26,7 +26,7 @@ export default async function WelcomePage() {
       <div className="mx-auto max-w-[1080px] px-8 py-16">
         <header className="mb-12 text-center">
           <div className="font-serif text-[22px] font-medium tracking-tight">
-            Gig<em className="font-light text-accent">wright</em>
+            Gig<em className="font-light text-accent">Wright</em>
           </div>
           <h1 className="mt-8 font-serif text-[44px] font-light leading-[1.05] tracking-tight">
             Welcome, <em className="text-accent">{user.name ?? email.split("@")[0]}</em>.

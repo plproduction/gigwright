@@ -57,7 +57,7 @@ export default async function MyGigsPage() {
         <div className="rounded-[10px] border border-dashed border-line-strong bg-paper p-8 text-center">
           <div className="font-serif text-[18px]">No gigs yet.</div>
           <p className="mx-auto mt-2 max-w-[420px] text-[13px] text-ink-soft">
-            Once a bandleader books you on Gigwright, it&rsquo;ll show up here.
+            Once a bandleader books you on GigWright, it&rsquo;ll show up here.
             You&rsquo;ll also get texted and emailed on the channels you choose.
           </p>
         </div>

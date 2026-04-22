@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Color palette — taken from the Gigwright mockup */
+  /* Color palette — taken from the GigWright mockup */
   --color-paper: #FBFAF6;
   --color-paper-warm: #F3EFE6;
   --color-paper-deep: #EDE7DA;

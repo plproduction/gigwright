@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 
 // Small button on the musician edit form that fires /api/musicians/[id]/invite
-// to send the "You have been added to Gigwright" email with the custom copy.
+// to send the "You have been added to GigWright" email with the custom copy.
 // Shows a confirmation toast inline after firing.
 export function InviteMusicianButton({
   musicianId,

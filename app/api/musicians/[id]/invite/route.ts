@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 
 // POST /api/musicians/[id]/invite
 // Sends the musician an invite email with the specific copy we drafted:
-//   "You have been added to Gigwright. You can log in to see information,
+//   "You have been added to GigWright. You can log in to see information,
 //    gigwright style, or you can opt to just receive information via text
 //    and email."
 // Fires via Resend directly; reuses the same sender address as magic links.
@@ -55,7 +55,7 @@ export async function POST(
     body: JSON.stringify({
       from,
       to: musician.email,
-      subject: "You've been added to Gigwright",
+      subject: "You've been added to GigWright",
       html,
       text,
     }),
@@ -82,12 +82,12 @@ function inviteText(opts: {
 }) {
   return `Hi ${opts.musicianName.split(" ")[0]},
 
-You have been added to Gigwright. You can log in to see information, gigwright style, or you can opt to just receive information via text and email.
+You have been added to GigWright. You can log in to see information, gigwright style, or you can opt to just receive information via text and email.
 
 Log in here (no password, just a one-time link):
 ${opts.signInUrl}
 
-— ${opts.bandleaderName} via Gigwright
+— ${opts.bandleaderName} via GigWright
 `;
 }
 
@@ -102,17 +102,17 @@ function inviteHtml(opts: {
   <body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
     <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
       <div style="font-family:Georgia,serif;font-size:20px;font-weight:500;letter-spacing:-0.02em;padding-bottom:16px;border-bottom:1px solid #E5E2D8;">
-        Gig<span style="color:#7E2418;font-weight:300">wright</span>
+        Gig<span style="color:#7E2418;font-weight:300">Wright</span>
       </div>
       <p style="font-size:15px;color:#111;margin:20px 0 8px;">Hi ${firstName},</p>
       <h1 style="font-family:Georgia,serif;font-size:22px;font-weight:400;letter-spacing:-0.02em;line-height:1.25;margin:0 0 16px;color:#111;">
-        You have been added to Gigwright.
+        You have been added to GigWright.
       </h1>
       <p style="color:#494336;font-size:14px;line-height:1.55;margin:0 0 20px;">
         You can log in to see information, gigwright style, or you can opt to just receive information via text and email.
       </p>
       <a href="${opts.signInUrl}" style="display:inline-block;padding:12px 20px;background:#7E2418;color:#FBFAF6;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">
-        Log in to Gigwright
+        Log in to GigWright
       </a>
       <p style="color:#857F72;font-size:12px;line-height:1.5;margin:28px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;">
         No password required &mdash; you&rsquo;ll get a one-time sign-in link emailed to this address.

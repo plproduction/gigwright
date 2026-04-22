@@ -20,7 +20,7 @@ import {
 type Params = { id: string };
 
 // Browser tab title = venue name. When you open Funky Biscuit, the tab reads
-// "The Funky Biscuit · Gigwright".
+// "The Funky Biscuit · GigWright".
 export async function generateMetadata({
   params,
 }: {
@@ -28,13 +28,13 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const user = await requireUser().catch(() => null);
-  if (!user) return { title: "Gigwright" };
+  if (!user) return { title: "GigWright" };
   const gig = await db.gig.findFirst({
     where: { id, ownerId: user.id },
     include: { venue: true },
   });
   const name = gig?.venue?.name ?? "Gig";
-  return { title: `${name} · Gigwright` };
+  return { title: `${name} · GigWright` };
 }
 
 export default async function GigDetailPage({

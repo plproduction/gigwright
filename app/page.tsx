@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 
-// Landing page — ported from the Cowork design onto Gigwright's live design
+// Landing page — ported from the Cowork design onto GigWright's live design
 // system. Sticky nav, hero with dashboard preview mock, credibility strip,
 // problem/solution, 9 features, sync spine, comparison, pricing, FAQ, CTA,
 // footer. Everything links back to /signin?callbackUrl=/welcome since that's
@@ -42,7 +42,7 @@ function TopNav() {
     <header className="sticky top-0 z-50 border-b border-line bg-paper/90 backdrop-blur-md backdrop-saturate-150">
       <div className="mx-auto flex max-w-[1240px] items-center justify-between px-8 py-4">
         <Link href="/" className="font-serif text-[22px] font-medium tracking-tight">
-          Gig<em className="font-light text-accent">wright</em>
+          Gig<em className="font-light text-accent">Wright</em>
         </Link>
         <nav className="hidden items-center gap-7 md:flex">
           <a href="#features" className="text-[13px] font-medium text-ink-soft transition-colors hover:text-ink">Features</a>
@@ -86,7 +86,7 @@ function Hero() {
             </span>
           </div>
           <h1 className="mb-6 font-serif text-[56px] font-light leading-[1.02] tracking-tight md:text-[64px]">
-            A playwright writes plays. A <em className="text-accent">gigwright</em> runs gigs.
+            A playwright writes plays. A <em className="text-accent">GigWright</em> runs gigs.
           </h1>
           <p className="mb-9 max-w-[540px] text-[17px] leading-[1.55] text-ink-soft md:text-[18px]">
             The bandleader&rsquo;s workbench &mdash; from the first call to the final payout.
@@ -257,7 +257,7 @@ function Problem() {
           title="Email blasts, group texts, and a Squarespace calendar that nobody checks."
           items={before} mark="—"
         />
-        <ProblemCard tone="after" label="What Gigwright gives you"
+        <ProblemCard tone="after" label="What GigWright gives you"
           title="One gig record. Three channels. Always in lockstep, always diff-aware."
           items={after} mark="+"
         />
@@ -315,7 +315,7 @@ function Features() {
   return (
     <SectionBay id="features" num="02" label="What's inside"
       heading={<>Everything you need to run the gigs you've already <em className="text-accent">booked</em>.</>}
-      lede="Gigwright isn't trying to be a marketplace, a CRM with ambitions, or a contracts-and-invoicing suite. It's a calendar-synced logistics spine for the working bandleader — and it does that one job exceptionally well."
+      lede="GigWright isn't trying to be a marketplace, a CRM with ambitions, or a contracts-and-invoicing suite. It's a calendar-synced logistics spine for the working bandleader — and it does that one job exceptionally well."
     >
       <div className="grid grid-cols-1 overflow-hidden rounded-[10px] border border-line bg-line sm:grid-cols-2 lg:grid-cols-4 [&>*]:bg-surface gap-px">
         {items.map(({ icon: Icon, title, body, tag }, i) => (
@@ -361,7 +361,7 @@ function Spine() {
         </div>
         <div className="rounded-[10px] border border-paper/10 bg-paper/5 p-6">
           <div className="rounded-lg bg-accent px-4 py-3.5 text-paper">
-            <div className="text-[10px] font-medium uppercase tracking-[0.18em] opacity-75">Edit on Gigwright</div>
+            <div className="text-[10px] font-medium uppercase tracking-[0.18em] opacity-75">Edit on GigWright</div>
             <div className="mt-2 font-serif text-[16px]">Downbeat: 7:00 → 8:00 PM</div>
           </div>
           <div className="my-1.5 text-center text-[14px] text-paper/40">↓</div>
@@ -400,14 +400,14 @@ function Compare() {
   ];
   return (
     <SectionBay id="vs" num="04" label="The honest moat"
-      heading={<>How Gigwright stacks up against <em className="text-accent">what&rsquo;s out there</em>.</>}
+      heading={<>How GigWright stacks up against <em className="text-accent">what&rsquo;s out there</em>.</>}
       lede="No fluff. Side by side, against how working bandleaders are running their gigs today."
     >
       <div className="overflow-hidden rounded-[10px] border border-line bg-surface">
         {/* Head */}
         <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-line bg-paper-warm">
           <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">What matters</div>
-          <div className="relative bg-ink px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-paper after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent">Gigwright</div>
+          <div className="relative bg-ink px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-paper after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent">GigWright</div>
           <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">Older booking tools</div>
           <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">Other modern tools</div>
         </div>
@@ -538,18 +538,18 @@ function Faq() {
     ["Do my musicians need to pay anything?",
       "No. Musicians on your roster get the member portal, calendar sync, SMS, and email at no cost. You're the only one paying — they just receive the gig info, on whichever calendar and notification channel they prefer."],
     ["How does iCloud calendar sync actually work?",
-      "Through CalDAV, Apple's calendar protocol. Each musician generates an app-specific password from appleid.apple.com, pastes it into Gigwright once, and from then on every edit flows both ways. We handle all the polling, retries, and rate-limit handling. They just see their gig appear, update, or move on the iPhone calendar app they already use."],
+      "Through CalDAV, Apple's calendar protocol. Each musician generates an app-specific password from appleid.apple.com, pastes it into GigWright once, and from then on every edit flows both ways. We handle all the polling, retries, and rate-limit handling. They just see their gig appear, update, or move on the iPhone calendar app they already use."],
     ["What about Google Calendar and Outlook?",
-      "Same idea, with OAuth instead of app passwords. Each musician picks their own provider once, and Gigwright routes their calendar updates to the right place. Mix and match across the band — three musicians on iCloud, two on Google, one on Outlook is fine."],
+      "Same idea, with OAuth instead of app passwords. Each musician picks their own provider once, and GigWright routes their calendar updates to the right place. Mix and match across the band — three musicians on iCloud, two on Google, one on Outlook is fine."],
     ["What does \u201Cdiff-aware SMS\u201D actually mean?",
       "When you change a gig, we compare the new state to the last state we notified about. If only the call time changed, the SMS reads \u201CCall time updated to 5:30 (was 5:00).\u201D If you fix a typo in the venue address, no SMS fires at all — there's nothing meaningful to communicate. The result: musicians trust the texts because every text means something actually changed."],
     ["Can my musicians see each other's pay?",
       "No. Each musician sees only their own pay, their own gigs, their own calendar preferences. The roster, the reconciliation totals (client pays / band total / your net), and other musicians' amounts are admin-only. This is a hard wall — not a setting you have to remember to flip."],
     ["I already use another booking tool. How hard is the switch?",
-      "Bring a CSV of your gigs and roster — we import them. Your musicians get a friendly setup link to choose their calendar provider, and that's it. Most bandleaders are running on Gigwright within an afternoon."],
+      "Bring a CSV of your gigs and roster — we import them. Your musicians get a friendly setup link to choose their calendar provider, and that's it. Most bandleaders are running on GigWright within an afternoon."],
     ["What about contracts, invoices, and accepting payments?",
       "Phase 1.5 — coming after the v1 sync spine is rock solid. Contracts and e-sign, a public \u201CBook me\u201D inquiry page, and full 1099 export are on the roadmap and included at the same price when they ship."],
-    ["Who's behind Gigwright?",
+    ["Who's behind GigWright?",
       "Patrick Lamb — saxophonist, bandleader, and producer in Palm Beach. Built because every existing tool failed at the one thing that matters most: keeping the band in sync when something changes at 3pm on a gig day. Built using the tool live, gig after gig, before opening it up to other bandleaders."],
   ];
   return (
@@ -614,7 +614,7 @@ function Footer() {
         <div className="mb-12 grid grid-cols-1 gap-10 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div>
             <Link href="/" className="mb-3.5 inline-block font-serif text-[26px] font-medium tracking-tight">
-              Gig<em className="font-light text-accent">wright</em>
+              Gig<em className="font-light text-accent">Wright</em>
             </Link>
             <p className="max-w-[320px] text-[13px] leading-[1.6] text-ink-soft">
               The booking management platform for working bandleaders. Built in Palm Beach. Used at every gig before it shipped.
@@ -646,7 +646,7 @@ function Footer() {
           />
         </div>
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-[12px] text-ink-mute md:flex-row">
-          <div>© 2026 Gigwright. Built in Palm Beach, Florida.</div>
+          <div>© 2026 GigWright. Built in Palm Beach, Florida.</div>
           <a href="mailto:hello@gigwright.com" className="hover:text-ink">hello@gigwright.com</a>
         </div>
       </div>

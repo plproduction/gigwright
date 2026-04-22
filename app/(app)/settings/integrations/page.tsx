@@ -53,7 +53,7 @@ export default async function IntegrationsPage({
             QuickBooks connected.
           </div>
           <div className="mt-1 text-[13px] text-ink-soft">
-            Gigwright can now post bills to your books when a gig is fully
+            GigWright can now post bills to your books when a gig is fully
             paid. Use the “Push to QuickBooks” button on any gig.
           </div>
         </div>

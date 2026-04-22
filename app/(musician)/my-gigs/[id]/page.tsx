@@ -25,7 +25,7 @@ export async function generateMetadata({
     include: { venue: true },
   });
   const name = gig?.venue?.name ?? "Gig";
-  return { title: `${name} · Gigwright` };
+  return { title: `${name} · GigWright` };
 }
 
 export default async function MyGigDetailPage({

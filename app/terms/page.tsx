@@ -5,8 +5,8 @@ import Link from "next/link";
 // contact for everything else.
 
 export const metadata = {
-  title: "Terms of Service · Gigwright",
-  description: "Terms of service for Gigwright.",
+  title: "Terms of Service · GigWright",
+  description: "Terms of service for GigWright.",
 };
 
 export default function TermsPage() {
@@ -15,7 +15,7 @@ export default function TermsPage() {
       <header className="border-b border-line">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-8 py-4">
           <Link href="/" className="font-serif text-[22px] font-medium tracking-tight">
-            Gig<em className="font-light text-accent">wright</em>
+            Gig<em className="font-light text-accent">Wright</em>
           </Link>
           <Link
             href="/"
@@ -37,12 +37,12 @@ export default function TermsPage() {
 
         <div className="space-y-5 text-[15px] leading-[1.7] text-ink-soft [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-[22px] [&_h2]:font-normal [&_h2]:tracking-tight [&_h2]:text-ink">
           <p>
-            By creating a Gigwright account or using the Service, you agree to these Terms. If you don&rsquo;t agree, please don&rsquo;t use the Service.
+            By creating a GigWright account or using the Service, you agree to these Terms. If you don&rsquo;t agree, please don&rsquo;t use the Service.
           </p>
 
           <h2>The Service</h2>
           <p>
-            Gigwright (operated by Patrick Lamb Productions) is a booking management web application for working bandleaders. It lets you manage gigs, your musician roster, venues, pay reconciliation, set lists, and send operational notifications to musicians assigned to your gigs.
+            GigWright (operated by Patrick Lamb Productions) is a booking management web application for working bandleaders. It lets you manage gigs, your musician roster, venues, pay reconciliation, set lists, and send operational notifications to musicians assigned to your gigs.
           </p>
 
           <h2>Your Account</h2>
@@ -52,7 +52,7 @@ export default function TermsPage() {
 
           <h2>Acceptable Use</h2>
           <p>
-            Don&rsquo;t use Gigwright to send spam or marketing SMS, scrape user data, violate any law, or harm others. SMS messages are reserved for operational communication with musicians you have personally hired.
+            Don&rsquo;t use GigWright to send spam or marketing SMS, scrape user data, violate any law, or harm others. SMS messages are reserved for operational communication with musicians you have personally hired.
           </p>
 
           <h2>Subscription and Billing</h2>
@@ -67,17 +67,17 @@ export default function TermsPage() {
 
           <h2>Third-Party Integrations</h2>
           <p>
-            When you connect QuickBooks, a calendar provider, or any other integration, you authorize Gigwright to access data from that service on your behalf, subject to that service&rsquo;s own terms. You can disconnect integrations at any time.
+            When you connect QuickBooks, a calendar provider, or any other integration, you authorize GigWright to access data from that service on your behalf, subject to that service&rsquo;s own terms. You can disconnect integrations at any time.
           </p>
 
           <h2>Availability</h2>
           <p>
-            We work hard to keep Gigwright available, but we don&rsquo;t guarantee uninterrupted service. We may perform maintenance, and occasional downtime may happen. We&rsquo;ll do our best to communicate in advance.
+            We work hard to keep GigWright available, but we don&rsquo;t guarantee uninterrupted service. We may perform maintenance, and occasional downtime may happen. We&rsquo;ll do our best to communicate in advance.
           </p>
 
           <h2>Disclaimers</h2>
           <p>
-            Gigwright is provided &ldquo;as is&rdquo; without warranties of any kind, express or implied. To the fullest extent permitted by law, Patrick Lamb Productions is not liable for indirect, incidental, consequential, or special damages, or for lost profits or revenue, arising from your use of the Service.
+            GigWright is provided &ldquo;as is&rdquo; without warranties of any kind, express or implied. To the fullest extent permitted by law, Patrick Lamb Productions is not liable for indirect, incidental, consequential, or special damages, or for lost profits or revenue, arising from your use of the Service.
           </p>
 
           <h2>Changes to These Terms</h2>
@@ -94,7 +94,7 @@ export default function TermsPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 Gigwright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
         </div>
       </footer>
     </div>

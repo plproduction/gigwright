@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Gigwright",
+  title: "GigWright",
   description: "A quiet spine for working bandleaders.",
 };
 

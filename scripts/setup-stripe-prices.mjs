@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// One-off: create the Gigwright Pro product (if needed) and the two prices —
+// One-off: create the GigWright Pro product (if needed) and the two prices —
 // $20/month and $200/year — on the current Stripe account/mode.
 //
 // Usage:
 //   STRIPE_SECRET_KEY=sk_test_... node scripts/setup-stripe-prices.mjs
 //
-// Safe to run more than once: it will reuse an existing "Gigwright Pro"
+// Safe to run more than once: it will reuse an existing "GigWright Pro"
 // product if one exists, and will not create duplicate $20/$200 prices.
 // Prints the monthly + yearly price IDs at the end so you can paste them
 // into Vercel env vars.
@@ -19,7 +19,7 @@ if (!key) {
 }
 const stripe = new Stripe(key);
 
-const PRODUCT_NAME = "Gigwright Pro";
+const PRODUCT_NAME = "GigWright Pro";
 
 async function findOrCreateProduct() {
   const existing = await stripe.products.search({

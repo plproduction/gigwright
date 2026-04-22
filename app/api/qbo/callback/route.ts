@@ -7,7 +7,7 @@ import {
 } from "@/lib/qbo";
 
 // GET /api/qbo/callback?code=...&state=...&realmId=...
-// Intuit redirects here after the user authorizes Gigwright in their QBO
+// Intuit redirects here after the user authorizes GigWright in their QBO
 // company. We exchange the code for tokens, store them + the realmId, auto-
 // pick a default expense account, and bounce back to Settings → Integrations.
 export async function GET(req: Request) {

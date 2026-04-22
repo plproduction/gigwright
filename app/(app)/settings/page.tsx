@@ -60,7 +60,7 @@ export default async function SettingsPage() {
           appear there alongside everything else.
         </ComingItem>
         <ComingItem title="Notification rules">
-          Control when Gigwright sends SMS and email to the band — on first
+          Control when GigWright sends SMS and email to the band — on first
           booking, on every edit, morning-of, all toggleable.
         </ComingItem>
         <ComingItem title="Gig sheet template">

@@ -64,8 +64,8 @@ export async function fanOutGigUpdate(
     }
     try {
       const subject = opts.triggerLabel
-        ? `Gigwright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
-        : `Gigwright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
+        ? `GigWright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
+        : `GigWright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -251,7 +251,7 @@ function renderText(c: Ctx): string {
   );
   lines.push(`https://gigwright.vercel.app/my-gigs/${c.gigId}`);
   lines.push("");
-  lines.push(`— Gigwright, on behalf of ${c.bandleader}`);
+  lines.push(`— GigWright, on behalf of ${c.bandleader}`);
   return lines.join("\n");
 }
 
@@ -288,7 +288,7 @@ function renderHtml(c: Ctx): string {
   <body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
     <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
       <div style="font-family:Georgia,serif;font-size:18px;font-weight:500;letter-spacing:-0.02em;padding-bottom:14px;border-bottom:1px solid #E5E2D8;color:#111">
-        Gig<span style="color:#7E2418;font-weight:300">wright</span>
+        Gig<span style="color:#7E2418;font-weight:300">Wright</span>
       </div>
       <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${c.firstName},</p>
       ${trigger ? `<div style="margin-top:16px">${trigger}</div>` : ""}
@@ -321,7 +321,7 @@ function renderHtml(c: Ctx): string {
             : "W-9: not yet received — please send one if you haven't."
         }</p>
         <p style="margin:0">
-          <a href="https://gigwright.vercel.app/my-gigs/${c.gigId}" style="color:#7E2418">View full details on Gigwright →</a>
+          <a href="https://gigwright.vercel.app/my-gigs/${c.gigId}" style="color:#7E2418">View full details on GigWright →</a>
         </p>
         <p style="margin:8px 0 0">Sent on behalf of <strong>${c.bandleader}</strong>.</p>
       </div>

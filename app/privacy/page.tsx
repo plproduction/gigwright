@@ -1,13 +1,13 @@
 import Link from "next/link";
 
-// Privacy policy for Gigwright. Adapted from the Patrick Lamb Productions
+// Privacy policy for GigWright. Adapted from the Patrick Lamb Productions
 // draft for gigwright.com specifically — covers the booking management app,
 // musician portal, SMS fanout, and calendar/QBO integrations.
 
 export const metadata = {
-  title: "Privacy Policy · Gigwright",
+  title: "Privacy Policy · GigWright",
   description:
-    "How Gigwright collects, uses, and protects information from bandleaders and the musicians on their rosters.",
+    "How GigWright collects, uses, and protects information from bandleaders and the musicians on their rosters.",
 };
 
 export default function PrivacyPage() {
@@ -16,7 +16,7 @@ export default function PrivacyPage() {
       <header className="border-b border-line">
         <div className="mx-auto flex max-w-[1240px] items-center justify-between px-8 py-4">
           <Link href="/" className="font-serif text-[22px] font-medium tracking-tight">
-            Gig<em className="font-light text-accent">wright</em>
+            Gig<em className="font-light text-accent">Wright</em>
           </Link>
           <Link
             href="/"
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
 
         <Prose>
           <p>
-            Patrick Lamb Productions (&ldquo;we,&rdquo; &ldquo;our,&rdquo; &ldquo;us&rdquo;) operates Gigwright (&ldquo;the Service&rdquo;) at gigwright.com. This Privacy Policy explains what information we collect, how we use it, and your rights regarding it.
+            Patrick Lamb Productions (&ldquo;we,&rdquo; &ldquo;our,&rdquo; &ldquo;us&rdquo;) operates GigWright (&ldquo;the Service&rdquo;) at gigwright.com. This Privacy Policy explains what information we collect, how we use it, and your rights regarding it.
           </p>
 
           <H2>Information We Collect</H2>
@@ -77,10 +77,10 @@ export default function PrivacyPage() {
 
           <H2>SMS Communications</H2>
           <p>
-            Phone numbers collected in Gigwright are used solely to send operational information to musicians booked on gigs &mdash; call times, venue details, updates, and morning-of reminders. We do not use phone numbers for marketing, and we do not share them with third parties for marketing purposes.
+            Phone numbers collected in GigWright are used solely to send operational information to musicians booked on gigs &mdash; call times, venue details, updates, and morning-of reminders. We do not use phone numbers for marketing, and we do not share them with third parties for marketing purposes.
           </p>
           <p>
-            Recipients can opt out at any time by replying <strong>STOP</strong>, <strong>UNSUBSCRIBE</strong>, or <strong>END</strong>. Replying <strong>HELP</strong> returns contact information for the bandleader and for Gigwright support.
+            Recipients can opt out at any time by replying <strong>STOP</strong>, <strong>UNSUBSCRIBE</strong>, or <strong>END</strong>. Replying <strong>HELP</strong> returns contact information for the bandleader and for GigWright support.
           </p>
 
           <H2>The Permission Wall</H2>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
           <p>We share information only with:</p>
           <ul>
             <li>
-              <strong>Service providers</strong> who help us operate Gigwright, under contractual obligations to protect your data: Vercel (application hosting), Neon (database hosting), Resend (email delivery), Twilio (SMS delivery), Stripe (subscription billing), Intuit / QuickBooks Online (accounting sync, only if you connect it), Apple iCloud / Google / Microsoft (calendar sync, only if you connect it), and Vercel Blob (file storage for PDFs and avatars).
+              <strong>Service providers</strong> who help us operate GigWright, under contractual obligations to protect your data: Vercel (application hosting), Neon (database hosting), Resend (email delivery), Twilio (SMS delivery), Stripe (subscription billing), Intuit / QuickBooks Online (accounting sync, only if you connect it), Apple iCloud / Google / Microsoft (calendar sync, only if you connect it), and Vercel Blob (file storage for PDFs and avatars).
             </li>
             <li>
               <strong>Legal or regulatory authorities</strong> when required by law.
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
 
           <H2>Data Retention</H2>
           <p>
-            We retain your data for as long as your Gigwright account is active. If you cancel, we retain records required for tax or legal compliance (typically up to seven years) and then delete the rest. You may request earlier deletion by emailing us at any time.
+            We retain your data for as long as your GigWright account is active. If you cancel, we retain records required for tax or legal compliance (typically up to seven years) and then delete the rest. You may request earlier deletion by emailing us at any time.
           </p>
 
           <H2>Your Rights</H2>
@@ -119,7 +119,7 @@ export default function PrivacyPage() {
 
           <H2>Children&rsquo;s Privacy</H2>
           <p>
-            Gigwright is not directed to individuals under 18. We do not knowingly collect personal information from children. If we learn that we have, we will delete it promptly.
+            GigWright is not directed to individuals under 18. We do not knowingly collect personal information from children. If we learn that we have, we will delete it promptly.
           </p>
 
           <H2>Security</H2>
@@ -148,7 +148,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 Gigwright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
         </div>
       </footer>
     </div>

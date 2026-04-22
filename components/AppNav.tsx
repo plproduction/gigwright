@@ -20,7 +20,7 @@ export function AppNav({ userInitials }: { userInitials: string }) {
         href="/dashboard"
         className="font-serif text-[17px] font-medium tracking-tight mr-9"
       >
-        Gig<em className="font-light text-accent">wright</em>
+        Gig<em className="font-light text-accent">Wright</em>
       </Link>
       <nav className="flex gap-6">
         {NAV.map((item) => {
