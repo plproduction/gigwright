@@ -86,11 +86,10 @@ function Hero() {
             </span>
           </div>
           <h1 className="mb-6 font-serif text-[56px] font-light leading-[1.02] tracking-tight md:text-[64px]">
-            Booking management, built by a working <em className="text-accent">bandleader</em>.
+            A playwright writes plays. A <em className="text-accent">gigwright</em> runs gigs.
           </h1>
           <p className="mb-9 max-w-[540px] text-[17px] leading-[1.55] text-ink-soft md:text-[18px]">
-            A single home for every gig you book. Update once and your whole band stays in sync
-            &mdash; on whatever calendar, phone, or inbox they actually use.
+            The bandleader&rsquo;s workbench &mdash; from the first call to the final payout.
           </p>
           <div className="mb-6 flex flex-wrap items-center gap-3">
             <Link
