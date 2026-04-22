@@ -3,125 +3,169 @@
 import { useState, useTransition } from "react";
 import { savePayout } from "@/lib/actions/gigs";
 
-type Personnel = {
+// One unified line-item worksheet modeled on the Iridium Payout spreadsheet.
+// Contractors and freeform expenses live in the same ordered table. Each row
+// has a label, an amount, and an optional "date paid". Total Vendor Cost rolls
+// up at the bottom, Payment from Client is entered beneath, and Your Total =
+// client payment − vendor cost is shown (parens for negative).
+
+type PersonnelIn = {
   id: string;
+  musicianId: string;
   musicianName: string;
   isLeader: boolean;
   roleLabel?: string | null;
   paymentMethod?: string | null;
   payCents: number;
+  paidAt: Date | null;
 };
 
-type Expense = {
-  id?: string;
+type ExpenseIn = {
+  id: string;
   label: string;
   amountCents: number;
+  paidAt: Date | null;
   position: number;
+};
+
+type Row = {
+  kind: "personnel" | "expense";
+  id?: string;           // existing DB id if imported
+  musicianId?: string;   // set for personnel
+  isLeader?: boolean;
+  label: string;
+  amountField: string;   // free-text money input
+  paidDate: string;      // YYYY-MM-DD or ""
+  hint?: string;         // role / payment method display
 };
 
 export function PayoutWorksheet({
   gigId,
+  gigTitle,
   initialClientPayCents,
-  initialClientDepositCents,
   personnel,
   expenses,
 }: {
   gigId: string;
+  gigTitle?: string;
   initialClientPayCents: number | null;
-  initialClientDepositCents: number | null;
-  personnel: Personnel[];
-  expenses: Expense[];
+  initialClientDepositCents?: number | null;
+  personnel: PersonnelIn[];
+  expenses: ExpenseIn[];
 }) {
-  const [clientPay, setClientPay] = useState(
-    centsToField(initialClientPayCents),
-  );
-  const [clientDeposit, setClientDeposit] = useState(
-    centsToField(initialClientDepositCents),
-  );
-  const [peopleRows, setPeopleRows] = useState(() =>
-    personnel.map((p) => ({ ...p, payField: centsToField(p.payCents) })),
-  );
-  const [expenseRows, setExpenseRows] = useState<
-    Array<Expense & { amountField: string }>
-  >(() =>
-    expenses.map((e, i) => ({
-      ...e,
-      position: e.position ?? i,
+  const initialRows: Row[] = [
+    ...personnel
+      .filter((p) => !p.isLeader) // leader isn't a vendor
+      .map((p) => ({
+        kind: "personnel" as const,
+        id: p.id,
+        musicianId: p.musicianId,
+        isLeader: p.isLeader,
+        label: p.musicianName + (p.roleLabel ? ` — ${p.roleLabel}` : ""),
+        amountField: centsToField(p.payCents),
+        paidDate: dateToField(p.paidAt),
+        hint: p.paymentMethod ? paymentLabel(p.paymentMethod) : undefined,
+      })),
+    ...expenses.map((e) => ({
+      kind: "expense" as const,
+      id: e.id,
+      label: e.label,
       amountField: centsToField(e.amountCents),
+      paidDate: dateToField(e.paidAt),
     })),
+  ];
+
+  // Always show at least one empty row to invite input.
+  const [rows, setRows] = useState<Row[]>(
+    initialRows.length > 0
+      ? initialRows
+      : [{ kind: "expense", label: "", amountField: "", paidDate: "" }],
   );
+  const [clientPay, setClientPay] = useState(centsToField(initialClientPayCents));
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
+  const vendorTotalCents = rows.reduce(
+    (s, r) => s + fieldToCents(r.amountField),
+    0,
+  );
   const clientPayCents = fieldToCents(clientPay);
-  const clientDepositCents = fieldToCents(clientDeposit);
-  const personnelTotal = peopleRows.reduce(
-    (s, p) => s + fieldToCents(p.payField),
-    0,
-  );
-  const expenseTotal = expenseRows.reduce(
-    (s, e) => s + fieldToCents(e.amountField),
-    0,
-  );
-  const vendorTotal = personnelTotal + expenseTotal;
-  const net = (clientPayCents ?? 0) - vendorTotal;
-  const outstanding =
-    (clientPayCents ?? 0) - (clientDepositCents ?? 0);
+  const netCents = (clientPayCents ?? 0) - vendorTotalCents;
 
-  function addExpense() {
-    setExpenseRows((rows) => [
-      ...rows,
-      {
-        label: "",
-        amountCents: 0,
-        amountField: "",
-        position: rows.length,
-      },
+  function addRow() {
+    setRows((r) => [
+      ...r,
+      { kind: "expense", label: "", amountField: "", paidDate: "" },
     ]);
   }
 
-  function removeExpense(idx: number) {
-    setExpenseRows((rows) => rows.filter((_, i) => i !== idx));
+  function removeRow(idx: number) {
+    setRows((r) => r.filter((_, i) => i !== idx));
+  }
+
+  function updateRow(idx: number, patch: Partial<Row>) {
+    setRows((r) => r.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
   }
 
   function save() {
     startTransition(async () => {
+      const personnelPayload = rows
+        .filter((r) => r.kind === "personnel")
+        .map((r) => ({
+          id: r.id!,
+          payCents: fieldToCents(r.amountField),
+          paidAt: fieldToDate(r.paidDate),
+        }));
+
+      const deletedPersonnelIds = personnel
+        .filter((p) => !p.isLeader)
+        .filter((p) => !rows.some((r) => r.kind === "personnel" && r.id === p.id))
+        .map((p) => p.id);
+
+      const expensePayload = rows
+        .filter((r) => r.kind === "expense")
+        .map((r, i) => ({
+          id: r.id,
+          label: r.label.trim() || "Line item",
+          amountCents: fieldToCents(r.amountField),
+          paidAt: fieldToDate(r.paidDate),
+          position: i,
+        }));
+
       await savePayout(gigId, {
         clientPayCents,
-        clientDepositCents,
-        personnel: peopleRows.map((p) => ({
-          id: p.id,
-          payCents: fieldToCents(p.payField) ?? 0,
-        })),
-        expenses: expenseRows
-          .filter((e) => e.label.trim() !== "" || fieldToCents(e.amountField))
-          .map((e, i) => ({
-            id: e.id,
-            label: e.label.trim() || "Untitled",
-            amountCents: fieldToCents(e.amountField) ?? 0,
-            position: i,
-          })),
+        clientDepositCents: null,
+        personnel: personnelPayload,
+        deletedPersonnelIds,
+        expenses: expensePayload,
       });
       setSavedAt(new Date());
     });
   }
 
   return (
-    <div className="rounded-[10px] border border-line bg-surface">
+    <section
+      id="payout"
+      className="overflow-hidden rounded-[10px] border border-line bg-surface shadow-sm"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-line bg-paper-warm px-6 py-4">
+      <header className="flex items-center justify-between gap-4 border-b border-line bg-paper-warm px-6 py-4">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
-            Payout worksheet
+            Contractor
           </div>
-          <div className="mt-0.5 font-serif text-[16px] text-ink-soft">
-            Live totals · every line rolls up to your net
-          </div>
+          <h3 className="mt-0.5 font-serif text-[22px] font-normal leading-tight tracking-tight">
+            {gigTitle ?? "Payout worksheet"}
+          </h3>
         </div>
         <div className="flex items-center gap-3">
           {savedAt && (
             <span className="text-[11px] text-ink-mute">
-              Saved {savedAt.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+              Saved{" "}
+              {savedAt.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+              })}
             </span>
           )}
           <button
@@ -133,230 +177,146 @@ export function PayoutWorksheet({
             {pending ? "Saving…" : "Save"}
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Body */}
-      <div className="px-6 py-5">
-        {/* Income */}
-        <Section title="Income" emphasis={net}>
-          <WorkRow
-            label="Client pays"
-            rightField={
-              <MoneyInput
-                value={clientPay}
-                onChange={setClientPay}
-                placeholder="0"
-              />
-            }
-            tone="income"
-          />
-          <WorkRow
-            label="Deposit received"
-            sub={
-              outstanding > 0 && (clientDepositCents ?? 0) > 0
-                ? `${fmt(outstanding)} outstanding`
-                : undefined
-            }
-            rightField={
-              <MoneyInput
-                value={clientDeposit}
-                onChange={setClientDeposit}
-                placeholder="0"
-              />
-            }
-            tone="income"
-            muted
-          />
-        </Section>
+      {/* Line items table */}
+      <div>
+        {/* Column headings */}
+        <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-b border-line bg-paper/60 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
+          <div>Line item</div>
+          <div className="text-right">Total cost</div>
+          <div>Date paid</div>
+          <div></div>
+        </div>
 
-        {/* Personnel */}
-        <Section title={`Band · ${peopleRows.length}`} total={personnelTotal}>
-          {peopleRows.length === 0 ? (
-            <div className="py-3 text-[12px] text-ink-mute">
-              No personnel on this gig.
+        {rows.length === 0 && (
+          <div className="px-6 py-10 text-center text-[13px] text-ink-mute">
+            No line items yet. Add your first vendor or expense below.
+          </div>
+        )}
+
+        {rows.map((row, idx) => (
+          <div
+            key={row.id ?? `new-${idx}`}
+            className="group grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-b border-line px-6 py-2.5 hover:bg-paper/40"
+          >
+            {/* Label */}
+            <div>
+              {row.kind === "personnel" ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-serif text-[15px] text-ink">
+                    {row.label}
+                  </span>
+                  {row.hint && (
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-mute">
+                      · {row.hint}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <input
+                  value={row.label}
+                  onChange={(e) => updateRow(idx, { label: e.target.value })}
+                  placeholder="e.g. Hotel, Flights, Facebook ads…"
+                  className="w-full bg-transparent font-serif text-[15px] text-ink placeholder-ink-mute focus:outline-none"
+                />
+              )}
             </div>
-          ) : (
-            peopleRows.map((p, idx) => (
-              <WorkRow
-                key={p.id}
-                label={p.musicianName}
-                sub={[
-                  p.isLeader ? "Leader" : null,
-                  p.roleLabel,
-                  p.paymentMethod && !p.isLeader
-                    ? paymentLabel(p.paymentMethod)
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")}
-                leader={p.isLeader}
-                rightField={
-                  p.isLeader ? (
-                    <span className="font-serif text-[14px] text-ink-mute">—</span>
-                  ) : (
-                    <MoneyInput
-                      value={p.payField}
-                      onChange={(v) => {
-                        setPeopleRows((rows) =>
-                          rows.map((r, i) =>
-                            i === idx ? { ...r, payField: v } : r,
-                          ),
-                        );
-                      }}
-                    />
-                  )
-                }
-                tone="cost"
-              />
-            ))
-          )}
-        </Section>
 
-        {/* Expenses */}
-        <Section title={`Expenses · ${expenseRows.length}`} total={expenseTotal}>
-          {expenseRows.map((e, idx) => (
-            <div
-              key={idx}
-              className="grid grid-cols-[1fr_130px_28px] items-center gap-3 border-b border-line px-0 py-2 last:border-b-0"
+            {/* Amount */}
+            <MoneyInput
+              value={row.amountField}
+              onChange={(v) => updateRow(idx, { amountField: v })}
+            />
+
+            {/* Date paid */}
+            <input
+              type="date"
+              value={row.paidDate}
+              onChange={(e) => updateRow(idx, { paidDate: e.target.value })}
+              className="w-full rounded-md border border-line bg-paper px-2 py-1.5 text-[12px] text-ink-soft outline-none focus:border-accent"
+            />
+
+            {/* Remove */}
+            <button
+              type="button"
+              onClick={() => removeRow(idx)}
+              aria-label="Remove line"
+              title="Remove"
+              className="flex h-7 w-7 items-center justify-center rounded text-[16px] text-ink-mute opacity-0 transition-opacity hover:bg-accent-soft hover:text-accent group-hover:opacity-100"
             >
-              <input
-                value={e.label}
-                onChange={(ev) => {
-                  const v = ev.target.value;
-                  setExpenseRows((rows) =>
-                    rows.map((r, i) => (i === idx ? { ...r, label: v } : r)),
-                  );
-                }}
-                placeholder="e.g. Flights · Hotel · Ad spend"
-                className="bg-transparent font-serif text-[15px] text-ink placeholder-ink-mute focus:outline-none"
-              />
-              <MoneyInput
-                value={e.amountField}
-                onChange={(v) => {
-                  setExpenseRows((rows) =>
-                    rows.map((r, i) =>
-                      i === idx ? { ...r, amountField: v } : r,
-                    ),
-                  );
-                }}
-                align="right"
-              />
-              <button
-                type="button"
-                onClick={() => removeExpense(idx)}
-                className="rounded text-[13px] text-ink-mute hover:text-accent"
-                aria-label="Remove expense"
-                title="Remove"
-              >
-                ×
-              </button>
-            </div>
-          ))}
+              ×
+            </button>
+          </div>
+        ))}
+
+        {/* + Add line */}
+        <div className="border-b border-line px-6 py-3">
           <button
             type="button"
-            onClick={addExpense}
-            className="mt-2 rounded-md border border-dashed border-line-strong bg-paper px-3 py-2 text-[12px] font-medium text-ink-soft hover:border-accent hover:text-accent"
+            onClick={addRow}
+            className="flex items-center gap-1.5 rounded-md border border-dashed border-line-strong bg-paper px-3 py-1.5 text-[12px] font-medium text-ink-soft transition-colors hover:border-accent hover:text-accent"
           >
-            + Add expense
+            <span className="text-[14px]">＋</span>
+            <span>Add line item</span>
           </button>
-        </Section>
+        </div>
 
         {/* Totals */}
-        <div className="mt-5 border-t-2 border-ink pt-4">
-          <TotalRow label="Gross income" value={clientPayCents ?? 0} />
-          <TotalRow label="Total vendor cost" value={-vendorTotal} neg />
-          <TotalRow label="Your net" value={net} emphasize />
+        <div className="px-6 py-4">
+          {/* Total Vendor Cost — highlighted */}
+          <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-y border-accent/20 bg-[#FFF9D9] px-0 py-2.5">
+            <div className="pl-0 text-[11px] font-semibold uppercase tracking-[0.18em] text-ink">
+              Total vendor cost
+            </div>
+            <div className="text-right font-serif text-[16px] font-medium tabular-nums text-ink">
+              {fmt(vendorTotalCents)}
+            </div>
+            <div />
+            <div />
+          </div>
+
+          {/* Payment from client */}
+          <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-b border-line py-2.5">
+            <div className="text-[13px] text-ink">Payment from client</div>
+            <MoneyInput value={clientPay} onChange={setClientPay} />
+            <div />
+            <div />
+          </div>
+
+          {/* Your total */}
+          <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-t-2 border-ink pt-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              Your total
+            </div>
+            <div
+              className={`text-right font-serif text-[24px] font-light tabular-nums ${
+                netCents < 0 ? "text-accent" : "text-accent"
+              }`}
+            >
+              {fmtAccounting(netCents)}
+            </div>
+            <div />
+            <div />
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 // ── subcomponents ────────────────────────────────────────────
 
-function Section({
-  title,
-  total,
-  emphasis,
-  children,
-}: {
-  title: string;
-  total?: number;
-  emphasis?: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mb-5 last:mb-0">
-      <div className="mb-2 flex items-baseline justify-between border-b border-line pb-1.5">
-        <h5 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
-          {title}
-        </h5>
-        {total != null && (
-          <span className="font-serif text-[13px] tabular-nums text-ink-soft">
-            {fmt(total)}
-          </span>
-        )}
-        {emphasis != null && total == null && (
-          <span className="text-[11px] text-ink-mute">
-            Net rolls up below
-          </span>
-        )}
-      </div>
-      <div>{children}</div>
-    </div>
-  );
-}
-
-function WorkRow({
-  label,
-  sub,
-  rightField,
-  leader,
-  tone,
-  muted,
-}: {
-  label: string;
-  sub?: string | false;
-  rightField: React.ReactNode;
-  leader?: boolean;
-  tone?: "income" | "cost";
-  muted?: boolean;
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_130px] items-center gap-3 border-b border-line py-2 last:border-b-0">
-      <div className={muted ? "opacity-80" : ""}>
-        <div
-          className={`font-serif text-[15px] ${leader ? "text-accent" : "text-ink"}`}
-        >
-          {label}
-        </div>
-        {sub && (
-          <div className="mt-0.5 text-[11px] text-ink-mute">{sub}</div>
-        )}
-      </div>
-      <div className={tone === "income" ? "text-accent" : ""}>{rightField}</div>
-    </div>
-  );
-}
-
 function MoneyInput({
   value,
   onChange,
-  placeholder,
-  align = "right",
 }: {
   value: string;
   onChange: (v: string) => void;
-  placeholder?: string;
-  align?: "left" | "right";
 }) {
   return (
     <div className="relative">
-      <span
-        className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-[13px] text-ink-mute ${
-          align === "right" ? "left-2.5" : "left-2.5"
-        }`}
-      >
+      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[13px] text-ink-mute">
         $
       </span>
       <input
@@ -364,50 +324,9 @@ function MoneyInput({
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder ?? "0"}
-        className={`w-full rounded-md border border-line bg-paper py-1.5 pl-5 pr-2 font-serif text-[14px] tabular-nums text-ink outline-none focus:border-accent ${
-          align === "right" ? "text-right" : "text-left"
-        }`}
+        placeholder="0"
+        className="w-full rounded-md border border-line bg-paper py-1.5 pl-5 pr-2 text-right font-serif text-[14px] tabular-nums text-ink outline-none focus:border-accent"
       />
-    </div>
-  );
-}
-
-function TotalRow({
-  label,
-  value,
-  emphasize,
-  neg,
-}: {
-  label: string;
-  value: number;
-  emphasize?: boolean;
-  neg?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-baseline justify-between py-1.5 ${
-        emphasize ? "border-t border-line mt-1 pt-3" : ""
-      }`}
-    >
-      <span
-        className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${
-          emphasize ? "text-accent" : "text-ink-mute"
-        }`}
-      >
-        {label}
-      </span>
-      <span
-        className={`font-serif tabular-nums ${
-          emphasize
-            ? "text-[28px] font-light tracking-tight text-accent"
-            : neg
-              ? "text-[14px] text-ink-soft"
-              : "text-[14px] text-ink"
-        }`}
-      >
-        {fmt(value)}
-      </span>
     </div>
   );
 }
@@ -429,14 +348,33 @@ function centsToField(cents: number | null | undefined): string {
   return dollars.toFixed(2);
 }
 
+function fieldToDate(s: string): Date | null {
+  if (!s) return null;
+  const d = new Date(s + "T12:00:00");
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function dateToField(d: Date | null): string {
+  if (!d) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function fmt(cents: number): string {
-  const neg = cents < 0;
   const abs = Math.abs(cents) / 100;
-  const formatted = abs.toLocaleString("en-US", {
-    minimumFractionDigits: abs % 1 === 0 ? 0 : 2,
+  const s = abs.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return neg ? `−$${formatted}` : `$${formatted}`;
+  return `$${s}`;
+}
+
+// Accounting-style formatting: negatives in parens, like the spreadsheet
+function fmtAccounting(cents: number): string {
+  const base = fmt(cents);
+  return cents < 0 ? `(${base})` : base;
 }
 
 function paymentLabel(m: string): string {

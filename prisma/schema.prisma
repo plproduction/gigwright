@@ -227,6 +227,8 @@ model GigExpense {
   category    String? // optional grouping (travel, promo, meals, etc.)
   position    Int @default(0)
 
+  paidAt DateTime? // when the expense was paid / cleared
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

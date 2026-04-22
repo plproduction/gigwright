@@ -85,13 +85,12 @@ export default async function GigDetailPage({
           >
             Edit
           </Link>
-          <button
-            disabled
-            className="cursor-not-allowed rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink opacity-50"
-            title="Coming soon"
+          <a
+            href="#payout"
+            className="rounded-md border border-accent/30 bg-accent-soft px-3 py-1.5 text-[12px] font-medium text-accent hover:bg-accent hover:text-paper"
           >
-            Gig sheet
-          </button>
+            Finance
+          </a>
           <button
             disabled
             className="cursor-not-allowed rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper opacity-50"
@@ -292,21 +291,28 @@ export default async function GigDetailPage({
       <div className="border-t border-line bg-paper-warm/40 px-7 py-6">
         <PayoutWorksheet
           gigId={gig.id}
+          gigTitle={
+            gig.venue?.name
+              ? `${gig.venue.name} · ${gig.startAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+              : `Gig · ${gig.startAt.toLocaleDateString()}`
+          }
           initialClientPayCents={gig.clientPayCents}
-          initialClientDepositCents={gig.clientDepositCents}
           personnel={gig.personnel.map((p) => ({
             id: p.id,
+            musicianId: p.musicianId,
             musicianName: p.musician.name,
             isLeader: p.musician.isLeader,
             roleLabel: p.roleLabel ?? null,
             paymentMethod: p.musician.paymentMethod ?? null,
             payCents: p.payCents,
+            paidAt: p.paidAt,
           }))}
           expenses={gig.expenses.map((e) => ({
             id: e.id,
             label: e.label,
             amountCents: e.amountCents,
             position: e.position,
+            paidAt: e.paidAt,
           }))}
         />
       </div>

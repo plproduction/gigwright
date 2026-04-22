@@ -189,8 +189,15 @@ export async function savePayout(
   payload: {
     clientPayCents: number | null;
     clientDepositCents: number | null;
-    personnel: Array<{ id: string; payCents: number }>;
-    expenses: Array<{ id?: string; label: string; amountCents: number; position: number }>;
+    personnel: Array<{ id: string; payCents: number; paidAt?: Date | null }>;
+    deletedPersonnelIds?: string[];
+    expenses: Array<{
+      id?: string;
+      label: string;
+      amountCents: number;
+      position: number;
+      paidAt?: Date | null;
+    }>;
   },
 ) {
   const user = await requireUser();
@@ -206,25 +213,47 @@ export async function savePayout(
       },
     });
 
+    // Remove personnel the user dropped from the worksheet
+    if (payload.deletedPersonnelIds && payload.deletedPersonnelIds.length > 0) {
+      await tx.gigPersonnel.deleteMany({
+        where: {
+          id: { in: payload.deletedPersonnelIds },
+          gig: { ownerId: user.id },
+        },
+      });
+    }
+
     for (const p of payload.personnel) {
       await tx.gigPersonnel.update({
         where: { id: p.id },
-        data: { payCents: p.payCents },
+        data: {
+          payCents: p.payCents,
+          paidAt: p.paidAt ?? null,
+        },
       });
     }
 
     const existing = await tx.gigExpense.findMany({ where: { gigId } });
-    const keepIds = new Set(payload.expenses.map((e) => e.id).filter(Boolean) as string[]);
+    const keepIds = new Set(
+      payload.expenses.map((e) => e.id).filter(Boolean) as string[],
+    );
     const toDelete = existing.filter((e) => !keepIds.has(e.id));
     if (toDelete.length > 0) {
-      await tx.gigExpense.deleteMany({ where: { id: { in: toDelete.map((e) => e.id) } } });
+      await tx.gigExpense.deleteMany({
+        where: { id: { in: toDelete.map((e) => e.id) } },
+      });
     }
 
     for (const e of payload.expenses) {
       if (e.id) {
         await tx.gigExpense.update({
           where: { id: e.id },
-          data: { label: e.label, amountCents: e.amountCents, position: e.position },
+          data: {
+            label: e.label,
+            amountCents: e.amountCents,
+            position: e.position,
+            paidAt: e.paidAt ?? null,
+          },
         });
       } else {
         await tx.gigExpense.create({
@@ -233,6 +262,7 @@ export async function savePayout(
             label: e.label,
             amountCents: e.amountCents,
             position: e.position,
+            paidAt: e.paidAt ?? null,
           },
         });
       }
