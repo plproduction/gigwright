@@ -266,12 +266,25 @@ function GigList({
     );
   }
 
+  // Column layout:
+  //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Pay · Status · Open
+  const cols =
+    "grid-cols-[72px_1.4fr_1.6fr_72px_78px_72px_96px_90px_70px]";
+
   return (
     <div className="text-[13px]">
-      <div className="grid grid-cols-[90px_2fr_1fr_90px_110px_110px_80px] gap-3.5 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+      <div
+        className={`grid ${cols} gap-3 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute`}
+      >
         <div>Date</div>
         <div>Venue</div>
         <div>Personnel</div>
+        <div>Load in</div>
+        <div
+          title="All lines run, instruments set up, ready to play at this time"
+        >
+          Sound check
+        </div>
         <div>Downbeat</div>
         <div>Pay</div>
         <div>Status</div>
@@ -288,17 +301,17 @@ function GigList({
         return (
           <div
             key={g.id}
-            className={`grid grid-cols-[90px_2fr_1fr_90px_110px_110px_80px] items-center gap-3.5 border-b border-line px-1.5 py-3.5 transition-colors hover:bg-paper-warm ${
+            className={`grid ${cols} items-center gap-3 border-b border-line px-1.5 py-3.5 transition-colors hover:bg-paper-warm ${
               today ? "bg-paper-deep" : ""
             }`}
           >
             <div className="font-serif leading-none">
-              <div className="text-[22px]">{formatDayNum(g.startAt)}</div>
+              <div className="text-[20px]">{formatDayNum(g.startAt)}</div>
               <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
                 {formatMonthAbbr(g.startAt)}
               </div>
             </div>
-            <div className="font-serif text-[17px]">
+            <div className="font-serif text-[16px] leading-tight">
               {venue.name}
               {venue.sub && (
                 <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
@@ -306,16 +319,22 @@ function GigList({
                 </div>
               )}
             </div>
-            <div className="text-[12px] text-ink-soft">
-              {personnelSummary(g.personnel.map((p) => p.musician.name))}
+            <div className="text-[12px] leading-snug text-ink-soft">
+              {personnelSummary(g.personnel.map((p) => p.musician.name), 4)}
             </div>
-            <div className="font-serif text-[14px] tabular-nums text-ink-soft">
+            <div className="font-serif text-[13px] tabular-nums text-ink-soft">
+              {formatTime(g.loadInAt)}
+            </div>
+            <div className="font-serif text-[13px] tabular-nums text-ink-soft">
+              {formatTime(g.soundcheckAt)}
+            </div>
+            <div className="font-serif text-[13px] tabular-nums text-ink">
               {formatTime(g.startAt)}
             </div>
-            <div className="font-serif text-[14px] tabular-nums">
+            <div className="font-serif text-[13px] tabular-nums">
               {formatMoneyCents(bandPay)}
               {sideCount > 0 && (
-                <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
+                <div className="mt-0.5 font-sans text-[10px] text-ink-mute">
                   {sideCount} × band
                 </div>
               )}
@@ -326,7 +345,7 @@ function GigList({
             <div className="flex justify-end">
               <Link
                 href={`/gigs/${g.id}`}
-                className="rounded-md border border-line-strong px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
+                className="rounded-md border border-line-strong px-2.5 py-1 text-[11px] font-medium text-ink hover:bg-paper-warm"
               >
                 Open
               </Link>

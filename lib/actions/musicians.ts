@@ -44,6 +44,7 @@ export async function upsertMusician(
       | "CHECK"
       | "DIRECT_DEPOSIT"
       | "OTHER",
+    payoutAddress: nullIfEmpty(formData.get("payoutAddress")),
     notifyBySms: formData.get("notifyBySms") === "on",
     notifyByEmail: formData.get("notifyByEmail") === "on",
     notes: nullIfEmpty(formData.get("notes")),

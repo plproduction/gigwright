@@ -156,6 +156,11 @@ model Musician {
   calendarProvider CalendarProvider @default(NONE)
   paymentMethod    PaymentMethod?
 
+  // The destination to send money: Zelle email/phone, Venmo @handle,
+  // PayPal email, Cashtag (with or without $), etc. Interpreted based on
+  // paymentMethod.
+  payoutAddress    String?
+
   notifyBySms   Boolean @default(true)
   notifyByEmail Boolean @default(true)
 

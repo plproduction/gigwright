@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { savePayout } from "@/lib/actions/gigs";
+import { PayAction } from "@/components/PayAction";
 
 // One unified line-item worksheet modeled on the Iridium Payout spreadsheet.
 // Contractors and freeform expenses live in the same ordered table. Each row
@@ -16,6 +17,7 @@ type PersonnelIn = {
   isLeader: boolean;
   roleLabel?: string | null;
   paymentMethod?: string | null;
+  payoutAddress?: string | null;
   payCents: number;
   paidAt: Date | null;
 };
@@ -37,6 +39,8 @@ type Row = {
   amountField: string;   // free-text money input
   paidDate: string;      // YYYY-MM-DD or ""
   hint?: string;         // role / payment method display
+  paymentMethod?: string | null;
+  payoutAddress?: string | null;
 };
 
 export function PayoutWorksheet({
@@ -65,6 +69,8 @@ export function PayoutWorksheet({
         amountField: centsToField(p.payCents),
         paidDate: dateToField(p.paidAt),
         hint: p.paymentMethod ? paymentLabel(p.paymentMethod) : undefined,
+        paymentMethod: p.paymentMethod ?? null,
+        payoutAddress: p.payoutAddress ?? null,
       })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
@@ -207,11 +213,23 @@ export function PayoutWorksheet({
                   <span className="font-serif text-[15px] text-ink">
                     {row.label}
                   </span>
-                  {row.hint && (
-                    <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-mute">
-                      · {row.hint}
-                    </span>
-                  )}
+                  <PayAction
+                    method={
+                      (row.paymentMethod as
+                        | "VENMO"
+                        | "PAYPAL"
+                        | "ZELLE"
+                        | "CASHAPP"
+                        | "CASH"
+                        | "CHECK"
+                        | "DIRECT_DEPOSIT"
+                        | "OTHER"
+                        | null) ?? null
+                    }
+                    address={row.payoutAddress ?? null}
+                    amountCents={fieldToCents(row.amountField) || undefined}
+                    note={gigTitle ? `Gig: ${gigTitle}` : undefined}
+                  />
                 </div>
               ) : (
                 <input

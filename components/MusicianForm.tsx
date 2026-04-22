@@ -11,6 +11,7 @@ type M = {
   isLeader: boolean;
   calendarProvider: string;
   paymentMethod: string | null;
+  payoutAddress: string | null;
   notifyBySms: boolean;
   notifyByEmail: boolean;
   notes: string | null;
@@ -111,6 +112,15 @@ export function MusicianForm({ musician }: { musician: M }) {
             <option value="DIRECT_DEPOSIT">Direct deposit</option>
             <option value="OTHER">Other</option>
           </select>
+        </Field>
+
+        <Field span label="Payment address / handle">
+          <input
+            name="payoutAddress"
+            defaultValue={musician?.payoutAddress ?? ""}
+            placeholder="Zelle: email or phone · Venmo: @handle · PayPal: paypal.me link · Cash App: $cashtag"
+            className="input"
+          />
         </Field>
 
         <Field span label="Notes">

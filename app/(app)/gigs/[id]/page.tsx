@@ -304,6 +304,7 @@ export default async function GigDetailPage({
             isLeader: p.musician.isLeader,
             roleLabel: p.roleLabel ?? null,
             paymentMethod: p.musician.paymentMethod ?? null,
+            payoutAddress: p.musician.payoutAddress ?? null,
             payCents: p.payCents,
             paidAt: p.paidAt,
           }))}
