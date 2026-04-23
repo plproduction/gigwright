@@ -8,6 +8,7 @@ import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
 import { LoadingMapUpload } from "@/components/LoadingMapUpload";
 import { ShareGigButton } from "@/components/ShareGigButton";
+import { CloneGigButton } from "@/components/CloneGigButton";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import {
@@ -436,6 +437,16 @@ export default async function GigDetailPage({
 
           <Section title="Share gig sheet">
             <ShareGigButton gigId={gig.id} />
+          </Section>
+
+          <Section title="Clone this gig">
+            <div className="flex items-center gap-3">
+              <CloneGigButton gigId={gig.id} />
+              <span className="text-[11px] text-ink-mute">
+                Repeating the same gig? Clone makes a fresh inquiry one week
+                out with the same venue and band.
+              </span>
+            </div>
           </Section>
 
           <Section title="Activity">

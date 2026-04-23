@@ -199,8 +199,9 @@ model Musician {
 
   // W-9 tracking — every outbound message auto-includes either a request
   // (if not received) or a "W-9 received" confirmation (if received).
-  w9Received   Boolean   @default(false)
-  w9ReceivedAt DateTime?
+  w9Received    Boolean   @default(false)
+  w9ReceivedAt  DateTime?
+  w9RequestedAt DateTime? // when we last sent the W-9 request email — so UI can show "requested [date]"
 
   notes String?
 

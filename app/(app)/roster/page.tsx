@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { RequestW9Button } from "@/components/RequestW9Button";
 
 export default async function RosterPage() {
   const user = await requireUser();
@@ -66,6 +67,7 @@ function MusicianRow({
     calendarProvider: string;
     paymentMethod: string | null;
     w9Received: boolean;
+    w9RequestedAt: Date | null;
   };
 }) {
   const initials =
@@ -148,6 +150,13 @@ function MusicianRow({
         >
           {m.w9Received ? "W-9 ✓" : "W-9"}
         </span>
+        {!m.isLeader && !m.w9Received && (
+          <RequestW9Button
+            musicianId={m.id}
+            hasEmail={!!m.email}
+            requestedAt={m.w9RequestedAt}
+          />
+        )}
         <Link
           href={`/roster/${m.id}/edit`}
           className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-ink hover:border-accent hover:bg-accent hover:text-paper"

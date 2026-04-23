@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { savePayout } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
+import { MarkAllPaidButton } from "@/components/MarkAllPaidButton";
 import {
   IRS_MILEAGE_RATE_USD,
   GSA_PER_DIEM_USD,
@@ -255,6 +256,10 @@ export function PayoutWorksheet({
           </h3>
         </div>
         <div className="flex items-center gap-3">
+          <MarkAllPaidButton
+            gigId={gigId}
+            unpaidCount={personnel.filter((p) => !p.isLeader && !p.paidAt).length}
+          />
           {savedAt && (
             <span className="text-[11px] text-ink-mute">
               Saved{" "}

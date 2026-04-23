@@ -110,6 +110,77 @@ export async function upsertGig(id: string | null, formData: FormData) {
   }
 }
 
+// Clone a gig as an INQUIRY on today's date. Copies venue, personnel (as
+// GigPersonnel rows with same pay, no paidAt), the tech/attire/meal block,
+// set list, materials URL, and notes. Doesn't copy expenses, paid state,
+// QBO sync state, or activity. The user lands on the new gig in edit mode
+// and typically just changes the date.
+export async function cloneGig(sourceId: string) {
+  const user = await requireUser();
+  const src = await db.gig.findFirst({
+    where: { id: sourceId, ownerId: user.id },
+    include: { personnel: { orderBy: { position: "asc" } } },
+  });
+  if (!src) throw new Error("Source gig not found");
+
+  // Default the new gig to 1 week out at the same times. Nine times out of ten
+  // that's closer to what the user wants than "today".
+  const weekLater = new Date(src.startAt);
+  weekLater.setDate(weekLater.getDate() + 7);
+  const bump = (d: Date | null) => {
+    if (!d) return null;
+    const out = new Date(d);
+    out.setDate(out.getDate() + 7);
+    return out;
+  };
+
+  const created = await db.gig.create({
+    data: {
+      ownerId: user.id,
+      venueId: src.venueId,
+      startAt: weekLater,
+      loadInAt: bump(src.loadInAt),
+      soundcheckAt: bump(src.soundcheckAt),
+      callTimeAt: bump(src.callTimeAt),
+      endAt: bump(src.endAt),
+      status: "INQUIRY", // never clone a CONFIRMED / PLAYED status
+      clientPayCents: src.clientPayCents,
+      clientDepositCents: null,
+      sound: src.sound,
+      soundContactName: src.soundContactName,
+      soundContactPhone: src.soundContactPhone,
+      lights: src.lights,
+      attire: src.attire,
+      meal: src.meal,
+      materialsUrl: src.materialsUrl,
+      setlistUrl: src.setlistUrl,
+      setlistFileName: src.setlistFileName,
+      loadingInfo: src.loadingInfo,
+      loadingMapUrl: src.loadingMapUrl,
+      loadingMapLink: src.loadingMapLink,
+      notes: src.notes,
+      personnel: {
+        create: src.personnel.map((p) => ({
+          musicianId: p.musicianId,
+          payCents: p.payCents,
+          position: p.position,
+        })),
+      },
+    },
+  });
+
+  await db.activity.create({
+    data: {
+      gigId: created.id,
+      action: "gig_cloned",
+      summary: `Cloned from ${src.id}`,
+    },
+  });
+
+  revalidatePath("/dashboard");
+  redirect(`/gigs/${created.id}/edit`);
+}
+
 export async function deleteGig(id: string) {
   const user = await requireUser();
   await db.gig.delete({ where: { id, ownerId: user.id } });
@@ -378,6 +449,61 @@ export async function updateGigField(
   });
 
   revalidatePath(`/gigs/${gigId}`);
+}
+
+// Mark every unpaid GigPersonnel row on this gig as paid today with the
+// given method. No-op for rows that already have paidAt set — we don't
+// overwrite their existing paid date / method. Returns the number of
+// rows newly marked paid.
+export async function markAllPaid(
+  gigId: string,
+  method: string,
+): Promise<{ count: number }> {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  const validMethods = new Set([
+    "VENMO",
+    "PAYPAL",
+    "ZELLE",
+    "CASHAPP",
+    "CASH",
+    "CHECK",
+    "DIRECT_DEPOSIT",
+    "OTHER",
+  ]);
+  if (!validMethods.has(method)) throw new Error("Invalid payment method");
+
+  const result = await db.gigPersonnel.updateMany({
+    where: { gigId, paidAt: null },
+    data: {
+      paidAt: new Date(),
+      paidMethod: method as
+        | "VENMO"
+        | "PAYPAL"
+        | "ZELLE"
+        | "CASHAPP"
+        | "CASH"
+        | "CHECK"
+        | "DIRECT_DEPOSIT"
+        | "OTHER",
+    },
+  });
+
+  if (result.count > 0) {
+    await db.activity.create({
+      data: {
+        gigId,
+        action: "bulk_paid",
+        summary: `Marked ${result.count} musician${result.count === 1 ? "" : "s"} paid via ${method.toLowerCase()}`,
+      },
+    });
+  }
+
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/finance`);
+  return { count: result.count };
 }
 
 export async function markPaid(personnelId: string, method: string) {
