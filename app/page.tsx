@@ -162,7 +162,7 @@ function Hero() {
               Now in private beta
             </span>
           </div>
-          <h1 className="mb-6 font-serif text-[56px] font-light leading-[1.02] tracking-tight md:text-[64px]">
+          <h1 className="mb-6 font-serif text-[40px] font-light leading-[1.05] tracking-tight sm:text-[52px] md:text-[64px] md:leading-[1.02]">
             A playwright writes plays. A <em className="text-accent">GigWright</em> runs gigs.
           </h1>
           <p className="mb-9 max-w-[540px] text-[17px] leading-[1.55] text-ink-soft md:text-[18px]">
@@ -480,23 +480,29 @@ function Compare() {
       heading={<>How GigWright stacks up against <em className="text-accent">what&rsquo;s out there</em>.</>}
       lede="No fluff. Side by side, against how working bandleaders are running their gigs today."
     >
-      <div className="overflow-hidden rounded-[10px] border border-line bg-surface">
-        {/* Head */}
-        <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-line bg-paper-warm">
-          <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">What matters</div>
-          <div className="relative bg-ink px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-paper after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent">GigWright</div>
-          <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">Older booking tools</div>
-          <div className="px-6 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute">Other modern tools</div>
-        </div>
-        {/* Rows */}
-        {rows.map(([label, a, b, c], i) => (
-          <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-t border-line">
-            <div className="flex items-center bg-paper px-6 py-4 text-[14px] font-medium text-ink">{label}</div>
-            <div className="flex items-center bg-accent/[0.04] px-6 py-4 text-[14px] font-medium text-ink">{a}</div>
-            <div className="flex items-center px-6 py-4 text-[14px] text-ink-soft">{b}</div>
-            <div className="flex items-center px-6 py-4 text-[14px] text-ink-soft">{c}</div>
+      {/* On narrow screens the 4-column grid gets cramped, so we let it
+          overflow horizontally with a visible scroll hint instead of
+          squashing the text unreadably. The inner min-width keeps columns
+          legible across all viewports. */}
+      <div className="overflow-x-auto overflow-y-hidden rounded-[10px] border border-line bg-surface">
+        <div className="min-w-[640px]">
+          {/* Head */}
+          <div className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-b border-line bg-paper-warm">
+            <div className="px-4 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute sm:px-6">What matters</div>
+            <div className="relative bg-ink px-4 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-paper after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-accent sm:px-6">GigWright</div>
+            <div className="px-4 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute sm:px-6">Older booking tools</div>
+            <div className="px-4 py-5 text-[11px] font-medium uppercase tracking-[0.22em] text-ink-mute sm:px-6">Other modern tools</div>
           </div>
-        ))}
+          {/* Rows */}
+          {rows.map(([label, a, b, c], i) => (
+            <div key={i} className="grid grid-cols-[1.4fr_1fr_1fr_1fr] border-t border-line">
+              <div className="flex items-center bg-paper px-4 py-4 text-[13px] font-medium text-ink sm:px-6 sm:text-[14px]">{label}</div>
+              <div className="flex items-center bg-accent/[0.04] px-4 py-4 text-[13px] font-medium text-ink sm:px-6 sm:text-[14px]">{a}</div>
+              <div className="flex items-center px-4 py-4 text-[13px] text-ink-soft sm:px-6 sm:text-[14px]">{b}</div>
+              <div className="flex items-center px-4 py-4 text-[13px] text-ink-soft sm:px-6 sm:text-[14px]">{c}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </SectionBay>
   );
