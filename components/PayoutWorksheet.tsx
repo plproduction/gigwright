@@ -246,16 +246,16 @@ export function PayoutWorksheet({
         ))}
       </datalist>
       {/* Header */}
-      <header className="flex items-center justify-between gap-4 border-b border-line bg-paper-warm px-6 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-paper-warm px-5 py-4 md:px-6">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
             Contractor
           </div>
-          <h3 className="mt-0.5 font-serif text-[22px] font-normal leading-tight tracking-tight">
+          <h3 className="mt-0.5 font-serif text-[20px] font-normal leading-tight tracking-tight md:text-[22px]">
             {gigTitle ?? "Payout worksheet"}
           </h3>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <MarkAllPaidButton
             gigId={gigId}
             unpaidCount={personnel.filter((p) => !p.isLeader && !p.paidAt).length}
@@ -280,8 +280,11 @@ export function PayoutWorksheet({
         </div>
       </header>
 
-      {/* Line items table */}
-      <div>
+      {/* Line items table — horizontal scroll on narrow screens so the
+          140px amount/date columns keep their layout instead of squashing.
+          Inner min-w-[560px] guarantees the grid keeps its desktop feel. */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[560px]">
         {/* Column headings */}
         <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-b border-line bg-paper/60 px-6 py-2.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
           <div>Line item</div>
@@ -552,6 +555,7 @@ export function PayoutWorksheet({
             <div />
             <div />
           </div>
+        </div>
         </div>
       </div>
     </section>

@@ -130,16 +130,18 @@ export default async function GigDetailPage({
 
   return (
     <div className="-mx-8 -mb-9 -mt-7">
-      {/* Header */}
-      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-7 border-b border-line bg-paper-warm px-7 py-[22px]">
-        <div className="border-r border-line pr-7 text-center font-serif leading-[0.95]">
-          <div className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-            {dow}
+      {/* Header — stacks on mobile, becomes [date | title | actions] on md+ */}
+      <div className="flex flex-col gap-5 border-b border-line bg-paper-warm px-5 py-5 md:grid md:grid-cols-[auto_1fr_auto] md:items-center md:gap-7 md:px-7 md:py-[22px]">
+        <div className="flex items-end gap-4 border-line pb-4 text-left font-serif leading-[0.95] md:block md:border-r md:pb-0 md:pr-7 md:text-center">
+          <div className="flex flex-col">
+            <div className="mb-0.5 font-sans text-[10px] font-semibold uppercase tracking-[0.2em] text-accent md:mb-1">
+              {dow}
+            </div>
+            <span className="block text-[44px] font-light tracking-tight md:text-[52px]">
+              {formatDayNum(gig.startAt)}
+            </span>
           </div>
-          <span className="block text-[52px] font-light tracking-tight">
-            {formatDayNum(gig.startAt)}
-          </span>
-          <div className="text-[12px] text-ink-soft">
+          <div className="text-[12px] text-ink-soft md:mt-0">
             {month} {formatYear(gig.startAt)}
           </div>
         </div>
@@ -150,12 +152,16 @@ export default async function GigDetailPage({
             </Link>{" "}
             <span className="text-accent">·</span> {dow}
           </div>
-          <h2 className="font-serif text-[30px] font-normal leading-[1.05] tracking-tight">
+          <h2 className="font-serif text-[26px] font-normal leading-[1.05] tracking-tight md:text-[30px]">
             {gig.venue?.name ?? "TBD"}
           </h2>
-          <div className="mt-1 text-[12px] text-ink-soft">
-            {gig.venue?.city && `${gig.venue.city}, ${gig.venue.state}`}{" "}
-            <span className="mx-1.5 text-ink-mute">·</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ink-soft">
+            {gig.venue?.city && (
+              <span>
+                {gig.venue.city}, {gig.venue.state}
+              </span>
+            )}
+            {gig.venue?.city && <span className="text-ink-mute">·</span>}
             <StatusPill status={gig.status} />
           </div>
         </div>
@@ -177,10 +183,10 @@ export default async function GigDetailPage({
         </div>
       </div>
 
-      {/* Three columns */}
-      <div className="grid grid-cols-3">
+      {/* Three columns — stack vertically on mobile, 3-up on lg+ */}
+      <div className="grid grid-cols-1 lg:grid-cols-3">
         {/* Column 1: Personnel + Money */}
-        <div className="border-r border-line px-6 py-5">
+        <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
           <Section title={`Personnel · ${gig.personnel.length} on`}>
             <div className="flex flex-col gap-2.5">
               {gig.personnel.map((p) => (
@@ -255,7 +261,7 @@ export default async function GigDetailPage({
         </div>
 
         {/* Column 2: Times + Venue + Tech */}
-        <div className="border-r border-line px-6 py-5">
+        <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
           <Section title="Times">
             <div className="grid grid-cols-2 gap-3">
               <TimeTile label="Load in" value={formatTime(gig.loadInAt)} />
@@ -352,7 +358,7 @@ export default async function GigDetailPage({
         </div>
 
         {/* Column 3: Gig Materials + Set List + Activity */}
-        <div className="px-6 py-5">
+        <div className="px-5 py-5 md:px-6">
           <Section title="Gig materials">
             <InlineField
               gigId={gig.id}
