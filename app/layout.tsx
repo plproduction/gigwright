@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://gigwright.com"),
+  metadataBase: new URL("https://www.gigwright.com"),
   title: {
     default: "GigWright · Booking management built by a working bandleader",
     template: "%s · GigWright",
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://gigwright.com",
+    url: "https://www.gigwright.com",
     siteName: "GigWright",
     title: "GigWright · Booking management built by a working bandleader",
     description:
