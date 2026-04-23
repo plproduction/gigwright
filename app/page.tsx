@@ -19,6 +19,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-1 flex-col bg-paper text-ink">
+      <StructuredData />
       <TopNav />
       <Hero />
       <Credibility />
@@ -31,6 +32,82 @@ export default async function Home() {
       <CtaBand />
       <Footer />
     </div>
+  );
+}
+
+/* ============================================================
+   SCHEMA.ORG JSON-LD
+
+   Structured data for search crawlers and (notably) Google Safe
+   Browsing reviewers, who look for Organization + SoftwareApplication
+   signals when evaluating whether a domain is a legitimate business.
+============================================================ */
+function StructuredData() {
+  const ld = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.gigwright.com/#organization",
+        name: "GigWright",
+        legalName: "Patrick Lamb Productions",
+        url: "https://www.gigwright.com",
+        logo: "https://www.gigwright.com/apple-icon",
+        founder: { "@type": "Person", name: "Patrick Lamb" },
+        foundingDate: "2026-04",
+        description:
+          "GigWright is booking management software for working bandleaders — two-way calendar sync, diff-aware SMS, QuickBooks push, payout reconciliation, tax-tagged expenses.",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Palm Beach",
+          addressRegion: "FL",
+          addressCountry: "US",
+        },
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            email: "hello@gigwright.com",
+            contactType: "customer support",
+          },
+        ],
+        sameAs: ["https://patricklamb.com"],
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.gigwright.com/#website",
+        url: "https://www.gigwright.com",
+        name: "GigWright",
+        publisher: { "@id": "https://www.gigwright.com/#organization" },
+      },
+      {
+        "@type": "SoftwareApplication",
+        name: "GigWright",
+        applicationCategory: "BusinessApplication",
+        operatingSystem: "Web, iOS, Android (via browser)",
+        description:
+          "Booking management for working bandleaders. Manage gigs, roster, venues, set lists, and payouts in one place.",
+        offers: {
+          "@type": "Offer",
+          price: "20.00",
+          priceCurrency: "USD",
+          priceSpecification: {
+            "@type": "UnitPriceSpecification",
+            price: "20.00",
+            priceCurrency: "USD",
+            unitCode: "MON",
+            unitText: "monthly subscription",
+          },
+        },
+        publisher: { "@id": "https://www.gigwright.com/#organization" },
+      },
+    ],
+  };
+  return (
+    <script
+      type="application/ld+json"
+      // JSON-LD is one of the few legitimate uses of dangerouslySetInnerHTML
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+    />
   );
 }
 
@@ -634,6 +711,7 @@ function Footer() {
             heading="Company"
             links={[
               ["About", "/about"],
+              ["What's new", "/changelog"],
               ["Contact", "mailto:hello@gigwright.com"],
             ]}
           />

@@ -18,6 +18,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
     {
+      url: "https://www.gigwright.com/changelog",
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
+    {
       url: "https://www.gigwright.com/privacy",
       lastModified: now,
       changeFrequency: "yearly",
