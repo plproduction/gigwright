@@ -232,6 +232,7 @@ export default async function GigDetailPage({
             </div>
           </Section>
 
+          <div className="hidden lg:block">
           <Section title="Money at a glance">
             <div className="grid grid-cols-[auto_1fr] gap-x-3.5 gap-y-2 text-[13px]">
               <Label>Gross</Label>
@@ -258,6 +259,7 @@ export default async function GigDetailPage({
               Full payout worksheet below &mdash; edit every line.
             </div>
           </Section>
+          </div>
         </div>
 
         {/* Column 2: Times + Venue + Tech */}
@@ -380,6 +382,7 @@ export default async function GigDetailPage({
             </div>
           </Section>
 
+          <div className="hidden lg:block">
           <Section title="Calendar sync · pending">
             <div className="flex flex-wrap gap-1.5">
               {gig.personnel.map((p) => (
@@ -401,6 +404,7 @@ export default async function GigDetailPage({
               Two-way iCloud and Google calendar sync is Phase 1 work. The plumbing is there; the providers are next.
             </div>
           </Section>
+          </div>
 
           <Section title="Specific loading info">
             <div className="space-y-3">
@@ -483,8 +487,10 @@ export default async function GigDetailPage({
         </div>
       </div>
 
-      {/* Notes — full width, click to edit */}
-      <div className="border-t border-line bg-surface px-7 py-5">
+      {/* Notes — full width, click to edit. Hidden on mobile to keep the
+          gig detail view compact; still editable on desktop where there's
+          room for the freeform context. */}
+      <div className="hidden border-t border-line bg-surface px-7 py-5 lg:block">
         <h5 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
           Notes
         </h5>
