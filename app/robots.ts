@@ -23,7 +23,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://www.gigwright.com/sitemap.xml",
-    host: "https://www.gigwright.com",
+    sitemap: "https://gigwright.com/sitemap.xml",
+    host: "https://gigwright.com",
   };
 }

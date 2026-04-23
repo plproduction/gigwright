@@ -7,7 +7,7 @@ import { useState } from "react";
 // read-only gig sheet, no login, no app install.
 export function ShareGigButton({ gigId }: { gigId: string }) {
   const [copied, setCopied] = useState(false);
-  const url = `https://www.gigwright.com/g/${gigId}`;
+  const url = `https://gigwright.com/g/${gigId}`;
 
   async function copy() {
     try {

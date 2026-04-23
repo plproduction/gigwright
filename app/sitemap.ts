@@ -6,31 +6,31 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   return [
     {
-      url: "https://www.gigwright.com/",
+      url: "https://gigwright.com/",
       lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: "https://www.gigwright.com/about",
+      url: "https://gigwright.com/about",
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.6,
     },
     {
-      url: "https://www.gigwright.com/changelog",
+      url: "https://gigwright.com/changelog",
       lastModified: now,
       changeFrequency: "weekly",
       priority: 0.5,
     },
     {
-      url: "https://www.gigwright.com/privacy",
+      url: "https://gigwright.com/privacy",
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
-      url: "https://www.gigwright.com/terms",
+      url: "https://gigwright.com/terms",
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.3,
