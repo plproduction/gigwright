@@ -455,6 +455,7 @@ export default async function GigDetailPage({
             <ShareGigButton gigId={gig.id} />
           </Section>
 
+          <div className="hidden lg:block">
           <Section title="Clone this gig">
             <div className="flex items-center gap-3">
               <CloneGigButton gigId={gig.id} />
@@ -464,7 +465,9 @@ export default async function GigDetailPage({
               </span>
             </div>
           </Section>
+          </div>
 
+          <div className="hidden lg:block">
           <Section title="Activity">
             {gig.activity.length === 0 ? (
               <div className="text-[12px] text-ink-mute">
@@ -490,6 +493,7 @@ export default async function GigDetailPage({
               </div>
             )}
           </Section>
+          </div>
         </div>
       </div>
 
