@@ -161,8 +161,12 @@ export default async function GigDetailPage({
                 {gig.venue.city}, {gig.venue.state}
               </span>
             )}
-            {gig.venue?.city && <span className="text-ink-mute">·</span>}
-            <StatusPill status={gig.status} />
+            {/* Status pill hidden on mobile — users know the state of a gig
+                they're already inside. Kept for desktop overview scanning. */}
+            <span className="hidden items-center gap-2 lg:inline-flex">
+              {gig.venue?.city && <span className="text-ink-mute">·</span>}
+              <StatusPill status={gig.status} />
+            </span>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -406,6 +410,7 @@ export default async function GigDetailPage({
           </Section>
           </div>
 
+          <div className="hidden lg:block">
           <Section title="Specific loading info">
             <div className="space-y-3">
               <div>
@@ -444,6 +449,7 @@ export default async function GigDetailPage({
               </div>
             </div>
           </Section>
+          </div>
 
           <Section title="Share gig sheet">
             <ShareGigButton gigId={gig.id} />
