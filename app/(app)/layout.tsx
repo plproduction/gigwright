@@ -11,10 +11,13 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-paper">
-      <div className="mx-auto max-w-[1240px] px-8 py-10">
+      {/* Responsive outer padding — 16px on phones, 32px on desktop. */}
+      <div className="mx-auto max-w-[1240px] px-4 py-5 md:px-8 md:py-10">
         <section className="overflow-hidden rounded-[10px] border border-line bg-surface">
           <AppNav userInitials={initials} />
-          <div className="px-8 pb-9 pt-7">{children}</div>
+          {/* Inner padding also scales down on mobile so the content has room
+              to breathe and doesn't get chopped by the shell. */}
+          <div className="px-4 pb-6 pt-5 md:px-8 md:pb-9 md:pt-7">{children}</div>
         </section>
       </div>
     </div>

@@ -54,11 +54,13 @@ export default async function DashboardPage() {
 
   return (
     <>
-      {/* Top row: Tonight card + Stats */}
-      <div className="mb-7 grid grid-cols-[1.4fr_1fr] gap-[18px]">
+      {/* Top row: Tonight card + Stats. On mobile, Tonight goes full-width
+          and the 4 stat tiles (admin-level overview data) are hidden —
+          they're not useful on a gig-day phone view. */}
+      <div className="mb-7 grid grid-cols-1 gap-[18px] lg:grid-cols-[1.4fr_1fr]">
         <TonightCard gig={tonight} />
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="hidden grid-cols-2 gap-3 lg:grid">
           <Stat
             label="This month"
             value={thisMonth.length}
@@ -153,14 +155,14 @@ function TonightCard({
   const today = isToday(gig.startAt);
 
   return (
-    <div className="grid grid-cols-[1fr_auto] gap-4 rounded-[10px] bg-ink p-[22px_24px] text-paper">
-      <div>
+    <div className="flex w-full flex-col gap-4 overflow-hidden rounded-[10px] bg-ink p-5 text-paper md:grid md:grid-cols-[1fr_auto] md:p-[22px_24px]">
+      <div className="min-w-0">
         <div className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.24em] text-[#D49B84]">
           <span className="mr-1.5 text-accent">●</span>
           {today ? "Tonight" : "Next up"} ·{" "}
           <span>{formatLongDate(gig.startAt)}</span>
         </div>
-        <h3 className="font-serif text-[26px] font-light leading-[1.05] tracking-tight">
+        <h3 className="font-serif text-[22px] font-light leading-[1.1] tracking-tight break-words md:text-[26px]">
           {venue.name.split(" ").length > 1 ? (
             <>
               {venue.name.split(" ").slice(0, -1).join(" ")}{" "}
@@ -177,24 +179,36 @@ function TonightCard({
             {venue.sub}
           </div>
         )}
-        <div className="flex gap-7 border-t border-white/10 pt-3.5">
+        {/* Meta row: Call + Downbeat only on mobile. On stage + Band pay
+            are admin info for a glance on desktop. */}
+        <div className="flex flex-wrap gap-5 border-t border-white/10 pt-3.5 md:gap-7">
           <Meta label="Call" value={formatTime(gig.callTimeAt)} />
           <Meta label="Downbeat" value={formatTime(gig.startAt)} />
-          <Meta label="On stage" value={String(personnelCount)} />
-          <Meta label="Band pay" value={formatMoneyCents(bandPay)} />
+          <div className="hidden md:block">
+            <Meta label="On stage" value={String(personnelCount)} />
+          </div>
+          <div className="hidden md:block">
+            <Meta label="Band pay" value={formatMoneyCents(bandPay)} />
+          </div>
         </div>
       </div>
 
-      <div className="flex min-w-[170px] flex-col justify-between gap-1.5">
+      {/* Action column. On mobile only the Open button; Send / Email are
+          desktop-only until the SMS fanout is live. */}
+      <div className="flex w-full flex-col gap-1.5 md:min-w-[170px] md:justify-between">
         <TonightButton href={`/gigs/${gig.id}`} primary>
           Open record
         </TonightButton>
-        <TonightButton href="#" disabled>
-          Send gig alert
-        </TonightButton>
-        <TonightButton href="#" disabled>
-          Email gig sheet
-        </TonightButton>
+        <div className="hidden md:block">
+          <TonightButton href="#" disabled>
+            Send gig alert
+          </TonightButton>
+        </div>
+        <div className="hidden md:block">
+          <TonightButton href="#" disabled>
+            Email gig sheet
+          </TonightButton>
+        </div>
       </div>
     </div>
   );
@@ -273,90 +287,148 @@ function GigList({
     );
   }
 
-  // Column layout:
+  // 9-column layout for desktop (lg+):
   //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Pay · Status · Open
   const cols =
     "grid-cols-[70px_1.3fr_1.5fr_94px_140px_94px_94px_86px_64px]";
 
   return (
     <div className="text-[13px]">
-      <div
-        className={`grid ${cols} items-start gap-3 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute`}
-      >
-        <div>Date</div>
-        <div>Venue</div>
-        <div>Personnel</div>
-        <div>Load in</div>
-        <div>
-          Sound check
-          <div className="mt-0.5 font-medium normal-case tracking-normal text-[10px] leading-[1.3] text-ink">
-            all lines run, instruments set up, ready to play at this time
-          </div>
-        </div>
-        <div>Downbeat</div>
-        <div>Pay</div>
-        <div>Status</div>
-        <div></div>
-      </div>
-      {gigs.map((g) => {
-        const venue = gigVenueLabel(g.venue);
-        const today = isToday(g.startAt);
-        const bandPay = g.personnel
-          .filter((p) => !p.musician.isLeader)
-          .reduce((s, p) => s + p.payCents, 0);
-        const sideCount = g.personnel.filter((p) => !p.musician.isLeader).length;
-
-        return (
-          <Link
-            key={g.id}
-            href={`/gigs/${g.id}`}
-            className={`grid ${cols} items-center gap-3 border-b border-line px-1.5 py-3.5 transition-colors hover:bg-paper-warm ${
-              today ? "bg-paper-deep" : ""
-            }`}
-          >
-            <div className="font-serif leading-none">
-              <div className="text-[20px]">{formatDayNum(g.startAt)}</div>
-              <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-                {formatMonthAbbr(g.startAt)}
+      {/* Mobile card list (<lg): each gig renders as a self-contained card
+          with just the glance-critical info. No horizontal overflow. */}
+      <div className="flex flex-col gap-2 lg:hidden">
+        {gigs.map((g) => {
+          const venue = gigVenueLabel(g.venue);
+          const today = isToday(g.startAt);
+          const bandPay = g.personnel
+            .filter((p) => !p.musician.isLeader)
+            .reduce((s, p) => s + p.payCents, 0);
+          return (
+            <Link
+              key={g.id}
+              href={`/gigs/${g.id}`}
+              className={`flex items-center gap-3 rounded-[10px] border border-line bg-surface p-3 transition-colors hover:bg-paper-warm ${
+                today ? "border-accent/50 bg-paper-deep" : ""
+              }`}
+            >
+              <div className="w-[50px] shrink-0 text-center">
+                <div className="font-serif text-[22px] leading-none">
+                  {formatDayNum(g.startAt)}
+                </div>
+                <div className="mt-1 text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+                  {formatMonthAbbr(g.startAt)}
+                </div>
               </div>
-            </div>
-            <div className="font-serif text-[16px] leading-tight">
-              {venue.name}
-              {venue.sub && (
-                <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
-                  {venue.sub}
+              <div className="min-w-0 flex-1">
+                <div className="truncate font-serif text-[16px] leading-tight">
+                  {venue.name}
                 </div>
-              )}
-            </div>
-            <div className="text-[12px] leading-snug text-ink-soft">
-              {personnelSummary(g.personnel.map((p) => p.musician.name), 4)}
-            </div>
-            <div className="font-serif text-[13px] tabular-nums text-ink-soft">
-              {formatTime(g.loadInAt)}
-            </div>
-            <div className="font-serif text-[13px] tabular-nums text-ink-soft">
-              {formatTime(g.soundcheckAt)}
-            </div>
-            <div className="font-serif text-[13px] tabular-nums text-ink">
-              {formatTime(g.startAt)}
-            </div>
-            <div className="font-serif text-[13px] tabular-nums">
-              {formatMoneyCents(bandPay)}
-              {sideCount > 0 && (
-                <div className="mt-0.5 font-sans text-[10px] text-ink-mute">
-                  {sideCount} × band
+                {venue.sub && (
+                  <div className="mt-0.5 truncate text-[11px] text-ink-mute">
+                    {venue.sub}
+                  </div>
+                )}
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11.5px] text-ink-soft">
+                  <span className="font-serif tabular-nums">{formatTime(g.startAt)}</span>
+                  <span className="text-ink-mute">·</span>
+                  <span className="truncate">
+                    {personnelSummary(g.personnel.map((p) => p.musician.name), 3)}
+                  </span>
                 </div>
-              )}
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="font-serif text-[14px] tabular-nums">
+                  {formatMoneyCents(bandPay)}
+                </div>
+                <div className="mt-1">
+                  <StatusPill status={today ? "TONIGHT" : g.status} />
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Desktop grid (lg+): the full 9-column table. */}
+      <div className="hidden lg:block">
+        <div
+          className={`grid ${cols} items-start gap-3 border-b border-line-strong px-1.5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute`}
+        >
+          <div>Date</div>
+          <div>Venue</div>
+          <div>Personnel</div>
+          <div>Load in</div>
+          <div>
+            Sound check
+            <div className="mt-0.5 font-medium normal-case tracking-normal text-[10px] leading-[1.3] text-ink">
+              all lines run, instruments set up, ready to play at this time
             </div>
-            <div>
-              <StatusPill status={today ? "TONIGHT" : g.status} />
-            </div>
-            <div className="flex justify-end text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
-              Open →
-            </div>
-          </Link>
-        );
-      })}
+          </div>
+          <div>Downbeat</div>
+          <div>Pay</div>
+          <div>Status</div>
+          <div></div>
+        </div>
+        {gigs.map((g) => {
+          const venue = gigVenueLabel(g.venue);
+          const today = isToday(g.startAt);
+          const bandPay = g.personnel
+            .filter((p) => !p.musician.isLeader)
+            .reduce((s, p) => s + p.payCents, 0);
+          const sideCount = g.personnel.filter((p) => !p.musician.isLeader).length;
+
+          return (
+            <Link
+              key={g.id}
+              href={`/gigs/${g.id}`}
+              className={`grid ${cols} items-center gap-3 border-b border-line px-1.5 py-3.5 transition-colors hover:bg-paper-warm ${
+                today ? "bg-paper-deep" : ""
+              }`}
+            >
+              <div className="font-serif leading-none">
+                <div className="text-[20px]">{formatDayNum(g.startAt)}</div>
+                <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
+                  {formatMonthAbbr(g.startAt)}
+                </div>
+              </div>
+              <div className="font-serif text-[16px] leading-tight">
+                {venue.name}
+                {venue.sub && (
+                  <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
+                    {venue.sub}
+                  </div>
+                )}
+              </div>
+              <div className="text-[12px] leading-snug text-ink-soft">
+                {personnelSummary(g.personnel.map((p) => p.musician.name), 4)}
+              </div>
+              <div className="font-serif text-[13px] tabular-nums text-ink-soft">
+                {formatTime(g.loadInAt)}
+              </div>
+              <div className="font-serif text-[13px] tabular-nums text-ink-soft">
+                {formatTime(g.soundcheckAt)}
+              </div>
+              <div className="font-serif text-[13px] tabular-nums text-ink">
+                {formatTime(g.startAt)}
+              </div>
+              <div className="font-serif text-[13px] tabular-nums">
+                {formatMoneyCents(bandPay)}
+                {sideCount > 0 && (
+                  <div className="mt-0.5 font-sans text-[10px] text-ink-mute">
+                    {sideCount} × band
+                  </div>
+                )}
+              </div>
+              <div>
+                <StatusPill status={today ? "TONIGHT" : g.status} />
+              </div>
+              <div className="flex justify-end text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
+                Open →
+              </div>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
