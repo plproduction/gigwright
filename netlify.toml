@@ -1,14 +1,15 @@
 [build]
   command = "npm run build"
-  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
 
-# Netlify's Next.js runtime auto-installs — no plugin block needed.
-# It handles App Router, proxy.ts (Next 16 middleware), ISR, and image
-# optimization out of the box for Next 16.
+# Explicitly declare the Next.js runtime so App Router pages get compiled
+# into Netlify Functions/Edge Functions. Without this the first deploy
+# uploaded static HTML only and every dynamic route 404'd.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
 
 # Redirect www → apex (mirrors what next.config.ts does today — Netlify
 # honors redirects() in next.config.ts via the runtime, but we also set a
