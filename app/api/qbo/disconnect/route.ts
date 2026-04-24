@@ -13,7 +13,7 @@ export async function POST() {
     await db.qboConnection.delete({ where: { userId: user.id } });
   }
   return NextResponse.redirect(
-    `${process.env.AUTH_URL ?? "https://gigwright.vercel.app"}/settings/integrations?qbo=disconnected`,
+    `${process.env.AUTH_URL ?? "https://gigwright.com"}/settings/integrations?qbo=disconnected`,
     { status: 303 },
   );
 }

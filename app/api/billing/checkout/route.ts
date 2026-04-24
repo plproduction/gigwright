@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const origin =
     req.headers.get("origin") ??
     process.env.AUTH_URL ??
-    "https://gigwright.vercel.app";
+    "https://gigwright.com";
 
   // Upsert the Stripe Customer so the subscription is attached to a stable id
   let customerId = user.stripeCustomerId;

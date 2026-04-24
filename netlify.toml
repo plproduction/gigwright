@@ -1,0 +1,21 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+# Netlify's Next.js runtime auto-installs — no plugin block needed.
+# It handles App Router, proxy.ts (Next 16 middleware), ISR, and image
+# optimization out of the box for Next 16.
+
+# Redirect www → apex (mirrors what next.config.ts does today — Netlify
+# honors redirects() in next.config.ts via the runtime, but we also set a
+# host-level redirect here as a belt-and-suspenders for edge cases where
+# the runtime hasn't loaded yet).
+[[redirects]]
+  from = "https://www.gigwright.com/*"
+  to = "https://gigwright.com/:splat"
+  status = 307
+  force = true

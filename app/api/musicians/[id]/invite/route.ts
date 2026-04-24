@@ -28,7 +28,8 @@ export async function POST(
     );
   }
 
-  const signInUrl = `https://gigwright.vercel.app/signin?callbackUrl=${encodeURIComponent(
+  const baseUrl = process.env.AUTH_URL ?? "https://gigwright.com";
+  const signInUrl = `${baseUrl}/signin?callbackUrl=${encodeURIComponent(
     "/my-gigs",
   )}`;
 

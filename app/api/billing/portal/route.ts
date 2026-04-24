@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const origin =
     req.headers.get("origin") ??
     process.env.AUTH_URL ??
-    "https://gigwright.vercel.app";
+    "https://gigwright.com";
 
   const session = await stripe().billingPortal.sessions.create({
     customer: user.stripeCustomerId,
