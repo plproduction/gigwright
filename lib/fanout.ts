@@ -11,6 +11,7 @@ import { formatLongDate, formatTime, mapLink } from "@/lib/format";
 type FanoutOpts = {
   gigId: string;
   triggerLabel?: string; // e.g. "Time changed" or "Set list updated"
+  message?: string; // bandleader's free-form note for this update — rendered at the top
   includeLeader?: boolean; // usually false (don't spam yourself)
 };
 
@@ -38,6 +39,46 @@ export async function fanOutGigUpdate(
     },
   });
   if (!gig) throw new Error("Gig not found");
+
+  // Lineup: who's on the gig. Each musician gets a "Drew Tucker — Drums"
+  // line; the leader is tagged so musicians can tell at a glance who's
+  // driving. We use the per-row roleLabel if present, else the musician's
+  // first role from their roster card.
+  const lineup = gig.personnel.map((p) => ({
+    name: p.musician.name,
+    role: p.roleLabel ?? p.musician.roles[0] ?? null,
+    isLeader: p.musician.isLeader,
+  }));
+
+  // Single source of truth for the email context — used for both each
+  // musician's send AND the bandleader's self-copy at the end. Only the
+  // recipient's first name varies between sends.
+  function buildCtx(over: { firstName: string }): Ctx {
+    return {
+      firstName: over.firstName,
+      bandleader,
+      triggerLabel: opts.triggerLabel,
+      message: opts.message,
+      gigId: gig!.id,
+      venueName: gig!.venue?.name ?? "Venue TBD",
+      venueAddress: [
+        gig!.venue?.addressL1,
+        [gig!.venue?.city, gig!.venue?.state].filter(Boolean).join(", "),
+      ]
+        .filter(Boolean)
+        .join(", "),
+      mapLink: mapLink(gig!.venue ?? {}),
+      longDate: formatLongDate(gig!.startAt),
+      loadIn: gig!.loadInAt ? formatTime(gig!.loadInAt) : null,
+      soundcheck: gig!.soundcheckAt ? formatTime(gig!.soundcheckAt) : null,
+      call: gig!.callTimeAt ? formatTime(gig!.callTimeAt) : null,
+      downbeat: formatTime(gig!.startAt),
+      attire: gig!.attire,
+      loadingInfo: gig!.loadingInfo,
+      loadingMapLink: gig!.loadingMapLink,
+      lineup,
+    };
+  }
 
   const bandleader =
     gig.owner?.name ?? gig.owner?.email?.split("@")[0] ?? "Your bandleader";
@@ -99,64 +140,12 @@ export async function fanOutGigUpdate(
           to: p.musician.email,
           ...(replyTo ? { reply_to: replyTo } : {}),
           subject,
-          html: renderHtml({
+          html: renderHtml(buildCtx({
             firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
-            bandleader,
-            triggerLabel: opts.triggerLabel,
-            gigId: gig.id,
-            venueName: gig.venue?.name ?? "Venue TBD",
-            venueAddress: [
-              gig.venue?.addressL1,
-              [gig.venue?.city, gig.venue?.state].filter(Boolean).join(", "),
-            ]
-              .filter(Boolean)
-              .join(", "),
-            mapLink: mapLink(gig.venue ?? {}),
-            longDate: formatLongDate(gig.startAt),
-            loadIn: gig.loadInAt ? formatTime(gig.loadInAt) : null,
-            soundcheck: gig.soundcheckAt ? formatTime(gig.soundcheckAt) : null,
-            call: gig.callTimeAt ? formatTime(gig.callTimeAt) : null,
-            downbeat: formatTime(gig.startAt),
-            attire: gig.attire,
-            notes: gig.notes,
-            setlistUrl: gig.setlistUrl,
-            setlistFileName: gig.setlistFileName,
-            materialsUrl: gig.materialsUrl,
-            soundContactName: gig.soundContactName,
-            soundContactPhone: gig.soundContactPhone,
-            myPayCents: p.musician.isLeader ? null : p.payCents,
-            paidAt: p.paidAt,
-            w9Received: p.musician.w9Received,
-          }),
-          text: renderText({
+          })),
+          text: renderText(buildCtx({
             firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
-            bandleader,
-            triggerLabel: opts.triggerLabel,
-            gigId: gig.id,
-            venueName: gig.venue?.name ?? "Venue TBD",
-            venueAddress: [
-              gig.venue?.addressL1,
-              [gig.venue?.city, gig.venue?.state].filter(Boolean).join(", "),
-            ]
-              .filter(Boolean)
-              .join(", "),
-            mapLink: mapLink(gig.venue ?? {}),
-            longDate: formatLongDate(gig.startAt),
-            loadIn: gig.loadInAt ? formatTime(gig.loadInAt) : null,
-            soundcheck: gig.soundcheckAt ? formatTime(gig.soundcheckAt) : null,
-            call: gig.callTimeAt ? formatTime(gig.callTimeAt) : null,
-            downbeat: formatTime(gig.startAt),
-            attire: gig.attire,
-            notes: gig.notes,
-            setlistUrl: gig.setlistUrl,
-            setlistFileName: gig.setlistFileName,
-            materialsUrl: gig.materialsUrl,
-            soundContactName: gig.soundContactName,
-            soundContactPhone: gig.soundContactPhone,
-            myPayCents: p.musician.isLeader ? null : p.payCents,
-            paidAt: p.paidAt,
-            w9Received: p.musician.w9Received,
-          }),
+          })),
         }),
       });
       if (!emailRes.ok) {
@@ -241,60 +230,26 @@ export async function fanOutGigUpdate(
   }
 
   // Self-copy to the bandleader so they can see exactly what their musicians
-  // are getting — same template, minus the per-musician pay row, with a
-  // `[your copy]` subject prefix so it's filterable in the inbox. Skipped if
-  // the owner has no email on file or AUTH_RESEND_KEY is missing.
+  // are getting — same template, with a `[your copy]` subject prefix and a
+  // "Sent to: …" footer listing recipients. Skipped if the owner has no
+  // email on file or AUTH_RESEND_KEY is missing.
   if (gig.owner?.email && apiKey) {
     try {
       const subject = opts.triggerLabel
         ? `[your copy] GigWright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
         : `[your copy] GigWright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
-      const ctx = {
-        // Render as if addressed to the bandleader — first name only, no pay row,
-        // and "W-9 ✓" so the nag line stays out of their copy.
+      const ctx = buildCtx({
         firstName: bandleader.split(" ")[0] ?? bandleader,
-        bandleader,
-        triggerLabel: opts.triggerLabel,
-        gigId: gig.id,
-        venueName: gig.venue?.name ?? "Venue TBD",
-        venueAddress: [
-          gig.venue?.addressL1,
-          [gig.venue?.city, gig.venue?.state].filter(Boolean).join(", "),
-        ]
-          .filter(Boolean)
-          .join(", "),
-        mapLink: mapLink(gig.venue ?? {}),
-        longDate: formatLongDate(gig.startAt),
-        loadIn: gig.loadInAt ? formatTime(gig.loadInAt) : null,
-        soundcheck: gig.soundcheckAt ? formatTime(gig.soundcheckAt) : null,
-        call: gig.callTimeAt ? formatTime(gig.callTimeAt) : null,
-        downbeat: formatTime(gig.startAt),
-        attire: gig.attire,
-        notes: gig.notes,
-        setlistUrl: gig.setlistUrl,
-        setlistFileName: gig.setlistFileName,
-        materialsUrl: gig.materialsUrl,
-        soundContactName: gig.soundContactName,
-        soundContactPhone: gig.soundContactPhone,
-        myPayCents: null,
-        paidAt: null,
-        w9Received: true,
-      };
-      const recipientList =
+      });
+      const recipientLine =
         result.recipients.length > 0
-          ? `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;font-size:12px;color:#888;line-height:1.5">Sent to: ${result.recipients
-              .map((n) => escapeHtml(n))
-              .join(", ")}</p>`
-          : "";
+          ? `Sent to: ${result.recipients.join(", ")}`
+          : "No musicians on the gig had an email on file.";
       const html = renderHtml(ctx).replace(
-        '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">',
-        `${recipientList}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">`,
+        '<!--RECIPIENTS-->',
+        `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;font-size:12px;color:#888;line-height:1.5">${escapeHtml(recipientLine)}</p>`,
       );
-      const text =
-        renderText(ctx) +
-        (result.recipients.length > 0
-          ? `\n\nSent to: ${result.recipients.join(", ")}`
-          : "");
+      const text = renderText(ctx) + `\n\n${recipientLine}`;
       await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -335,6 +290,7 @@ type Ctx = {
   firstName: string;
   bandleader: string;
   triggerLabel?: string;
+  message?: string; // bandleader's free-form note for this update
   gigId: string;
   venueName: string;
   venueAddress: string;
@@ -345,66 +301,67 @@ type Ctx = {
   call: string | null;
   downbeat: string;
   attire: string | null;
-  notes: string | null;
-  setlistUrl: string | null;
-  setlistFileName: string | null;
-  materialsUrl: string | null;
-  soundContactName: string | null;
-  soundContactPhone: string | null;
-  myPayCents: number | null;
-  paidAt: Date | null;
-  w9Received: boolean;
+  loadingInfo: string | null;
+  loadingMapLink: string | null;
+  lineup: Array<{ name: string; role: string | null; isLeader: boolean }>;
 };
 
 function renderText(c: Ctx): string {
   const lines: string[] = [];
   lines.push(`Hi ${c.firstName},`);
   lines.push("");
-  if (c.triggerLabel) lines.push(`Update from ${c.bandleader}: ${c.triggerLabel}.`);
-  else lines.push(`Gig info from ${c.bandleader}:`);
-  lines.push("");
+
+  // The bandleader's message comes FIRST — that's the "new info" they're
+  // pushing out, and it's what the band cares about most. The structural
+  // gig details follow as a reference.
+  if (c.message) {
+    lines.push(c.message.trim());
+    lines.push("");
+    lines.push("───");
+    lines.push("");
+  } else if (c.triggerLabel) {
+    lines.push(`Update from ${c.bandleader}: ${c.triggerLabel}.`);
+    lines.push("");
+  } else {
+    lines.push(`Gig info from ${c.bandleader}:`);
+    lines.push("");
+  }
+
+  // Meat and potatoes — date, venue, map.
   lines.push(`📅 ${c.longDate}`);
   lines.push(`📍 ${c.venueName}${c.venueAddress ? ` — ${c.venueAddress}` : ""}`);
   if (c.mapLink) lines.push(`   Map: ${c.mapLink}`);
   lines.push("");
+
+  // Times.
   if (c.loadIn) lines.push(`Load in:     ${c.loadIn}`);
-  if (c.soundcheck)
-    lines.push(`Sound check: ${c.soundcheck}  (all lines run, instruments set up, ready to play)`);
+  if (c.soundcheck) lines.push(`Sound check: ${c.soundcheck}`);
   if (c.call) lines.push(`Call:        ${c.call}`);
   lines.push(`Downbeat:    ${c.downbeat}`);
-  lines.push("");
-  if (c.attire) lines.push(`Attire: ${c.attire}`);
-  if (c.soundContactName) {
-    lines.push(
-      `Sound engineer: ${c.soundContactName}${c.soundContactPhone ? ` (${c.soundContactPhone})` : ""}`,
-    );
-  }
-  if (c.setlistUrl) {
+  if (c.attire) {
     lines.push("");
-    lines.push(`Set list: ${c.setlistFileName ?? c.setlistUrl}`);
-    lines.push(`   ${c.setlistUrl}`);
+    lines.push(`Attire: ${c.attire}`);
   }
-  if (c.materialsUrl) {
-    lines.push(`Gig materials: ${c.materialsUrl}`);
-  }
-  if (c.notes) {
+
+  // Loading info — where to actually pull up + unload.
+  if (c.loadingInfo || c.loadingMapLink) {
     lines.push("");
-    lines.push(`Notes: ${c.notes}`);
+    lines.push(`Load-in spot:`);
+    if (c.loadingInfo) lines.push(`  ${c.loadingInfo.replace(/\n/g, "\n  ")}`);
+    if (c.loadingMapLink) lines.push(`  Map: ${c.loadingMapLink}`);
   }
-  if (c.myPayCents != null) {
+
+  // Lineup — who's on the gig.
+  if (c.lineup.length > 0) {
     lines.push("");
-    lines.push(
-      `Your pay: $${(c.myPayCents / 100).toFixed(
-        c.myPayCents % 100 === 0 ? 0 : 2,
-      )}${c.paidAt ? " (paid)" : ""}`,
-    );
+    lines.push(`Lineup:`);
+    for (const m of c.lineup) {
+      const tag = m.isLeader ? " (leader)" : "";
+      const role = m.role ? ` — ${m.role}` : "";
+      lines.push(`  • ${m.name}${role}${tag}`);
+    }
   }
-  lines.push("");
-  lines.push(
-    c.w9Received
-      ? "W-9: ✓ on file"
-      : "W-9: not yet received — please send one if you haven't.",
-  );
+
   lines.push("");
   lines.push(`Full gig sheet (no login needed):`);
   lines.push(`https://gigwright.com/g/${c.gigId}`);
@@ -414,33 +371,45 @@ function renderText(c: Ctx): string {
 }
 
 function renderHtml(c: Ctx): string {
-  const pay =
-    c.myPayCents != null
-      ? `<tr><td style="color:#555;padding:4px 0">Your pay</td><td style="color:#111;text-align:right;padding:4px 0"><strong>$${(
-          c.myPayCents / 100
-        ).toFixed(c.myPayCents % 100 === 0 ? 0 : 2)}</strong>${
-          c.paidAt ? ' <span style="color:#2E6B3B;font-size:11px">✓ paid</span>' : ""
-        }</td></tr>`
-      : "";
-  const setlistLine = c.setlistUrl
-    ? `<p style="margin:12px 0 0"><a href="${c.setlistUrl}" style="color:#7E2418;font-weight:600">📄 ${c.setlistFileName ?? "Open set list"}</a></p>`
-    : "";
-  const materialsLine = c.materialsUrl
-    ? `<p style="margin:8px 0 0"><a href="${c.materialsUrl}" style="color:#7E2418;font-weight:600">Gig materials folder →</a></p>`
-    : "";
+  // Order: Greeting → Bandleader's message (top, highlighted) → Venue+date
+  // → Times → Attire → Load-in spot → Lineup → Footer.
+  // Cut: pay, W-9, set list link, materials link, sound engineer, gig.notes.
   const mapLine = c.mapLink
     ? `<p style="margin:4px 0 0"><a href="${c.mapLink}" style="color:#7E2418;font-size:13px;font-weight:600">Open in Maps →</a></p>`
     : "";
-  const soundLine = c.soundContactName
-    ? `<p style="margin:10px 0 0;font-size:13px;color:#555">Sound engineer: <strong>${c.soundContactName}</strong>${
-        c.soundContactPhone
-          ? ` · <a href="tel:${c.soundContactPhone.replace(/[^0-9+]/g, "")}" style="color:#7E2418">${c.soundContactPhone}</a>`
-          : ""
-      }</p>`
+  const messageBlock = c.message
+    ? `<div style="margin:20px 0 0;padding:16px 18px;background:#F4E1DB;border:1px solid #7E2418;border-radius:8px;color:#3a1109;font-size:14px;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>`
     : "";
-  const trigger = c.triggerLabel
-    ? `<div style="background:#F4E1DB;border:1px solid #7E2418;border-radius:6px;padding:10px 14px;color:#7E2418;font-size:13px;font-weight:600;margin:0 0 20px">${c.triggerLabel}</div>`
-    : "";
+  const triggerLine =
+    !c.message && c.triggerLabel
+      ? `<p style="margin:16px 0 0;padding:8px 12px;background:#F4E1DB;border:1px solid #7E2418;border-radius:6px;color:#7E2418;font-size:13px;font-weight:600">${escapeHtml(c.triggerLabel)}</p>`
+      : "";
+  const triggerSubline =
+    c.message && c.triggerLabel
+      ? `<p style="margin:8px 0 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em">${escapeHtml(c.triggerLabel)}</p>`
+      : "";
+  const loadingBlock =
+    c.loadingInfo || c.loadingMapLink
+      ? `<div style="margin:16px 0 0;padding:14px 16px;background:#F8F4EC;border:1px solid #E5E2D8;border-radius:6px">
+          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#7E2418;text-transform:uppercase">Load-in spot</p>
+          ${c.loadingInfo ? `<p style="margin:0;font-size:13px;color:#111;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>` : ""}
+          ${c.loadingMapLink ? `<p style="margin:6px 0 0;font-size:12px"><a href="${c.loadingMapLink}" style="color:#7E2418;font-weight:600">Open load-in map →</a></p>` : ""}
+        </div>`
+      : "";
+  const lineupBlock =
+    c.lineup.length > 0
+      ? `<div style="margin:20px 0 0;padding-top:16px;border-top:1px solid #E5E2D8">
+          <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#888;text-transform:uppercase">Lineup</p>
+          <ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#111;line-height:1.7">
+            ${c.lineup
+              .map(
+                (m) =>
+                  `<li>${escapeHtml(m.name)}${m.role ? ` <span style="color:#888">— ${escapeHtml(m.role)}</span>` : ""}${m.isLeader ? ` <span style="color:#7E2418;font-size:11px;font-weight:600">· leader</span>` : ""}</li>`,
+              )
+              .join("")}
+          </ul>
+        </div>`
+      : "";
   return `<!DOCTYPE html>
 <html>
   <body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
@@ -448,40 +417,37 @@ function renderHtml(c: Ctx): string {
       <div style="font-family:Georgia,serif;font-size:18px;font-weight:500;letter-spacing:-0.02em;padding-bottom:14px;border-bottom:1px solid #E5E2D8;color:#111">
         Gig<span style="color:#7E2418;font-weight:300">Wright</span>
       </div>
-      <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${c.firstName},</p>
-      ${trigger ? `<div style="margin-top:16px">${trigger}</div>` : ""}
-      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;line-height:1.15;margin:${trigger ? "0" : "16px"} 0 4px;color:#111">
-        ${c.venueName}
+      <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${escapeHtml(c.firstName)},</p>
+
+      ${messageBlock}
+      ${triggerLine}
+      ${triggerSubline}
+
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;line-height:1.15;margin:24px 0 4px;color:#111">
+        ${escapeHtml(c.venueName)}
       </h1>
-      <p style="color:#555;font-size:14px;margin:0 0 6px">${c.longDate}</p>
-      ${c.venueAddress ? `<p style="margin:0;font-size:13px;color:#555">${c.venueAddress}</p>` : ""}
+      <p style="color:#555;font-size:14px;margin:0 0 6px">${escapeHtml(c.longDate)}</p>
+      ${c.venueAddress ? `<p style="margin:0;font-size:13px;color:#555">${escapeHtml(c.venueAddress)}</p>` : ""}
       ${mapLine}
 
       <table style="width:100%;margin-top:20px;border-top:1px solid #E5E2D8;border-collapse:collapse;font-size:14px">
-        ${c.loadIn ? `<tr><td style="color:#555;padding:6px 0">Load in</td><td style="color:#111;text-align:right;padding:6px 0">${c.loadIn}</td></tr>` : ""}
-        ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check<br/><span style="font-size:11px;color:#888">all lines run, instruments set up, ready to play at this time</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${c.soundcheck}</td></tr>` : ""}
-        ${c.call ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Call</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${c.call}</td></tr>` : ""}
-        <tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8"><strong>Downbeat</strong></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8"><strong>${c.downbeat}</strong></td></tr>
-        ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${c.attire}</td></tr>` : ""}
-        ${pay ? `<tr><td colspan="2" style="border-top:1px solid #E5E2D8;padding-top:4px"></td></tr>${pay}` : ""}
+        ${c.loadIn ? `<tr><td style="color:#555;padding:6px 0">Load in</td><td style="color:#111;text-align:right;padding:6px 0">${escapeHtml(c.loadIn)}</td></tr>` : ""}
+        ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.soundcheck)}</td></tr>` : ""}
+        ${c.call ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Call</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.call)}</td></tr>` : ""}
+        <tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8"><strong>Downbeat</strong></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8"><strong>${escapeHtml(c.downbeat)}</strong></td></tr>
+        ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.attire)}</td></tr>` : ""}
       </table>
 
-      ${setlistLine}
-      ${materialsLine}
-      ${soundLine}
+      ${loadingBlock}
+      ${lineupBlock}
 
-      ${c.notes ? `<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;font-size:13px;color:#494336;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.notes)}</p>` : ""}
+      <!--RECIPIENTS-->
 
       <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">
-        <p style="margin:0 0 4px">${
-          c.w9Received
-            ? "W-9: ✓ on file"
-            : "W-9: not yet received — please send one if you haven't."
-        }</p>
         <p style="margin:0">
           <a href="https://gigwright.com/g/${c.gigId}" style="color:#7E2418">View the full gig sheet on GigWright →</a>
         </p>
-        <p style="margin:8px 0 0">Sent on behalf of <strong>${c.bandleader}</strong>.</p>
+        <p style="margin:8px 0 0">Sent on behalf of <strong>${escapeHtml(c.bandleader)}</strong>.</p>
       </div>
     </div>
   </body>

@@ -19,9 +19,9 @@ export async function POST(
     return NextResponse.json({ error: "gig not found" }, { status: 404 });
   }
 
-  let body: { triggerLabel?: string } = {};
+  let body: { triggerLabel?: string; message?: string } = {};
   try {
-    body = (await req.json()) as { triggerLabel?: string };
+    body = (await req.json()) as { triggerLabel?: string; message?: string };
   } catch {
     // no body — fine
   }
@@ -29,6 +29,7 @@ export async function POST(
   const result = await fanOutGigUpdate({
     gigId: id,
     triggerLabel: body.triggerLabel,
+    message: body.message,
   });
   return NextResponse.json(result);
 }
