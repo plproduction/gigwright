@@ -42,7 +42,12 @@ export async function fanOutGigUpdate(
     gig.owner?.name ?? gig.owner?.email?.split("@")[0] ?? "Your bandleader";
 
   const apiKey = process.env.AUTH_RESEND_KEY;
-  const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const fromAddress = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  // RFC 5322 display-name format so inboxes show "Patrick Lamb" instead of
+  // a bare email. Quote-escape the name to keep weird characters safe.
+  const fromName = (gig.owner?.name ?? bandleader).replace(/"/g, '\\"');
+  const from = `"${fromName}" <${fromAddress}>`;
+  const replyTo = gig.owner?.email ?? undefined;
 
   const result: FanoutResult = {
     emailsSent: 0,
@@ -75,6 +80,7 @@ export async function fanOutGigUpdate(
         body: JSON.stringify({
           from,
           to: p.musician.email,
+          ...(replyTo ? { reply_to: replyTo } : {}),
           subject,
           html: renderHtml({
             firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
