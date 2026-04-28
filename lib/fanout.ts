@@ -29,7 +29,7 @@ export async function fanOutGigUpdate(
     where: { id: opts.gigId },
     include: {
       venue: true,
-      owner: { select: { name: true, email: true } },
+      owner: { select: { name: true, email: true, senderEmail: true } },
       personnel: {
         include: { musician: true },
         orderBy: { position: "asc" },
@@ -42,10 +42,15 @@ export async function fanOutGigUpdate(
     gig.owner?.name ?? gig.owner?.email?.split("@")[0] ?? "Your bandleader";
 
   const apiKey = process.env.AUTH_RESEND_KEY;
-  const fromAddress = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
-  // RFC 5322 display-name format so inboxes show "Patrick Lamb" instead of
-  // a bare email. Quote-escape the name to keep weird characters safe.
-  const fromName = (gig.owner?.name ?? bandleader).replace(/"/g, '\\"');
+  // Sender resolution: if the bandleader has a custom senderEmail set
+  // (and its domain is verified at Resend), send as "Name" <their@addr>.
+  // Otherwise use the standardized GigWright sender with the bandleader's
+  // name attributed in the display: "Name via GigWright" <gigs@gigwright.com>.
+  const fallbackFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const useOwnDomain = !!gig.owner?.senderEmail;
+  const fromAddress = useOwnDomain ? gig.owner!.senderEmail! : fallbackFrom;
+  const baseName = (gig.owner?.name ?? bandleader).replace(/"/g, '\\"');
+  const fromName = useOwnDomain ? baseName : `${baseName} via GigWright`;
   const from = `"${fromName}" <${fromAddress}>`;
   const replyTo = gig.owner?.email ?? undefined;
 

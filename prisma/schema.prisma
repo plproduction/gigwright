@@ -43,6 +43,12 @@ model User {
   stripeSubscriptionId String?  @unique
   currentPeriodEnd     DateTime?
 
+  // Custom sender for outbound fanout emails. When set, fanout sends as
+  // "{User.name}" <{senderEmail}> (and the user's domain must be verified
+  // at Resend). When null, fanout falls back to "{User.name} via GigWright"
+  // <{EMAIL_FROM}>.
+  senderEmail String?
+
   accounts  Account[]
   sessions  Session[]
   venues    Venue[]
