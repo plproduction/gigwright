@@ -17,9 +17,10 @@ type FanoutOpts = {
 type FanoutResult = {
   emailsSent: number;
   emailsSkipped: number;
-  smsSent: number; // always 0 until Twilio comes online
+  smsSent: number;
+  smsSkipped: number;
   recipients: string[];
-  errors: Array<{ name: string; message: string }>;
+  errors: Array<{ name: string; message: string; channel?: "email" | "sms" }>;
 };
 
 export async function fanOutGigUpdate(
@@ -58,9 +59,20 @@ export async function fanOutGigUpdate(
     emailsSent: 0,
     emailsSkipped: 0,
     smsSent: 0,
+    smsSkipped: 0,
     recipients: [],
     errors: [],
   };
+
+  const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+  const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioMessagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+  const twilioFromNumber = process.env.TWILIO_PHONE_NUMBER;
+  const smsEnabled = !!(
+    twilioSid &&
+    twilioToken &&
+    (twilioMessagingServiceSid || twilioFromNumber)
+  );
 
   for (const p of gig.personnel) {
     if (!opts.includeLeader && p.musician.isLeader) continue;
@@ -151,6 +163,7 @@ export async function fanOutGigUpdate(
         const detail = await emailRes.text().catch(() => "");
         result.errors.push({
           name: p.musician.name,
+          channel: "email",
           message: `Resend ${emailRes.status}: ${detail.slice(0, 240)}`,
         });
       } else {
@@ -160,20 +173,80 @@ export async function fanOutGigUpdate(
     } catch (err) {
       result.errors.push({
         name: p.musician.name,
+        channel: "email",
         message: err instanceof Error ? err.message : "unknown",
       });
     }
 
-    // TODO: SMS fanout — when Twilio 10DLC approves, wire a second branch
-    // here that fires a short text with the same triggerLabel and a link.
-    // For now, skip without noise.
+    // SMS branch — sends a short text via Twilio for any musician who has
+    // notifyBySms=true and a phone on file. Skips silently if Twilio creds
+    // aren't fully configured (e.g. AUTH_TOKEN missing or 10DLC pending).
+    if (!smsEnabled) {
+      result.smsSkipped++;
+    } else if (!p.musician.notifyBySms) {
+      result.smsSkipped++;
+    } else if (!p.musician.phone) {
+      result.smsSkipped++;
+    } else {
+      try {
+        const to = normalizePhone(p.musician.phone);
+        const body = renderSms({
+          firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
+          bandleader,
+          triggerLabel: opts.triggerLabel,
+          gigId: gig.id,
+          venueName: gig.venue?.name ?? "Venue TBD",
+          longDate: formatLongDate(gig.startAt),
+          downbeat: formatTime(gig.startAt),
+        });
+        const form = new URLSearchParams();
+        form.set("To", to);
+        form.set("Body", body);
+        if (twilioMessagingServiceSid) {
+          form.set("MessagingServiceSid", twilioMessagingServiceSid);
+        } else if (twilioFromNumber) {
+          form.set("From", twilioFromNumber);
+        }
+        const smsRes = await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization:
+                "Basic " +
+                Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64"),
+            },
+            body: form.toString(),
+          },
+        );
+        if (!smsRes.ok) {
+          const detail = await smsRes.text().catch(() => "");
+          result.errors.push({
+            name: p.musician.name,
+            channel: "sms",
+            message: `Twilio ${smsRes.status}: ${detail.slice(0, 240)}`,
+          });
+        } else {
+          result.smsSent++;
+        }
+      } catch (err) {
+        result.errors.push({
+          name: p.musician.name,
+          channel: "sms",
+          message: err instanceof Error ? err.message : "unknown",
+        });
+      }
+    }
   }
 
   await db.activity.create({
     data: {
       gigId: opts.gigId,
       action: "fanout_sent",
-      summary: `Emailed ${result.emailsSent} · ${opts.triggerLabel ?? "update"}`,
+      summary: `Emailed ${result.emailsSent} · Texted ${result.smsSent} · ${
+        opts.triggerLabel ?? "update"
+      }`,
       payload: { triggerLabel: opts.triggerLabel, ...result } as object,
     },
   });
@@ -345,6 +418,32 @@ function formatDayShort(d: Date): string {
     month: "short",
     day: "numeric",
   });
+}
+
+// Normalize a phone string to E.164 (+15035551234). If it already starts
+// with "+", trust it. Otherwise strip non-digits and prepend "+1" — works
+// for the US-only roster GigWright targets today.
+function normalizePhone(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("+")) return "+" + trimmed.slice(1).replace(/[^0-9]/g, "");
+  const digits = trimmed.replace(/[^0-9]/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return `+1${digits}`;
+}
+
+function renderSms(c: {
+  firstName: string;
+  bandleader: string;
+  triggerLabel?: string;
+  gigId: string;
+  venueName: string;
+  longDate: string;
+  downbeat: string;
+}): string {
+  const lead = c.triggerLabel
+    ? `${c.bandleader}: ${c.triggerLabel}`
+    : `${c.bandleader} sent gig info`;
+  return `${lead}\n${c.venueName} · ${c.longDate} · ${c.downbeat}\nFull sheet: https://gigwright.com/g/${c.gigId}`;
 }
 
 function escapeHtml(s: string): string {

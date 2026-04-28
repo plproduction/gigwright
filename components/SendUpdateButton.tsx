@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 
-// "Send update" button on the gig detail header. Fires an email fanout to
-// every personnel with notifyByEmail=true and an email on file. SMS fanout
-// is queued until Twilio 10DLC approves.
+// "Send update" button on the gig detail header. Fires email + SMS fanout
+// to every personnel with the matching notify flag and contact info on
+// file. Email goes via Resend, SMS via Twilio.
 //
 // Optional trigger label lets the admin tag what changed — shows up as a
 // prominent banner in the email ("Call time changed", etc.) — but the
@@ -31,13 +31,16 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
       const json = (await res.json()) as {
         emailsSent: number;
         emailsSkipped: number;
-        errors?: Array<{ name: string; message: string }>;
+        smsSent: number;
+        smsSkipped: number;
+        errors?: Array<{ name: string; message: string; channel?: "email" | "sms" }>;
       };
       const errCount = json.errors?.length ?? 0;
+      const base = `Emailed ${json.emailsSent} · Texted ${json.smsSent}`;
       setResult(
         errCount > 0
-          ? `Emailed ${json.emailsSent}, ${errCount} error${errCount === 1 ? "" : "s"}`
-          : `Emailed ${json.emailsSent} · ${json.emailsSkipped} skipped`,
+          ? `${base} · ${errCount} error${errCount === 1 ? "" : "s"}`
+          : base,
       );
       setConfirming(false);
       setLabel("");
