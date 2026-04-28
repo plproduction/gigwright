@@ -76,6 +76,10 @@ export async function fanOutGigUpdate(
       attire: gig!.attire,
       loadingInfo: gig!.loadingInfo,
       loadingMapLink: gig!.loadingMapLink,
+      setlistUrl: gig!.setlistUrl,
+      setlistFileName: gig!.setlistFileName,
+      materialsUrl: gig!.materialsUrl,
+      notes: gig!.notes,
       lineup,
     };
   }
@@ -303,12 +307,30 @@ type Ctx = {
   attire: string | null;
   loadingInfo: string | null;
   loadingMapLink: string | null;
+  setlistUrl: string | null;
+  setlistFileName: string | null;
+  materialsUrl: string | null;
+  notes: string | null;
   lineup: Array<{ name: string; role: string | null; isLeader: boolean }>;
 };
 
+// Standard explanation for "Sound check" — always travels with the term so
+// musicians know exactly what's expected at that time. Same wording in HTML
+// and text emails so there's one source of truth.
+const SOUNDCHECK_EXPLAINER =
+  "all lines run, instruments set up, ready to play at this time";
+
+// Roster names are sometimes lowercased ("patrick"). Rendered emails should
+// always greet with proper case ("Patrick"). Handles unicode-safe first-char
+// capitalization.
+function capitalize(s: string): string {
+  if (!s) return s;
+  return s.charAt(0).toLocaleUpperCase() + s.slice(1);
+}
+
 function renderText(c: Ctx): string {
   const lines: string[] = [];
-  lines.push(`Hi ${c.firstName},`);
+  lines.push(`Hi ${capitalize(c.firstName)},`);
   lines.push("");
 
   // The bandleader's message comes FIRST — that's the "new info" they're
@@ -333,9 +355,13 @@ function renderText(c: Ctx): string {
   if (c.mapLink) lines.push(`   Map: ${c.mapLink}`);
   lines.push("");
 
-  // Times.
+  // Times. The soundcheck line ALWAYS includes the explainer so musicians
+  // know what "soundcheck" means in this band's vocabulary.
   if (c.loadIn) lines.push(`Load in:     ${c.loadIn}`);
-  if (c.soundcheck) lines.push(`Sound check: ${c.soundcheck}`);
+  if (c.soundcheck) {
+    lines.push(`Sound check: ${c.soundcheck}`);
+    lines.push(`             (${SOUNDCHECK_EXPLAINER})`);
+  }
   if (c.call) lines.push(`Call:        ${c.call}`);
   lines.push(`Downbeat:    ${c.downbeat}`);
   if (c.attire) {
@@ -349,6 +375,26 @@ function renderText(c: Ctx): string {
     lines.push(`Load-in spot:`);
     if (c.loadingInfo) lines.push(`  ${c.loadingInfo.replace(/\n/g, "\n  ")}`);
     if (c.loadingMapLink) lines.push(`  Map: ${c.loadingMapLink}`);
+  }
+
+  // Set list + materials — clickable links if set.
+  if (c.setlistUrl) {
+    lines.push("");
+    lines.push(`Set list: ${c.setlistFileName ?? "Open set list"}`);
+    lines.push(`  ${c.setlistUrl}`);
+  }
+  if (c.materialsUrl) {
+    lines.push("");
+    lines.push(`Gig materials folder:`);
+    lines.push(`  ${c.materialsUrl}`);
+  }
+
+  // Saved gig notes (standing notes attached to the gig — distinct from
+  // the bandleader's per-update message at the top of the email).
+  if (c.notes) {
+    lines.push("");
+    lines.push(`Notes:`);
+    lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
   }
 
   // Lineup — who's on the gig.
@@ -396,6 +442,26 @@ function renderHtml(c: Ctx): string {
           ${c.loadingMapLink ? `<p style="margin:6px 0 0;font-size:12px"><a href="${c.loadingMapLink}" style="color:#7E2418;font-weight:600">Open load-in map →</a></p>` : ""}
         </div>`
       : "";
+
+  // Set list + materials — simple, clickable links rendered as a small
+  // stacked block so they're easy to tap on mobile.
+  const linksBlock =
+    c.setlistUrl || c.materialsUrl
+      ? `<div style="margin:16px 0 0">
+          ${c.setlistUrl ? `<p style="margin:0 0 6px"><a href="${c.setlistUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 ${escapeHtml(c.setlistFileName ?? "Open set list")}</a></p>` : ""}
+          ${c.materialsUrl ? `<p style="margin:0"><a href="${c.materialsUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials folder →</a></p>` : ""}
+        </div>`
+      : "";
+
+  // Saved gig notes (e.g. "no smoking on stage", "BYO mic if you have one").
+  // Distinct from the bandleader's per-update `message` — these are standing
+  // notes attached to the gig itself.
+  const notesBlock = c.notes
+    ? `<div style="margin:16px 0 0;padding:14px 16px;background:#FBFAF6;border-left:3px solid #E5E2D8">
+        <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#888;text-transform:uppercase">Notes</p>
+        <p style="margin:0;font-size:13px;color:#494336;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.notes)}</p>
+      </div>`
+    : "";
   const lineupBlock =
     c.lineup.length > 0
       ? `<div style="margin:20px 0 0;padding-top:16px;border-top:1px solid #E5E2D8">
@@ -417,7 +483,7 @@ function renderHtml(c: Ctx): string {
       <div style="font-family:Georgia,serif;font-size:18px;font-weight:500;letter-spacing:-0.02em;padding-bottom:14px;border-bottom:1px solid #E5E2D8;color:#111">
         Gig<span style="color:#7E2418;font-weight:300">Wright</span>
       </div>
-      <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${escapeHtml(c.firstName)},</p>
+      <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${escapeHtml(capitalize(c.firstName))},</p>
 
       ${messageBlock}
       ${triggerLine}
@@ -432,13 +498,15 @@ function renderHtml(c: Ctx): string {
 
       <table style="width:100%;margin-top:20px;border-top:1px solid #E5E2D8;border-collapse:collapse;font-size:14px">
         ${c.loadIn ? `<tr><td style="color:#555;padding:6px 0">Load in</td><td style="color:#111;text-align:right;padding:6px 0">${escapeHtml(c.loadIn)}</td></tr>` : ""}
-        ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.soundcheck)}</td></tr>` : ""}
+        ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check<br/><span style="font-size:11px;color:#888;font-style:italic">${SOUNDCHECK_EXPLAINER}</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${escapeHtml(c.soundcheck)}</td></tr>` : ""}
         ${c.call ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Call</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.call)}</td></tr>` : ""}
         <tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8"><strong>Downbeat</strong></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8"><strong>${escapeHtml(c.downbeat)}</strong></td></tr>
         ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.attire)}</td></tr>` : ""}
       </table>
 
       ${loadingBlock}
+      ${linksBlock}
+      ${notesBlock}
       ${lineupBlock}
 
       <!--RECIPIENTS-->
