@@ -137,9 +137,10 @@ export async function fanOutGigUpdate(
         }),
       });
       if (!emailRes.ok) {
+        const detail = await emailRes.text().catch(() => "");
         result.errors.push({
           name: p.musician.name,
-          message: `Resend ${emailRes.status}`,
+          message: `Resend ${emailRes.status}: ${detail.slice(0, 240)}`,
         });
       } else {
         result.emailsSent++;
