@@ -133,11 +133,9 @@ export function GigForm({
             Cancel
           </Link>
           {del && (
-            <form action={del} className="ml-auto">
-              <button type="submit" className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-accent hover:bg-accent-soft">
-                Delete gig
-              </button>
-            </form>
+            <button type="submit" formAction={del} className="ml-auto rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-accent hover:bg-accent-soft">
+              Delete gig
+            </button>
           )}
         </div>
       </form>
