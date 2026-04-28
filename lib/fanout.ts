@@ -240,6 +240,81 @@ export async function fanOutGigUpdate(
     }
   }
 
+  // Self-copy to the bandleader so they can see exactly what their musicians
+  // are getting — same template, minus the per-musician pay row, with a
+  // `[your copy]` subject prefix so it's filterable in the inbox. Skipped if
+  // the owner has no email on file or AUTH_RESEND_KEY is missing.
+  if (gig.owner?.email && apiKey) {
+    try {
+      const subject = opts.triggerLabel
+        ? `[your copy] GigWright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
+        : `[your copy] GigWright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
+      const ctx = {
+        // Render as if addressed to the bandleader — first name only, no pay row,
+        // and "W-9 ✓" so the nag line stays out of their copy.
+        firstName: bandleader.split(" ")[0] ?? bandleader,
+        bandleader,
+        triggerLabel: opts.triggerLabel,
+        gigId: gig.id,
+        venueName: gig.venue?.name ?? "Venue TBD",
+        venueAddress: [
+          gig.venue?.addressL1,
+          [gig.venue?.city, gig.venue?.state].filter(Boolean).join(", "),
+        ]
+          .filter(Boolean)
+          .join(", "),
+        mapLink: mapLink(gig.venue ?? {}),
+        longDate: formatLongDate(gig.startAt),
+        loadIn: gig.loadInAt ? formatTime(gig.loadInAt) : null,
+        soundcheck: gig.soundcheckAt ? formatTime(gig.soundcheckAt) : null,
+        call: gig.callTimeAt ? formatTime(gig.callTimeAt) : null,
+        downbeat: formatTime(gig.startAt),
+        attire: gig.attire,
+        notes: gig.notes,
+        setlistUrl: gig.setlistUrl,
+        setlistFileName: gig.setlistFileName,
+        materialsUrl: gig.materialsUrl,
+        soundContactName: gig.soundContactName,
+        soundContactPhone: gig.soundContactPhone,
+        myPayCents: null,
+        paidAt: null,
+        w9Received: true,
+      };
+      const recipientList =
+        result.recipients.length > 0
+          ? `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;font-size:12px;color:#888;line-height:1.5">Sent to: ${result.recipients
+              .map((n) => escapeHtml(n))
+              .join(", ")}</p>`
+          : "";
+      const html = renderHtml(ctx).replace(
+        '<div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">',
+        `${recipientList}<div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">`,
+      );
+      const text =
+        renderText(ctx) +
+        (result.recipients.length > 0
+          ? `\n\nSent to: ${result.recipients.join(", ")}`
+          : "");
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          from,
+          to: gig.owner.email,
+          subject,
+          html,
+          text,
+        }),
+      });
+    } catch {
+      // Silent — self-copy is a convenience, not critical. If it fails,
+      // we still log the main fanout activity below.
+    }
+  }
+
   await db.activity.create({
     data: {
       gigId: opts.gigId,
