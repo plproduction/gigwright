@@ -77,10 +77,16 @@ export default function PrivacyPage() {
 
           <H2>SMS Communications</H2>
           <p>
-            Phone numbers collected in GigWright are used solely to send operational information to musicians booked on gigs &mdash; call times, venue details, updates, and morning-of reminders. We do not use phone numbers for marketing, and we do not share them with third parties for marketing purposes.
+            Phone numbers collected in GigWright are used solely to send operational information to musicians booked on gigs &mdash; call times, venue details, updates, and morning-of reminders. We do not use phone numbers for marketing, and we do not share, sell, or rent mobile phone numbers to any third party for marketing purposes. Mobile information will not be shared with third parties or affiliates for marketing or promotional purposes.
           </p>
           <p>
-            Recipients can opt out at any time by replying <strong>STOP</strong>, <strong>UNSUBSCRIBE</strong>, or <strong>END</strong>. Replying <strong>HELP</strong> returns contact information for the bandleader and for GigWright support.
+            <strong>Message frequency:</strong> varies based on the bandleader&rsquo;s gig schedule. Typical recipients receive between 0 and 10 messages per gig and 1 to 20 messages total per month. <strong>Message and data rates may apply</strong> per your wireless carrier&rsquo;s plan.
+          </p>
+          <p>
+            Recipients can opt out at any time by replying <strong>STOP</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>QUIT</strong>, or <strong>END</strong>. Opt-out is honored immediately and persistently at the carrier level. Replying <strong>HELP</strong> returns contact information for the bandleader and for GigWright support.
+          </p>
+          <p>
+            See our public <Link href="/sms-consent" className="text-accent underline-offset-4 hover:underline">SMS Consent &amp; Opt-In page</Link> for a full description of how musicians consent to receive SMS through GigWright.
           </p>
 
           <H2>The Permission Wall</H2>
