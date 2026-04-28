@@ -369,12 +369,19 @@ function renderText(c: Ctx): string {
     lines.push(`Attire: ${c.attire}`);
   }
 
-  // Loading info — where to actually pull up + unload.
-  if (c.loadingInfo || c.loadingMapLink) {
+  // Combined "Special loading info & notes" — merged single section.
+  if (c.loadingInfo || c.loadingMapLink || c.notes) {
     lines.push("");
-    lines.push(`Load-in spot:`);
+    lines.push(`Special loading info & notes:`);
     if (c.loadingInfo) lines.push(`  ${c.loadingInfo.replace(/\n/g, "\n  ")}`);
-    if (c.loadingMapLink) lines.push(`  Map: ${c.loadingMapLink}`);
+    if (c.notes) {
+      if (c.loadingInfo) lines.push("");
+      lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
+    }
+    if (c.loadingMapLink) {
+      if (c.loadingInfo || c.notes) lines.push("");
+      lines.push(`  Load-in map: ${c.loadingMapLink}`);
+    }
   }
 
   // Set list + materials — clickable links if set.
@@ -389,13 +396,7 @@ function renderText(c: Ctx): string {
     lines.push(`  ${c.materialsUrl}`);
   }
 
-  // Saved gig notes (standing notes attached to the gig — distinct from
-  // the bandleader's per-update message at the top of the email).
-  if (c.notes) {
-    lines.push("");
-    lines.push(`Notes:`);
-    lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
-  }
+  // (notes is now merged into the combined loading info & notes section above.)
 
   // Lineup — who's on the gig.
   if (c.lineup.length > 0) {
@@ -434,12 +435,28 @@ function renderHtml(c: Ctx): string {
     c.message && c.triggerLabel
       ? `<p style="margin:8px 0 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em">${escapeHtml(c.triggerLabel)}</p>`
       : "";
-  const loadingBlock =
-    c.loadingInfo || c.loadingMapLink
+  // Combined "Special loading info & notes" block. The bandleader sets
+  // these on the gig as one mental category — anything-extra-the-band-needs
+  // — so they render together in the email too. If only one of the three
+  // pieces is set, the block still renders cleanly.
+  const loadingNotesBody = [
+    c.loadingInfo
+      ? `<p style="margin:0;font-size:13px;color:#111;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>`
+      : "",
+    c.notes
+      ? `<p style="margin:${c.loadingInfo ? "10px" : "0"} 0 0;font-size:13px;color:#494336;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.notes)}</p>`
+      : "",
+    c.loadingMapLink
+      ? `<p style="margin:${c.loadingInfo || c.notes ? "10px" : "0"} 0 0;font-size:12px"><a href="${c.loadingMapLink}" style="color:#7E2418;font-weight:600;text-decoration:underline">📍 Open load-in map →</a></p>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+  const loadingNotesBlock =
+    c.loadingInfo || c.loadingMapLink || c.notes
       ? `<div style="margin:16px 0 0;padding:14px 16px;background:#F8F4EC;border:1px solid #E5E2D8;border-radius:6px">
-          <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#7E2418;text-transform:uppercase">Load-in spot</p>
-          ${c.loadingInfo ? `<p style="margin:0;font-size:13px;color:#111;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>` : ""}
-          ${c.loadingMapLink ? `<p style="margin:6px 0 0;font-size:12px"><a href="${c.loadingMapLink}" style="color:#7E2418;font-weight:600">Open load-in map →</a></p>` : ""}
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#7E2418;text-transform:uppercase">Special loading info &amp; notes</p>
+          ${loadingNotesBody}
         </div>`
       : "";
 
@@ -453,15 +470,7 @@ function renderHtml(c: Ctx): string {
         </div>`
       : "";
 
-  // Saved gig notes (e.g. "no smoking on stage", "BYO mic if you have one").
-  // Distinct from the bandleader's per-update `message` — these are standing
-  // notes attached to the gig itself.
-  const notesBlock = c.notes
-    ? `<div style="margin:16px 0 0;padding:14px 16px;background:#FBFAF6;border-left:3px solid #E5E2D8">
-        <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#888;text-transform:uppercase">Notes</p>
-        <p style="margin:0;font-size:13px;color:#494336;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.notes)}</p>
-      </div>`
-    : "";
+  // (notes is now merged into the combined loadingNotesBlock above.)
   const lineupBlock =
     c.lineup.length > 0
       ? `<div style="margin:20px 0 0;padding-top:16px;border-top:1px solid #E5E2D8">
@@ -504,9 +513,8 @@ function renderHtml(c: Ctx): string {
         ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.attire)}</td></tr>` : ""}
       </table>
 
-      ${loadingBlock}
+      ${loadingNotesBlock}
       ${linksBlock}
-      ${notesBlock}
       ${lineupBlock}
 
       <!--RECIPIENTS-->
