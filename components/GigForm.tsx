@@ -61,6 +61,32 @@ export function GigForm({
       </div>
 
       <form action={upsert} className="grid max-w-[760px] grid-cols-3 gap-x-5 gap-y-4">
+        {/* Top action bar — Save + Cancel right at the top so the user
+            doesn't have to scroll past every field to commit changes.
+            Submitting from EITHER the top button or the bottom button
+            posts the entire form, since both are <button type="submit">
+            inside the same <form action={upsert}> — that's standard HTML
+            form behavior, no extra wiring needed. */}
+        <div className="col-span-3 flex items-center justify-between border-b border-line pb-3">
+          <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-mute">
+            Saves all fields below
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href={isEdit ? `/gigs/${gig!.id}` : "/dashboard"}
+              className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[12.5px] font-medium text-ink hover:bg-paper-warm"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              className="rounded-md bg-accent px-4 py-2 text-[12.5px] font-semibold text-paper hover:bg-[#611B11]"
+            >
+              {isEdit ? "Save gig" : "Create gig"}
+            </button>
+          </div>
+        </div>
+
         <Field span3 label="Venue">
           <select name="venueId" defaultValue={gig?.venueId ?? ""} className="input">
             <option value="">— Select —</option>
@@ -73,9 +99,19 @@ export function GigForm({
           </select>
         </Field>
 
+        {/* Schedule row 1: Date, Downbeat, Finish (Downbeat & Finish paired
+            visually so the start-and-end of the gig read as one unit) */}
         <Field label="Date" required>
           <input type="date" name="date" required defaultValue={dateDefault} className="input" />
         </Field>
+        <Field label="Downbeat" required>
+          <input type="time" name="startTime" required defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
+        </Field>
+        <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
+          <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
+        </Field>
+
+        {/* Schedule row 2: Status, Load in, Sound check */}
         <Field label="Status">
           <select name="status" defaultValue={gig?.status ?? "CONFIRMED"} className="input">
             <option value="INQUIRY">Inquiry</option>
@@ -84,12 +120,6 @@ export function GigForm({
             <option value="PLAYED">Played</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
-        </Field>
-        <Field label="Downbeat" required>
-          <input type="time" name="startTime" required defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
-        </Field>
-        <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
-          <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
         </Field>
         <Field label="Load in">
           <input type="time" name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} className="input" />
@@ -100,6 +130,8 @@ export function GigForm({
         >
           <input type="time" name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} className="input" />
         </Field>
+
+        {/* Schedule row 3: Sound check complete, Call time, then on to money */}
         <Field
           label="Sound check complete"
           help="when the band is freed up between check and call"
