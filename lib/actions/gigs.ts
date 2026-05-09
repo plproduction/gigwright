@@ -28,6 +28,14 @@ export async function upsertGig(id: string | null, formData: FormData) {
   const clientPayCents = parseMoneyToCents(formData.get("clientPay"));
   const clientDepositCents = parseMoneyToCents(formData.get("clientDeposit"));
 
+  // IMPORTANT: only fields the GigForm actually exposes belong in this
+  // payload. materialsUrl, setlistUrl, setlistFileName, loadingInfo,
+  // loadingMapUrl, loadingMapLink, soundContactName, and soundContactPhone
+  // are managed via separate flows (InlineField on the detail page and
+  // the SetlistUpload / LoadingMapUpload routes). Including them here would
+  // silently null them out every time the user saves the form, since the
+  // form has no inputs for them — that's the "set list disappears after I
+  // edit something else" bug.
   const data = {
     venueId: nullIfEmpty(formData.get("venueId")),
     startAt,
@@ -44,9 +52,6 @@ export async function upsertGig(id: string | null, formData: FormData) {
     attire: nullIfEmpty(formData.get("attire")),
     meal: nullIfEmpty(formData.get("meal")),
     notes: nullIfEmpty(formData.get("notes")),
-    materialsUrl: nullIfEmpty(formData.get("materialsUrl")),
-    setlistUrl: nullIfEmpty(formData.get("setlistUrl")),
-    setlistFileName: nullIfEmpty(formData.get("setlistFileName")),
   };
 
   if (id) {

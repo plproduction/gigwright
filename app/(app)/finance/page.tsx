@@ -19,29 +19,49 @@ export default async function FinancePage({
   const start = new Date(year, 0, 1, 0, 0, 0, 0);
   const end = new Date(year + 1, 0, 1, 0, 0, 0, 0);
 
+  // Year-scope filter shared by all three aggregates so the numbers line up.
+  // Cancelled gigs never count toward year totals — they didn't actually
+  // generate revenue or expense, even if a quote was entered. Inquiries and
+  // holds DO count if the bandleader entered a real clientPayCents — for
+  // tax-year accrual reporting that's the right behavior. Filter out
+  // CANCELLED at the gig scope so it cascades to expenses + payouts too.
+  const yearGigScope = {
+    ownerId: user.id,
+    startAt: { gte: start, lt: end },
+    status: { not: "CANCELLED" as const },
+  };
+
   // Summary: expenses grouped by kind for the year
   const grouped = await db.gigExpense.groupBy({
     by: ["kind"],
-    where: { gig: { ownerId: user.id, startAt: { gte: start, lt: end } } },
+    where: { gig: yearGigScope },
     _sum: { amountCents: true, miles: true, days: true },
     _count: { _all: true },
   });
 
-  // Paid-out totals to musicians in the year
+  // Paid-out totals to musicians in the year (only rows actually disbursed)
   const paid = await db.gigPersonnel.aggregate({
     where: {
       paidAt: { not: null },
-      gig: { ownerId: user.id, startAt: { gte: start, lt: end } },
+      gig: yearGigScope,
     },
     _sum: { payCents: true },
     _count: { _all: true },
   });
 
+  // Committed musician pay across the year — paid AND unpaid. We use this
+  // (not just `paid`) when calculating Net so the figure reflects the
+  // bandleader's true liability for the year. Otherwise Net would be
+  // inflated by gigs whose musicians simply haven't been paid yet.
+  const committed = await db.gigPersonnel.aggregate({
+    where: { gig: yearGigScope },
+    _sum: { payCents: true },
+  });
+
   // Client revenue (sum of clientPayCents for gigs in year)
   const revenue = await db.gig.aggregate({
     where: {
-      ownerId: user.id,
-      startAt: { gte: start, lt: end },
+      ...yearGigScope,
       clientPayCents: { not: null },
     },
     _sum: { clientPayCents: true },
@@ -106,10 +126,10 @@ export default async function FinancePage({
           label="Net"
           value={formatMoney(
             (revenue._sum.clientPayCents ?? 0) -
-              (paid._sum.payCents ?? 0) -
+              (committed._sum.payCents ?? 0) -
               totalExpenseCents,
           )}
-          sub={`before tax`}
+          sub={`revenue − committed pay − expenses`}
           emphasize
         />
       </section>
