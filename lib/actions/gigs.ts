@@ -228,6 +228,49 @@ export async function addPersonnel(
   redirect(`/gigs/${gigId}/edit`);
 }
 
+// Update a personnel row's pay in place. Lets the bandleader dial in a
+// musician's amount as the deal comes together without removing-and-readding
+// the row (which used to be the only path). Activity log records both the
+// before and after so the audit trail is complete.
+export async function updatePersonnelPay(
+  gigId: string,
+  personnelId: string,
+  formData: FormData,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  const newPayCents = parseMoneyToCents(formData.get("pay")) ?? 0;
+
+  const before = await db.gigPersonnel.findFirst({
+    where: { id: personnelId, gigId },
+    include: { musician: true },
+  });
+  if (!before) throw new Error("Personnel row not found");
+
+  // No-op if the value hasn't changed — avoids noise in the activity log.
+  if (before.payCents === newPayCents) {
+    revalidatePath(`/gigs/${gigId}`);
+    return;
+  }
+
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: { payCents: newPayCents },
+  });
+
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "personnel_pay_updated",
+      summary: `Updated ${before.musician.name}'s pay: $${(before.payCents / 100).toFixed(0)} → $${(newPayCents / 100).toFixed(0)}`,
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
+}
+
 export async function removePersonnel(
   gigId: string,
   personnelId: string,

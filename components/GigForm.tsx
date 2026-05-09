@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { upsertGig, deleteGig, addPersonnel, removePersonnel } from "@/lib/actions/gigs";
+import { upsertGig, deleteGig, addPersonnel, removePersonnel, updatePersonnelPay } from "@/lib/actions/gigs";
+import { PersonnelPayEdit } from "@/components/PersonnelPayEdit";
 
 type GigFormData = {
   id: string;
@@ -169,9 +170,15 @@ export function GigForm({
                     </span>
                   )}
                 </div>
-                <div className="font-serif tabular-nums">
-                  {p.musician.isLeader ? "—" : `$${(p.payCents / 100).toFixed(0)}`}
-                </div>
+                {p.musician.isLeader ? (
+                  <div className="font-serif tabular-nums text-ink-mute">—</div>
+                ) : (
+                  <PersonnelPayEdit
+                    initialCents={p.payCents}
+                    action={updatePersonnelPay.bind(null, gig.id, p.id)}
+                    musicianName={p.musician.name}
+                  />
+                )}
                 {!p.musician.isLeader && (
                   <form action={removePersonnel.bind(null, gig.id, p.id)}>
                     <button
