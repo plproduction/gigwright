@@ -94,7 +94,16 @@ export async function POST(req: Request): Promise<NextResponse> {
             summary: "Set list updated — band will be notified on fanout",
           },
         });
+        // Bust caches on every surface that surfaces this gig so the
+        // setlist update is immediately visible everywhere — admin
+        // detail page, edit form, dashboard activity, finance recents,
+        // and the affected musicians' portal.
         revalidatePath(`/gigs/${gigId}`);
+        revalidatePath(`/gigs/${gigId}/edit`);
+        revalidatePath(`/dashboard`);
+        revalidatePath(`/finance`);
+        revalidatePath(`/my-gigs`);
+        revalidatePath(`/my-gigs/${gigId}`);
       },
     });
     return NextResponse.json(result);

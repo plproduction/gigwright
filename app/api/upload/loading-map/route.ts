@@ -63,7 +63,15 @@ export async function POST(req: Request): Promise<NextResponse> {
             summary: "Loading map uploaded",
           },
         });
+        // Bust caches everywhere this gig surfaces so the upload is
+        // visible without a manual reload — same pattern as the
+        // setlist webhook.
         revalidatePath(`/gigs/${gigId}`);
+        revalidatePath(`/gigs/${gigId}/edit`);
+        revalidatePath(`/dashboard`);
+        revalidatePath(`/finance`);
+        revalidatePath(`/my-gigs`);
+        revalidatePath(`/my-gigs/${gigId}`);
       },
     });
     return NextResponse.json(result);
