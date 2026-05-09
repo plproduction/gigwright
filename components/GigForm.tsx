@@ -7,6 +7,7 @@ type GigFormData = {
   startAt: Date;
   loadInAt: Date | null;
   soundcheckAt: Date | null;
+  soundcheckEndAt: Date | null;
   callTimeAt: Date | null;
   endAt: Date | null;
   status: string;
@@ -93,6 +94,12 @@ export function GigForm({
           help="all lines run, instruments set up, ready to play at this time"
         >
           <input type="time" name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} className="input" />
+        </Field>
+        <Field
+          label="Sound check complete"
+          help="when the band is freed up between check and call"
+        >
+          <input type="time" name="soundcheckEndTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckEndAt) : ""} className="input" />
         </Field>
         <Field label="Call time">
           <input type="time" name="callTime" defaultValue={gig ? toTimeInputOpt(gig.callTimeAt) : ""} className="input" />

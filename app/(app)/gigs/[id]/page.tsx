@@ -276,6 +276,11 @@ export default async function GigDetailPage({
                 value={formatTime(gig.soundcheckAt)}
                 sub="all lines run, instruments set up, ready to play at this time"
               />
+              <TimeTile
+                label="Sound check complete"
+                value={formatTime(gig.soundcheckEndAt)}
+                sub="band is freed up after this time"
+              />
               <TimeTile label="Call" value={formatTime(gig.callTimeAt)} />
               <TimeTile label="Downbeat" value={formatTime(gig.startAt)} />
             </div>

@@ -21,6 +21,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
   const startAt = combineDateTime(dateStr, startTime);
   const loadInAt = combineOptionalTime(dateStr, formData.get("loadInTime"));
   const soundcheckAt = combineOptionalTime(dateStr, formData.get("soundcheckTime"));
+  const soundcheckEndAt = combineOptionalTime(dateStr, formData.get("soundcheckEndTime"));
   const callTimeAt = combineOptionalTime(dateStr, formData.get("callTime"));
   const endAt = combineOptionalTime(dateStr, formData.get("endTime"));
 
@@ -32,6 +33,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
     startAt,
     loadInAt,
     soundcheckAt,
+    soundcheckEndAt,
     callTimeAt,
     endAt,
     status: String(formData.get("status") ?? "CONFIRMED") as GigStatus,
@@ -141,6 +143,7 @@ export async function cloneGig(sourceId: string) {
       startAt: weekLater,
       loadInAt: bump(src.loadInAt),
       soundcheckAt: bump(src.soundcheckAt),
+      soundcheckEndAt: bump(src.soundcheckEndAt),
       callTimeAt: bump(src.callTimeAt),
       endAt: bump(src.endAt),
       status: "INQUIRY", // never clone a CONFIRMED / PLAYED status

@@ -228,11 +228,12 @@ model Gig {
   // Core date/time fields
   // startAt is the authoritative "when is this gig" field (downbeat time).
   // The detail screen also tracks optional load-in, soundcheck, and end times.
-  startAt      DateTime // Downbeat
-  loadInAt     DateTime?
-  soundcheckAt DateTime?
-  callTimeAt   DateTime?
-  endAt        DateTime? // null = "open"
+  startAt         DateTime // Downbeat
+  loadInAt        DateTime?
+  soundcheckAt    DateTime?
+  soundcheckEndAt DateTime? // when the band is freed up after sound check
+  callTimeAt      DateTime?
+  endAt           DateTime? // null = "open"
 
   status GigStatus @default(CONFIRMED)
 

@@ -71,6 +71,7 @@ export async function fanOutGigUpdate(
       longDate: formatLongDate(gig!.startAt),
       loadIn: gig!.loadInAt ? formatTime(gig!.loadInAt) : null,
       soundcheck: gig!.soundcheckAt ? formatTime(gig!.soundcheckAt) : null,
+      soundcheckEnd: gig!.soundcheckEndAt ? formatTime(gig!.soundcheckEndAt) : null,
       call: gig!.callTimeAt ? formatTime(gig!.callTimeAt) : null,
       downbeat: formatTime(gig!.startAt),
       attire: gig!.attire,
@@ -302,6 +303,7 @@ type Ctx = {
   longDate: string;
   loadIn: string | null;
   soundcheck: string | null;
+  soundcheckEnd: string | null;
   call: string | null;
   downbeat: string;
   attire: string | null;
@@ -362,6 +364,10 @@ function renderText(c: Ctx): string {
     lines.push(`Sound check: ${c.soundcheck}`);
     lines.push(`             (${SOUNDCHECK_EXPLAINER})`);
   }
+  if (c.soundcheckEnd) {
+    lines.push(`Sound check complete: ${c.soundcheckEnd}`);
+    lines.push(`             (band is freed up after this time)`);
+  }
   if (c.call) lines.push(`Call:        ${c.call}`);
   lines.push(`Downbeat:    ${c.downbeat}`);
   if (c.attire) {
@@ -384,16 +390,26 @@ function renderText(c: Ctx): string {
     }
   }
 
-  // Set list + materials — clickable links if set.
+  // Set list + materials — ALWAYS show both. If a real URL is posted, link
+  // to it directly; if not, point at the gig sheet so the band can refresh
+  // there when the file lands.
+  const gigSheetUrl = `https://gigwright.com/g/${c.gigId}`;
+  lines.push("");
   if (c.setlistUrl) {
-    lines.push("");
     lines.push(`Set list: ${c.setlistFileName ?? "Open set list"}`);
     lines.push(`  ${c.setlistUrl}`);
+  } else {
+    lines.push(`Set list: not yet posted — view gig sheet for updates`);
+    lines.push(`  ${gigSheetUrl}`);
   }
   if (c.materialsUrl) {
     lines.push("");
     lines.push(`Gig materials folder:`);
     lines.push(`  ${c.materialsUrl}`);
+  } else {
+    lines.push("");
+    lines.push(`Gig materials: not yet posted — view gig sheet for updates`);
+    lines.push(`  ${gigSheetUrl}`);
   }
 
   // (notes is now merged into the combined loading info & notes section above.)
@@ -418,23 +434,33 @@ function renderText(c: Ctx): string {
 }
 
 function renderHtml(c: Ctx): string {
-  // Order: Greeting → Bandleader's message (top, highlighted) → Venue+date
-  // → Times → Attire → Load-in spot → Lineup → Footer.
-  // Cut: pay, W-9, set list link, materials link, sound engineer, gig.notes.
+  // Order: Trigger label (subject heading) → Greeting + Bandleader's message
+  // (one cohesive block at the top) → Venue+date → Times → Attire → Load-in
+  // notes → Set list + materials → Lineup → Footer.
+  // The trigger label ALWAYS renders ABOVE the greeting so it reads like a
+  // subject heading ("GREETINGS", "DOWNBEAT CHANGE", etc.) rather than a
+  // confusing tag dropped below the message.
   const mapLine = c.mapLink
-    ? `<p style="margin:4px 0 0"><a href="${c.mapLink}" style="color:#7E2418;font-size:13px;font-weight:600">Open in Maps →</a></p>`
+    ? `<p style="margin:4px 0 0;font-family:Georgia,serif"><a href="${c.mapLink}" style="color:#7E2418;font-size:13px;font-weight:600">Open in Maps →</a></p>`
     : "";
-  const messageBlock = c.message
-    ? `<div style="margin:20px 0 0;padding:16px 18px;background:#F4E1DB;border:1px solid #7E2418;border-radius:8px;color:#3a1109;font-size:14px;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>`
+
+  // Subject-style heading shown above the greeting block. Only renders when
+  // a triggerLabel is present (e.g. "Greetings", "Downbeat change").
+  const triggerHeading = c.triggerLabel
+    ? `<p style="margin:24px 0 10px;font-family:Georgia,serif;font-size:12px;font-weight:700;letter-spacing:0.18em;color:#7E2418;text-transform:uppercase">${escapeHtml(c.triggerLabel)}</p>`
     : "";
-  const triggerLine =
-    !c.message && c.triggerLabel
-      ? `<p style="margin:16px 0 0;padding:8px 12px;background:#F4E1DB;border:1px solid #7E2418;border-radius:6px;color:#7E2418;font-size:13px;font-weight:600">${escapeHtml(c.triggerLabel)}</p>`
-      : "";
-  const triggerSubline =
-    c.message && c.triggerLabel
-      ? `<p style="margin:8px 0 0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.08em">${escapeHtml(c.triggerLabel)}</p>`
-      : "";
+
+  // The greeting + custom message render as one cohesive block. Same font
+  // family as the rest of the email (Georgia for headings, system sans for
+  // body) so the greeting doesn't feel disjointed from the schedule below.
+  // The message body uses a soft accent panel — visually distinct, but no
+  // heavy red border that competes with the venue heading.
+  const greetingBlock = c.message
+    ? `<div style="margin:${c.triggerLabel ? "0" : "24px"} 0 0;padding:18px 20px;background:#FBF5F0;border-left:3px solid #7E2418;border-radius:4px;font-size:14px;line-height:1.6;color:#0E0C09">
+        <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:15px;color:#0E0C09">Hi ${escapeHtml(capitalize(c.firstName))},</p>
+        <div style="white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>
+      </div>`
+    : `<p style="margin:${c.triggerLabel ? "0" : "24px"} 0 0;font-family:Georgia,serif;font-size:15px;color:#0E0C09">Hi ${escapeHtml(capitalize(c.firstName))},</p>`;
   // Combined "Special loading info & notes" block. The bandleader sets
   // these on the gig as one mental category — anything-extra-the-band-needs
   // — so they render together in the email too. If only one of the three
@@ -460,15 +486,21 @@ function renderHtml(c: Ctx): string {
         </div>`
       : "";
 
-  // Set list + materials — simple, clickable links rendered as a small
-  // stacked block so they're easy to tap on mobile.
-  const linksBlock =
-    c.setlistUrl || c.materialsUrl
-      ? `<div style="margin:16px 0 0">
-          ${c.setlistUrl ? `<p style="margin:0 0 6px"><a href="${c.setlistUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 ${escapeHtml(c.setlistFileName ?? "Open set list")}</a></p>` : ""}
-          ${c.materialsUrl ? `<p style="margin:0"><a href="${c.materialsUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials folder →</a></p>` : ""}
-        </div>`
-      : "";
+  // Set list + materials — ALWAYS rendered in every email so musicians have
+  // a one-click path to whatever the bandleader has posted (or to the live
+  // gig sheet if it hasn't been posted yet — the band can refresh from there
+  // when it lands). Two separate, easy-to-tap rows on mobile.
+  const gigSheetUrl = `https://gigwright.com/g/${c.gigId}`;
+  const setlistRow = c.setlistUrl
+    ? `<p style="margin:0 0 8px;font-size:14px"><a href="${c.setlistUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 ${escapeHtml(c.setlistFileName ?? "Open set list")}</a></p>`
+    : `<p style="margin:0 0 8px;font-size:14px"><a href="${gigSheetUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 Set list — view on gig sheet</a><span style="color:#888;font-size:12px"> · check back, posts before downbeat</span></p>`;
+  const materialsRow = c.materialsUrl
+    ? `<p style="margin:0;font-size:14px"><a href="${c.materialsUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials folder →</a></p>`
+    : `<p style="margin:0;font-size:14px"><a href="${gigSheetUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials — view on gig sheet</a><span style="color:#888;font-size:12px"> · check back, posts when ready</span></p>`;
+  const linksBlock = `<div style="margin:18px 0 0;padding:14px 16px;background:#FBF9F4;border:1px solid #E5E2D8;border-radius:6px">
+      ${setlistRow}
+      ${materialsRow}
+    </div>`;
 
   // (notes is now merged into the combined loadingNotesBlock above.)
   const lineupBlock =
@@ -485,29 +517,34 @@ function renderHtml(c: Ctx): string {
           </ul>
         </div>`
       : "";
+  // Common font stack for body text — same in greeting block, schedule
+  // table, and footer so the email reads as one cohesive piece. Headings
+  // (logo, venue name, key labels) use Georgia to match the brand.
+  const bodyFont =
+    "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif";
+
   return `<!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
+  <body style="margin:0;padding:32px;background:#F3EFE6;font-family:${bodyFont};color:#0E0C09;">
     <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
       <div style="font-family:Georgia,serif;font-size:18px;font-weight:500;letter-spacing:-0.02em;padding-bottom:14px;border-bottom:1px solid #E5E2D8;color:#111">
         Gig<span style="color:#7E2418;font-weight:300">Wright</span>
       </div>
-      <p style="font-size:14px;color:#111;margin:20px 0 0">Hi ${escapeHtml(capitalize(c.firstName))},</p>
 
-      ${messageBlock}
-      ${triggerLine}
-      ${triggerSubline}
+      ${triggerHeading}
+      ${greetingBlock}
 
-      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;line-height:1.15;margin:24px 0 4px;color:#111">
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;line-height:1.15;margin:28px 0 4px;color:#111">
         ${escapeHtml(c.venueName)}
       </h1>
-      <p style="color:#555;font-size:14px;margin:0 0 6px">${escapeHtml(c.longDate)}</p>
-      ${c.venueAddress ? `<p style="margin:0;font-size:13px;color:#555">${escapeHtml(c.venueAddress)}</p>` : ""}
+      <p style="color:#555;font-size:14px;margin:0 0 6px;font-family:${bodyFont}">${escapeHtml(c.longDate)}</p>
+      ${c.venueAddress ? `<p style="margin:0;font-size:13px;color:#555;font-family:${bodyFont}">${escapeHtml(c.venueAddress)}</p>` : ""}
       ${mapLine}
 
-      <table style="width:100%;margin-top:20px;border-top:1px solid #E5E2D8;border-collapse:collapse;font-size:14px">
+      <table style="width:100%;margin-top:20px;border-top:1px solid #E5E2D8;border-collapse:collapse;font-size:14px;font-family:${bodyFont}">
         ${c.loadIn ? `<tr><td style="color:#555;padding:6px 0">Load in</td><td style="color:#111;text-align:right;padding:6px 0">${escapeHtml(c.loadIn)}</td></tr>` : ""}
         ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check<br/><span style="font-size:11px;color:#888;font-style:italic">${SOUNDCHECK_EXPLAINER}</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${escapeHtml(c.soundcheck)}</td></tr>` : ""}
+        ${c.soundcheckEnd ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check complete<br/><span style="font-size:11px;color:#888;font-style:italic">band is freed up after this time</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${escapeHtml(c.soundcheckEnd)}</td></tr>` : ""}
         ${c.call ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Call</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.call)}</td></tr>` : ""}
         <tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8"><strong>Downbeat</strong></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8"><strong>${escapeHtml(c.downbeat)}</strong></td></tr>
         ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.attire)}</td></tr>` : ""}
