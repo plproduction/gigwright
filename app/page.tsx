@@ -726,6 +726,7 @@ function Footer() {
             links={[
               ["Privacy", "/privacy"],
               ["Terms", "/terms"],
+              ["SMS consent", "/sms-consent"],
             ]}
           />
         </div>

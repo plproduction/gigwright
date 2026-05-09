@@ -106,6 +106,13 @@ export default function TermsPage() {
             <strong>Support.</strong> For questions about the GigWright SMS
             program, email <a href="mailto:hello@gigwright.com" className="text-accent underline-offset-4 hover:underline">hello@gigwright.com</a>.
           </p>
+          <p>
+            <strong>Full opt-in details.</strong> For a complete description
+            of how musicians consent to receive SMS through GigWright &mdash;
+            including the end-to-end consent flow, sample messages, and
+            recipient rights &mdash; see our public{" "}
+            <Link href="/sms-consent" className="text-accent underline-offset-4 hover:underline">SMS Consent &amp; Opt-In</Link> page.
+          </p>
 
           <h2>Subscription and Billing</h2>
           <p>
@@ -146,7 +153,7 @@ export default function TermsPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS consent</Link>
         </div>
       </footer>
     </div>

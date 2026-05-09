@@ -154,7 +154,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS consent</Link>
         </div>
       </footer>
     </div>
