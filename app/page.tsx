@@ -733,7 +733,7 @@ function Footer() {
           />
         </div>
         <div className="flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-[12px] text-ink-mute md:flex-row">
-          <div>© 2026 GigWright. Built in Palm Beach, Florida.</div>
+          <div>© 2026 GigWright · Built in Palm Beach, Florida</div>
           <a href="mailto:hello@gigwright.com" className="hover:text-ink">hello@gigwright.com</a>
         </div>
       </div>
