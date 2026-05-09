@@ -224,7 +224,12 @@ export async function addPersonnel(
     },
   });
 
+  // Pay rollups on the dashboard and finance page now include this row,
+  // and the new musician's own portal needs to know about the gig too.
   revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/my-gigs`);
   redirect(`/gigs/${gigId}/edit`);
 }
 
@@ -250,6 +255,7 @@ export async function updatePersonnelPay(
   if (!before) throw new Error("Personnel row not found");
 
   // No-op if the value hasn't changed — avoids noise in the activity log.
+  // Still revalidate so the form's "Saved" affordance reflects truth.
   if (before.payCents === newPayCents) {
     revalidatePath(`/gigs/${gigId}`);
     return;
@@ -268,7 +274,16 @@ export async function updatePersonnelPay(
     },
   });
 
+  // Bust the cache for every surface that rolls up musician pay so band
+  // totals, year-to-date numbers, and the affected musician's own portal
+  // all reflect the new value immediately.
   revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/my-gigs`);
+  revalidatePath(`/my-gigs/${gigId}`);
+  revalidatePath(`/my-earnings`);
 }
 
 export async function removePersonnel(
@@ -296,7 +311,13 @@ export async function removePersonnel(
     });
   }
 
+  // Removing a musician also drops their pay from band rollups, and the
+  // musician loses access to the gig from their portal.
   revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/my-gigs`);
+  if (p) revalidatePath(`/my-gigs/${gigId}`);
   redirect(`/gigs/${gigId}/edit`);
 }
 
