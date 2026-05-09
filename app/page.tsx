@@ -238,9 +238,11 @@ function HeroMock() {
         </div>
         {/* Upcoming rows */}
         <div className="flex flex-col gap-2.5">
-          <MockRow date={{ d: "26", m: "Apr" }} title="Private wedding · Ocean Reef" sub="7-pc · Call 4:00 · Downbeat 6:00" pill="Confirmed" pay="$6,800" />
-          <MockRow date={{ d: "02", m: "May" }} title="Mar-a-Lago Spring Gala" sub="9-pc · Call 5:30 · Downbeat 7:30" pill="Confirmed" pay="$11,200" />
+          <MockRow date={{ d: "26", m: "Apr" }} title="Private wedding · Ocean Reef" sub="7-pc · Call 4:00 · Downbeat 6:00" pill="Confirmed" pay="$5,800" />
+          <MockRow date={{ d: "02", m: "May" }} title="Birdland · New York" sub="5-pc · Two sets · Downbeat 8:30" pill="Confirmed" pay="$4,200" />
           <MockRow date={{ d: "09", m: "May" }} title="Sailfish Club anniversary" sub="5-pc · Call 6:00 · Downbeat 8:00" pill="Hold" pay="$4,400" pillTone="warn" />
+          <MockRow date={{ d: "16", m: "May" }} title="Keystone Korner · Baltimore" sub="5-pc · Two sets · Downbeat 8:00" pill="Confirmed" pay="$3,600" />
+          <MockRow date={{ d: "23", m: "May" }} title="Blue Note · Tokyo" sub="5-pc · Two sets · Downbeat 7:30" pill="Confirmed" pay="$5,400" />
         </div>
       </div>
     </div>
