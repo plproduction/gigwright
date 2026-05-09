@@ -108,6 +108,7 @@ export default async function MyGigDetailPage({
               />
               <TimeTile label="Call" value={formatTime(gig.callTimeAt)} />
               <TimeTile label="Downbeat" value={formatTime(gig.startAt)} />
+              <TimeTile label="Finish" value={formatTime(gig.endAt)} />
             </div>
           </Section>
 

@@ -135,6 +135,7 @@ export default async function PublicGigPage({
           <TimeTile label="Load in" time={gig.loadInAt} />
           <TimeTile label="Sound check" time={gig.soundcheckAt} />
           <TimeTile label="Downbeat" time={gig.startAt} emphasize />
+          <TimeTile label="Finish" time={gig.endAt} />
         </section>
 
         {/* Venue + map */}

@@ -88,6 +88,9 @@ export function GigForm({
         <Field label="Downbeat" required>
           <input type="time" name="startTime" required defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
         </Field>
+        <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
+          <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
+        </Field>
         <Field label="Load in">
           <input type="time" name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} className="input" />
         </Field>
@@ -112,9 +115,6 @@ export function GigForm({
         </Field>
         <Field label="Deposit received">
           <input type="text" name="clientDeposit" placeholder="600" inputMode="decimal" defaultValue={centsToInput(gig?.clientDepositCents)} className="input" />
-        </Field>
-        <Field label="End time">
-          <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
         </Field>
 
         <Field label="Sound">

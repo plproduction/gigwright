@@ -79,6 +79,7 @@ export async function fanOutGigUpdate(
       loadIn: gig!.loadInAt ? formatTime(gig!.loadInAt) : null,
       soundcheck: gig!.soundcheckAt ? formatTime(gig!.soundcheckAt) : null,
       soundcheckEnd: gig!.soundcheckEndAt ? formatTime(gig!.soundcheckEndAt) : null,
+      finish: gig!.endAt ? formatTime(gig!.endAt) : null,
       call: gig!.callTimeAt ? formatTime(gig!.callTimeAt) : null,
       downbeat: formatTime(gig!.startAt),
       attire: gig!.attire,

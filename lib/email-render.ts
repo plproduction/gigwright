@@ -22,6 +22,7 @@ export type Ctx = {
   soundcheckEnd: string | null;
   call: string | null;
   downbeat: string;
+  finish: string | null;
   attire: string | null;
   loadingInfo: string | null;
   loadingMapLink: string | null;
@@ -106,6 +107,7 @@ export function renderText(c: Ctx): string {
   }
   if (c.call) lines.push(`Call:        ${c.call}`);
   lines.push(`Downbeat:    ${c.downbeat}`);
+  if (c.finish) lines.push(`Finish:      ${c.finish}`);
   if (c.attire) {
     lines.push("");
     lines.push(`Attire: ${c.attire}`);
@@ -276,6 +278,7 @@ export function renderHtml(c: Ctx): string {
   }
   scheduleRows.push(timeRow("Downbeat", c.downbeat, null, { emphasize: true, first: isFirst }));
   isFirst = false;
+  if (c.finish) scheduleRows.push(timeRow("Finish", c.finish, null, { first: isFirst }));
   if (c.attire) scheduleRows.push(timeRow("Attire", c.attire, null, { first: isFirst }));
 
   const scheduleBlock = `<tr><td style="padding:24px 32px 0">
