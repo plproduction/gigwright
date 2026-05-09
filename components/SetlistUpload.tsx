@@ -39,7 +39,7 @@ export function SetlistUpload({
       const blob = await upload(pathname, file, {
         access: "public",
         handleUploadUrl: "/api/upload/setlist",
-        clientPayload: JSON.stringify({ gigId }),
+        clientPayload: JSON.stringify({ gigId, fileName: file.name }),
         onUploadProgress: (e) => {
           // Vercel's progress callback: { loaded, total, percentage }
           setProgress(Math.round(e.percentage));

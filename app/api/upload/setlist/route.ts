@@ -1,29 +1,47 @@
 import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/session";
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { updateGigField } from "@/lib/actions/gigs";
 
 // Direct browser-to-Blob uploads. The client calls upload() from
-// @vercel/blob/client, which hits this route to get a signed upload token,
-// then streams the file straight to Vercel Blob — never through our server.
-// On upload completion, Blob calls this route again with the final URL, and
-// we write it to the gig's setlistUrl / setlistFileName fields.
+// @vercel/blob/client, which hits this route in TWO different contexts:
+//
+//   1. type=blob.generate-client-token — request from the user's BROWSER
+//      to get a signed upload token. Cookies present, auth works normally.
+//   2. type=blob.upload-completed — server-to-server webhook from Vercel
+//      Blob after the file lands. NO cookies, NO session. We cannot call
+//      requireUser() in this context — it would 302 to /signin and the
+//      callback would never run, so the gig record would never get its
+//      setlistUrl. (That was the "PDF disappears after editing something
+//      else" bug.)
+//
+// Therefore: auth happens ONLY inside onBeforeGenerateToken, and the
+// verified { gigId, userId } travels to the completion callback via
+// tokenPayload. The DB write in onUploadCompleted runs unauthenticated
+// but only writes to the gig that we already verified ownership of when
+// minting the token.
 export async function POST(req: Request): Promise<NextResponse> {
-  const user = await requireUser();
   const body = (await req.json()) as HandleUploadBody;
 
   try {
     const result = await handleUpload({
       body,
       request: req,
-      onBeforeGenerateToken: async (pathname, clientPayload) => {
-        // clientPayload is a JSON string from the browser — we put the gigId there
+      onBeforeGenerateToken: async (_pathname, clientPayload) => {
+        // Browser-side: authenticate the user and verify gig ownership
+        // before letting them upload anything.
+        const session = await auth();
+        const email = session?.user?.email;
+        if (!email) throw new Error("Not authenticated");
+        const user = await db.user.findUnique({ where: { email } });
+        if (!user) throw new Error("Not authenticated");
+
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
         const gigId = payload.gigId as string | undefined;
+        const originalFileName = payload.fileName as string | undefined;
         if (!gigId) throw new Error("Missing gigId");
 
-        // Verify the gig belongs to this user before letting them upload
         const gig = await db.gig.findFirst({
           where: { id: gigId, ownerId: user.id },
         });
@@ -32,22 +50,51 @@ export async function POST(req: Request): Promise<NextResponse> {
         return {
           allowedContentTypes: ["application/pdf"],
           maximumSizeInBytes: 20 * 1024 * 1024, // 20 MB — plenty for a set list
-          tokenPayload: JSON.stringify({ gigId, userId: user.id }),
+          tokenPayload: JSON.stringify({
+            gigId,
+            userId: user.id,
+            originalFileName,
+          }),
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Blob is now stored; write the URL + original filename to the gig.
+        // Server-to-server webhook: no cookies, no session. Trust the
+        // { gigId, userId, originalFileName } we baked into tokenPayload
+        // above (which only got set after auth + ownership check).
         const payload = tokenPayload ? JSON.parse(tokenPayload) : {};
         const gigId = payload.gigId as string | undefined;
+        const originalFileName = payload.originalFileName as
+          | string
+          | undefined;
         if (!gigId) return;
 
-        // Strip the upload folder prefix from the display name
+        // Prefer the original filename the user picked. Fall back to
+        // stripping our "setlists/{gigId}/{timestamp}-" prefix from the
+        // stored pathname so we don't show "1715221234-foo.pdf" in the UI.
         const fileName =
-          blob.pathname.split("/").pop()?.replace(/\.pdf$/i, ".pdf") ??
+          originalFileName ??
+          blob.pathname
+            .split("/")
+            .pop()
+            ?.replace(/^\d+-/, "") ??
           "setlist.pdf";
 
-        await updateGigField(gigId, "setlistUrl", blob.url);
-        await updateGigField(gigId, "setlistFileName", fileName);
+        await db.gig.update({
+          where: { id: gigId },
+          data: {
+            setlistUrl: blob.url,
+            setlistFileName: fileName,
+            setlistUpdatedAt: new Date(),
+          },
+        });
+        await db.activity.create({
+          data: {
+            gigId,
+            action: "field_updated:setlistUrl",
+            summary: "Set list updated — band will be notified on fanout",
+          },
+        });
+        revalidatePath(`/gigs/${gigId}`);
       },
     });
     return NextResponse.json(result);
