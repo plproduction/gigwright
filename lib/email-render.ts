@@ -206,15 +206,16 @@ export function renderHtml(c: Ctx): string {
 
   // Greeting: when the bandleader wrote a custom note we wrap the whole
   // greeting in a soft cream panel so it reads like a personal letter.
-  // When there's no message, the cream panel would just contain "Hi
-  // <name>," which looks lonely and over-emphasized — so in that case
+  // The 2px accent rule on the left echoes the eyebrow color above the
+  // panel without screaming. When there's no message, the cream panel
+  // would just contain "Hi <name>," which looks lonely — so in that case
   // we render a plain salutation paragraph instead.
   const greetingRow = c.message
     ? `<tr><td style="padding:${c.triggerLabel ? "4px" : "28px"} 32px 0">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-left:3px solid ${ACCENT};border-radius:2px">
-          <tr><td style="padding:22px 24px">
-            <p style="margin:0 0 12px;font-family:${BODY_FONT};font-size:16px;color:${INK}">Hi ${escapeHtml(capitalize(c.firstName))},</p>
-            <div style="font-family:${BODY_FONT};font-size:15px;line-height:1.65;color:${INK};white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:6px">
+          <tr><td style="padding:22px 26px;border-left:2px solid ${ACCENT};border-radius:6px 0 0 6px">
+            <p style="margin:0 0 14px;font-family:${BODY_FONT};font-size:16px;color:${INK};line-height:1.4">Hi ${escapeHtml(capitalize(c.firstName))},</p>
+            <div style="font-family:${BODY_FONT};font-size:15px;line-height:1.7;color:${INK};white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>
           </td></tr>
         </table>
       </td></tr>`
@@ -237,10 +238,20 @@ export function renderHtml(c: Ctx): string {
     sub: string | null,
     opts: { emphasize?: boolean; first?: boolean } = {},
   ) => {
-    const labelStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? INK : INK_SOFT};font-size:${opts.emphasize ? "14px" : "13px"};font-weight:${opts.emphasize ? 700 : 400};padding:${opts.first ? "0" : "12px"} 0 12px;${opts.first ? "" : `border-top:1px solid ${LINE_SOFT};`}letter-spacing:${opts.emphasize ? "0.04em" : "0.02em"};text-transform:${opts.emphasize ? "uppercase" : "none"};vertical-align:top`;
-    const valueStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? ACCENT : INK};font-size:${opts.emphasize ? "20px" : "15px"};font-weight:${opts.emphasize ? 600 : 400};text-align:right;padding:${opts.first ? "0" : "12px"} 0 12px;${opts.first ? "" : `border-top:1px solid ${LINE_SOFT};`};vertical-align:top;font-variant-numeric:tabular-nums`;
+    // Emphasize = the Downbeat row. Slightly larger than other rows, bold,
+    // accent color on the time, and a soft warm tint on both cells so the
+    // row reads as the visual climax of the schedule without screaming
+    // (the older uppercase-red treatment looked alarm-like).
+    const baseTopBorder = opts.first ? "" : `border-top:1px solid ${LINE_SOFT};`;
+    const cellPadding = opts.first ? "10px 0 14px" : "14px 0";
+    const labelCellPadding = opts.emphasize
+      ? (opts.first ? "12px 14px 14px 14px" : "14px 14px 14px 14px")
+      : cellPadding;
+    const valueCellPadding = labelCellPadding;
+    const labelStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? INK : INK_SOFT};font-size:${opts.emphasize ? "15px" : "14px"};font-weight:${opts.emphasize ? 700 : 400};padding:${labelCellPadding};${baseTopBorder}letter-spacing:0.01em;vertical-align:top;${opts.emphasize ? `background:${PAPER_WARM};border-radius:6px 0 0 6px;` : ""}`;
+    const valueStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? ACCENT : INK};font-size:${opts.emphasize ? "20px" : "15px"};font-weight:${opts.emphasize ? 600 : 400};text-align:right;padding:${valueCellPadding};${baseTopBorder}vertical-align:top;font-variant-numeric:tabular-nums;${opts.emphasize ? `background:${PAPER_WARM};border-radius:0 6px 6px 0;` : ""}`;
     return `<tr>
-      <td style="${labelStyle}">${escapeHtml(label)}${sub ? `<div style="margin-top:4px;font-family:${BODY_FONT};font-size:11px;font-weight:400;color:${INK_MUTE};letter-spacing:0;text-transform:none;font-style:italic;line-height:1.5">${escapeHtml(sub)}</div>` : ""}</td>
+      <td style="${labelStyle}">${escapeHtml(label)}${sub ? `<div style="margin-top:4px;font-family:${BODY_FONT};font-size:11.5px;font-weight:400;color:${INK_MUTE};letter-spacing:0;font-style:italic;line-height:1.5">${escapeHtml(sub)}</div>` : ""}</td>
       <td style="${valueStyle}">${escapeHtml(value)}</td>
     </tr>`;
   };
@@ -338,17 +349,33 @@ export function renderHtml(c: Ctx): string {
   </td></tr>`;
 
   // ── Lineup ─────────────────────────────────────────────────────────
+  // The "Leader" tag and the role text can collide ("Leader" tag + role
+  // "Sax / Leader" reads as "Leader Leader Sax"). Strip a trailing or
+  // leading "leader" from the role string when the row is also tagged
+  // as the leader, so the two pieces of UI carry distinct information.
+  const cleanLeaderRole = (role: string | null, isLeader: boolean) => {
+    if (!role) return "";
+    if (!isLeader) return role;
+    const cleaned = role
+      .replace(/\s*[\/|·,&]\s*leader\s*$/i, "")
+      .replace(/^\s*leader\s*[\/|·,&]\s*/i, "")
+      .replace(/^\s*leader\s*$/i, "")
+      .trim();
+    return cleaned;
+  };
+
   const lineupRows = c.lineup
-    .map(
-      (m, i) => `<tr>
-        <td style="padding:${i === 0 ? "0" : "10px"} 0 10px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.4">
-          ${escapeHtml(m.name)}${m.isLeader ? ` <span style="color:${ACCENT};font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-left:6px">Leader</span>` : ""}
+    .map((m, i) => {
+      const role = cleanLeaderRole(m.role, m.isLeader);
+      return `<tr>
+        <td style="padding:${i === 0 ? "2px" : "12px"} 0 12px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:14.5px;color:${INK};line-height:1.4">
+          ${escapeHtml(m.name)}${m.isLeader ? ` <span style="color:${ACCENT};font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;margin-left:8px">Leader</span>` : ""}
         </td>
-        <td style="padding:${i === 0 ? "0" : "10px"} 0 10px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4">
-          ${m.role ? escapeHtml(m.role) : ""}
+        <td style="padding:${i === 0 ? "2px" : "12px"} 0 12px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4;font-style:italic">
+          ${role ? escapeHtml(role) : ""}
         </td>
-      </tr>`,
-    )
+      </tr>`;
+    })
     .join("");
 
   const lineupBlock =
@@ -376,13 +403,17 @@ export function renderHtml(c: Ctx): string {
   </td></tr>`;
 
   // ── Header (wordmark) ──────────────────────────────────────────────
-  const headerBlock = `<tr><td style="padding:32px 32px 0">
+  // A thin hairline below the wordmark visually separates the masthead
+  // from the body content. The "GIG SHEET" eyebrow on the right echoes
+  // the same eyebrow style used throughout the email so the page has a
+  // consistent typographic vocabulary.
+  const headerBlock = `<tr><td style="padding:36px 32px 20px;border-bottom:1px solid ${LINE_SOFT}">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td style="font-family:${BODY_FONT};font-size:20px;font-weight:500;letter-spacing:-0.01em;color:${INK};line-height:1">
+        <td style="font-family:${BODY_FONT};font-size:22px;font-weight:500;letter-spacing:-0.01em;color:${INK};line-height:1">
           Gig<span style="color:${ACCENT};font-weight:300;font-style:italic">Wright</span>
         </td>
-        <td style="text-align:right;font-family:${BODY_FONT};font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${INK_MUTE}">
+        <td style="text-align:right;font-family:${BODY_FONT};font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:${INK_MUTE};line-height:1">
           Gig sheet
         </td>
       </tr>
