@@ -113,25 +113,47 @@ export function GigForm({
           <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
         </Field>
 
-        {/* Schedule row 1b: optional second show. Many jazz clubs run
-            two sets in one night (e.g. Funky Biscuit 6 PM + 9 PM). The
-            label cell in col 1 doubles as the "what is this row" hint;
-            leaving both time inputs blank = single-show gig, no second
-            show data is saved or rendered downstream. */}
-        <div className="flex flex-col gap-1.5 self-end pb-2.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
-            Second show
-          </span>
-          <span className="text-[11px] leading-[1.35] text-ink-mute">
-            Optional &mdash; leave blank if just one show
-          </span>
-        </div>
-        <Field label="Downbeat 2">
-          <input type="time" name="secondStartTime" defaultValue={gig ? toTimeInputOpt(gig.secondStartAt) : ""} className="input" />
-        </Field>
-        <Field label="Finish 2">
-          <input type="time" name="secondEndTime" defaultValue={gig ? toTimeInputOpt(gig.secondEndAt) : ""} className="input" />
-        </Field>
+        {/* Optional second show — hidden behind a "+ Add second show"
+            disclosure so single-show gigs (the common case) stay tidy.
+            Defaults to open when the gig already has second-show data
+            so the bandleader can see and edit it. Native <details>
+            element — no client JS needed; inputs inside a closed
+            <details> still submit with the form. */}
+        <details
+          className="col-span-3 group rounded-md border border-dashed border-line-strong bg-paper-warm/40 px-4 py-3 [&[open]]:bg-paper-warm/70"
+          open={!!(gig && (gig.secondStartAt || gig.secondEndAt))}
+        >
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-soft hover:text-accent [&::-webkit-details-marker]:hidden">
+            <span className="font-serif text-[16px] font-light leading-none text-accent transition-transform group-open:rotate-45">
+              +
+            </span>
+            <span>Add second show</span>
+            <span className="font-sans text-[10px] font-medium normal-case tracking-normal text-ink-mute">
+              · for clubs running two sets in one night
+            </span>
+          </summary>
+          <div className="mt-4 grid grid-cols-3 gap-x-5 gap-y-4">
+            <div className="flex flex-col justify-end pb-2.5 text-[11px] leading-[1.35] text-ink-mute">
+              Leave blank to remove
+            </div>
+            <Field label="Downbeat 2">
+              <input
+                type="time"
+                name="secondStartTime"
+                defaultValue={gig ? toTimeInputOpt(gig.secondStartAt) : ""}
+                className="input"
+              />
+            </Field>
+            <Field label="Finish 2">
+              <input
+                type="time"
+                name="secondEndTime"
+                defaultValue={gig ? toTimeInputOpt(gig.secondEndAt) : ""}
+                className="input"
+              />
+            </Field>
+          </div>
+        </details>
 
         {/* Schedule row 2: Status, Load in, Sound check */}
         <Field label="Status">
