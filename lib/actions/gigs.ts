@@ -192,7 +192,11 @@ export async function cloneGig(sourceId: string) {
 export async function deleteGig(id: string) {
   const user = await requireUser();
   await db.gig.delete({ where: { id, ownerId: user.id } });
+  // Bust every page that aggregates gigs/pay so a deleted gig doesn't
+  // linger on dashboards or year totals after redirect.
   revalidatePath("/dashboard");
+  revalidatePath("/finance");
+  revalidatePath("/my-gigs");
   redirect("/dashboard");
 }
 

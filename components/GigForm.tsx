@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { upsertGig, deleteGig, addPersonnel, removePersonnel, updatePersonnelPay } from "@/lib/actions/gigs";
 import { PersonnelPayEdit } from "@/components/PersonnelPayEdit";
+import { DeleteGigButton } from "@/components/DeleteGigButton";
 
 type GigFormData = {
   id: string;
@@ -140,11 +141,6 @@ export function GigForm({
           <Link href={isEdit ? `/gigs/${gig!.id}` : "/dashboard"} className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-ink hover:bg-paper-warm">
             Cancel
           </Link>
-          {del && (
-            <button type="submit" formAction={del} className="ml-auto rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-accent hover:bg-accent-soft">
-              Delete gig
-            </button>
-          )}
         </div>
       </form>
 
@@ -223,6 +219,34 @@ export function GigForm({
               </form>
             )}
           </div>
+
+          {/* Danger zone — delete is destructive and irreversible, so it
+              lives in its own clearly-separated section at the bottom
+              with a two-step confirm to prevent stray-click disasters. */}
+          {del && (
+            <div className="mt-12 max-w-[680px] rounded-md border border-line bg-paper-warm p-5">
+              <h5 className="mb-1 font-serif text-[16px] font-normal text-ink">
+                Delete this gig
+              </h5>
+              <p className="mb-4 text-[12.5px] leading-[1.55] text-ink-soft">
+                Permanently removes this gig, its expense rows, and the
+                activity log. Personnel rows on the gig are unlinked.
+                This can&rsquo;t be undone.
+              </p>
+              <DeleteGigButton
+                action={del}
+                venueLabel={
+                  (gig &&
+                    (venues.find((v) => v.id === gig.venueId)?.name ||
+                      `this ${gig.startAt.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })} gig`)) ||
+                  "this gig"
+                }
+              />
+            </div>
+          )}
         </>
       )}
     </>
