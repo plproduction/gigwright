@@ -23,6 +23,8 @@ export type Ctx = {
   call: string | null;
   downbeat: string;
   finish: string | null;
+  secondDownbeat: string | null;
+  secondFinish: string | null;
   attire: string | null;
   loadingInfo: string | null;
   loadingMapLink: string | null;
@@ -111,8 +113,17 @@ export function renderText(c: Ctx): string {
     lines.push(`             (band is freed up after this time)`);
   }
   if (c.call) lines.push(`Call:        ${c.call}`);
-  lines.push(`Downbeat:    ${c.downbeat}`);
-  if (c.finish) lines.push(`Finish:      ${c.finish}`);
+  // Conditional labelling: when there's a second show, the first one
+  // gets relabelled "1st downbeat / 1st finish" so the email reads
+  // unambiguously to a musician glancing at it on a phone screen.
+  const dbLabel = c.secondDownbeat ? "1st downbeat" : "Downbeat";
+  const fnLabel = c.secondDownbeat ? "1st finish" : "Finish";
+  lines.push(`${dbLabel.padEnd(12)} ${c.downbeat}`);
+  if (c.finish) lines.push(`${fnLabel.padEnd(12)} ${c.finish}`);
+  if (c.secondDownbeat) {
+    lines.push(`2nd downbeat ${c.secondDownbeat}`);
+    if (c.secondFinish) lines.push(`2nd finish   ${c.secondFinish}`);
+  }
   if (c.attire) {
     lines.push("");
     lines.push(`Attire: ${c.attire}`);
@@ -284,9 +295,25 @@ export function renderHtml(c: Ctx): string {
     scheduleRows.push(timeRow("Call", c.call, null, { first: isFirst }));
     isFirst = false;
   }
-  scheduleRows.push(timeRow("Downbeat", c.downbeat, null, { emphasize: true, first: isFirst }));
+  // First-show downbeat. When a second show exists, relabel both rows
+  // ("1st downbeat", "1st finish") so the schedule reads cleanly. Both
+  // downbeats are emphasized — they're each the visual climax of their
+  // respective show.
+  const dbLabel = c.secondDownbeat ? "1st downbeat" : "Downbeat";
+  const fnLabel = c.secondDownbeat ? "1st finish" : "Finish";
+  scheduleRows.push(
+    timeRow(dbLabel, c.downbeat, null, { emphasize: true, first: isFirst }),
+  );
   isFirst = false;
-  if (c.finish) scheduleRows.push(timeRow("Finish", c.finish, null, { first: isFirst }));
+  if (c.finish)
+    scheduleRows.push(timeRow(fnLabel, c.finish, null, { first: isFirst }));
+  if (c.secondDownbeat) {
+    scheduleRows.push(
+      timeRow("2nd downbeat", c.secondDownbeat, null, { emphasize: true, first: isFirst }),
+    );
+    if (c.secondFinish)
+      scheduleRows.push(timeRow("2nd finish", c.secondFinish, null, { first: isFirst }));
+  }
   if (c.attire) scheduleRows.push(timeRow("Attire", c.attire, null, { first: isFirst }));
 
   const scheduleBlock = `<tr><td style="padding:24px 32px 0">

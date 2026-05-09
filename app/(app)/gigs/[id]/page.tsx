@@ -317,8 +317,26 @@ export default async function GigDetailPage({
                 sub="band is freed up after this time"
               />
               <TimeTile label="Call" value={formatTime(gig.callTimeAt)} />
-              <TimeTile label="Downbeat" value={formatTime(gig.startAt)} />
-              <TimeTile label="Finish" value={formatTime(gig.endAt)} />
+              <TimeTile
+                label={gig.secondStartAt ? "1st downbeat" : "Downbeat"}
+                value={formatTime(gig.startAt)}
+              />
+              <TimeTile
+                label={gig.secondStartAt ? "1st finish" : "Finish"}
+                value={formatTime(gig.endAt)}
+              />
+              {gig.secondStartAt && (
+                <TimeTile
+                  label="2nd downbeat"
+                  value={formatTime(gig.secondStartAt)}
+                />
+              )}
+              {gig.secondEndAt && (
+                <TimeTile
+                  label="2nd finish"
+                  value={formatTime(gig.secondEndAt)}
+                />
+              )}
             </div>
           </Section>
 

@@ -12,6 +12,8 @@ type GigFormData = {
   soundcheckEndAt: Date | null;
   callTimeAt: Date | null;
   endAt: Date | null;
+  secondStartAt: Date | null;
+  secondEndAt: Date | null;
   status: string;
   clientPayCents: number | null;
   clientDepositCents: number | null;
@@ -109,6 +111,26 @@ export function GigForm({
         </Field>
         <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
           <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
+        </Field>
+
+        {/* Schedule row 1b: optional second show. Many jazz clubs run
+            two sets in one night (e.g. Funky Biscuit 6 PM + 9 PM). The
+            label cell in col 1 doubles as the "what is this row" hint;
+            leaving both time inputs blank = single-show gig, no second
+            show data is saved or rendered downstream. */}
+        <div className="flex flex-col gap-1.5 self-end pb-2.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+            Second show
+          </span>
+          <span className="text-[11px] leading-[1.35] text-ink-mute">
+            Optional &mdash; leave blank if just one show
+          </span>
+        </div>
+        <Field label="Downbeat 2">
+          <input type="time" name="secondStartTime" defaultValue={gig ? toTimeInputOpt(gig.secondStartAt) : ""} className="input" />
+        </Field>
+        <Field label="Finish 2">
+          <input type="time" name="secondEndTime" defaultValue={gig ? toTimeInputOpt(gig.secondEndAt) : ""} className="input" />
         </Field>
 
         {/* Schedule row 2: Status, Load in, Sound check */}

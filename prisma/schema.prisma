@@ -228,12 +228,16 @@ model Gig {
   // Core date/time fields
   // startAt is the authoritative "when is this gig" field (downbeat time).
   // The detail screen also tracks optional load-in, soundcheck, and end times.
-  startAt         DateTime // Downbeat
+  startAt         DateTime // Downbeat (first show)
   loadInAt        DateTime?
   soundcheckAt    DateTime?
   soundcheckEndAt DateTime? // when the band is freed up after sound check
   callTimeAt      DateTime?
-  endAt           DateTime? // null = "open"
+  endAt           DateTime? // null = "open"  (first show finish)
+  // Optional second-show times for jazz clubs running two sets in one
+  // night (e.g. Funky Biscuit 6 PM + 9 PM). Both null = single show.
+  secondStartAt   DateTime?
+  secondEndAt     DateTime?
 
   status GigStatus @default(CONFIRMED)
 

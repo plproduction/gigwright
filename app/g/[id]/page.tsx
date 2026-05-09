@@ -61,6 +61,8 @@ export default async function PublicGigPage({
       soundcheckAt: true,
       callTimeAt: true,
       endAt: true,
+      secondStartAt: true,
+      secondEndAt: true,
       status: true,
       sound: true,
       soundContactName: true,
@@ -134,8 +136,21 @@ export default async function PublicGigPage({
           <TimeTile label="Call" time={gig.callTimeAt} />
           <TimeTile label="Load in" time={gig.loadInAt} />
           <TimeTile label="Sound check" time={gig.soundcheckAt} />
-          <TimeTile label="Downbeat" time={gig.startAt} emphasize />
-          <TimeTile label="Finish" time={gig.endAt} />
+          <TimeTile
+            label={gig.secondStartAt ? "1st downbeat" : "Downbeat"}
+            time={gig.startAt}
+            emphasize
+          />
+          <TimeTile
+            label={gig.secondStartAt ? "1st finish" : "Finish"}
+            time={gig.endAt}
+          />
+          {gig.secondStartAt && (
+            <TimeTile label="2nd downbeat" time={gig.secondStartAt} emphasize />
+          )}
+          {gig.secondEndAt && (
+            <TimeTile label="2nd finish" time={gig.secondEndAt} />
+          )}
         </section>
 
         {/* Venue + map */}

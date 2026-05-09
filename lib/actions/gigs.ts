@@ -24,6 +24,9 @@ export async function upsertGig(id: string | null, formData: FormData) {
   const soundcheckEndAt = combineOptionalTime(dateStr, formData.get("soundcheckEndTime"));
   const callTimeAt = combineOptionalTime(dateStr, formData.get("callTime"));
   const endAt = combineOptionalTime(dateStr, formData.get("endTime"));
+  // Second show (optional). Both fields can stay null for a single-show gig.
+  const secondStartAt = combineOptionalTime(dateStr, formData.get("secondStartTime"));
+  const secondEndAt = combineOptionalTime(dateStr, formData.get("secondEndTime"));
 
   const clientPayCents = parseMoneyToCents(formData.get("clientPay"));
   const clientDepositCents = parseMoneyToCents(formData.get("clientDeposit"));
@@ -44,6 +47,8 @@ export async function upsertGig(id: string | null, formData: FormData) {
     soundcheckEndAt,
     callTimeAt,
     endAt,
+    secondStartAt,
+    secondEndAt,
     status: String(formData.get("status") ?? "CONFIRMED") as GigStatus,
     clientPayCents,
     clientDepositCents,
@@ -150,6 +155,8 @@ export async function cloneGig(sourceId: string) {
       soundcheckAt: bump(src.soundcheckAt),
       soundcheckEndAt: bump(src.soundcheckEndAt),
       callTimeAt: bump(src.callTimeAt),
+      secondStartAt: bump(src.secondStartAt),
+      secondEndAt: bump(src.secondEndAt),
       endAt: bump(src.endAt),
       status: "INQUIRY", // never clone a CONFIRMED / PLAYED status
       clientPayCents: src.clientPayCents,
