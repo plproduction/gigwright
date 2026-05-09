@@ -434,135 +434,248 @@ function renderText(c: Ctx): string {
 }
 
 function renderHtml(c: Ctx): string {
-  // Order: Trigger label (subject heading) → Greeting + Bandleader's message
-  // (one cohesive block at the top) → Venue+date → Times → Attire → Load-in
-  // notes → Set list + materials → Lineup → Footer.
-  // The trigger label ALWAYS renders ABOVE the greeting so it reads like a
-  // subject heading ("GREETINGS", "DOWNBEAT CHANGE", etc.) rather than a
-  // confusing tag dropped below the message.
-  const mapLine = c.mapLink
-    ? `<p style="margin:4px 0 0;font-family:Georgia,serif"><a href="${c.mapLink}" style="color:#7E2418;font-size:13px;font-weight:600">Open in Maps →</a></p>`
-    : "";
+  // Editorial layout — feels like a personal letter, not a system email.
+  //   1. Wordmark header
+  //   2. Eyebrow tag (GREETINGS / DOWNBEAT CHANGE / etc.) on its own line
+  //   3. Greeting + bandleader's message in a quiet cream panel
+  //   4. Venue name display (large Georgia) + date + address + map
+  //   5. Schedule table with Downbeat highlighted as the main event
+  //   6. Special loading info / notes (if present)
+  //   7. Set list + materials as proper button-style CTAs
+  //   8. Lineup as a refined list
+  //   9. Footer with full-sheet link and "sent on behalf of" attribution
+  // Every section uses the same restrained palette and breathing room so
+  // the whole piece reads as one coherent, professional document.
 
-  // Subject-style heading shown above the greeting block. Only renders when
-  // a triggerLabel is present (e.g. "Greetings", "Downbeat change").
+  const ACCENT = "#7E2418";
+  const INK = "#0E0C09";
+  const INK_SOFT = "#4A453C";
+  const INK_MUTE = "#8A8576";
+  const LINE = "#E5E2D8";
+  const LINE_SOFT = "#F0EBE0";
+  const PAPER = "#F3EFE6";
+  const PAPER_WARM = "#FAF6EC";
+  const BODY_FONT = "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif";
+
+  // Editorial-style "eyebrow" label — small caps in accent color. Used as
+  // a section header throughout the email so each block has a quiet
+  // wayfinder above it. Returns a <p> tag with its own margin reset so
+  // callers don't have to wrap it.
+  const eyebrow = (text: string) =>
+    `<p style="margin:0 0 10px;font-family:${BODY_FONT};font-size:11px;font-weight:700;letter-spacing:0.22em;color:${ACCENT};text-transform:uppercase;line-height:1.4">${escapeHtml(text)}</p>`;
+
+  // ── Eyebrow / greeting block ───────────────────────────────────────
   const triggerHeading = c.triggerLabel
-    ? `<p style="margin:24px 0 10px;font-family:Georgia,serif;font-size:12px;font-weight:700;letter-spacing:0.18em;color:#7E2418;text-transform:uppercase">${escapeHtml(c.triggerLabel)}</p>`
+    ? `<tr><td style="padding:28px 32px 0">${eyebrow(c.triggerLabel)}</td></tr>`
     : "";
 
-  // The greeting + custom message render as one cohesive block. Same font
-  // family as the rest of the email (Georgia for headings, system sans for
-  // body) so the greeting doesn't feel disjointed from the schedule below.
-  // The message body uses a soft accent panel — visually distinct, but no
-  // heavy red border that competes with the venue heading.
-  const greetingBlock = c.message
-    ? `<div style="margin:${c.triggerLabel ? "0" : "24px"} 0 0;padding:18px 20px;background:#FBF5F0;border-left:3px solid #7E2418;border-radius:4px;font-size:14px;line-height:1.6;color:#0E0C09">
-        <p style="margin:0 0 10px;font-family:Georgia,serif;font-size:15px;color:#0E0C09">Hi ${escapeHtml(capitalize(c.firstName))},</p>
-        <div style="white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>
-      </div>`
-    : `<p style="margin:${c.triggerLabel ? "0" : "24px"} 0 0;font-family:Georgia,serif;font-size:15px;color:#0E0C09">Hi ${escapeHtml(capitalize(c.firstName))},</p>`;
-  // Combined "Special loading info & notes" block. The bandleader sets
-  // these on the gig as one mental category — anything-extra-the-band-needs
-  // — so they render together in the email too. If only one of the three
-  // pieces is set, the block still renders cleanly.
+  const greetingInner = c.message
+    ? `<p style="margin:0 0 12px;font-family:${BODY_FONT};font-size:16px;color:${INK}">Hi ${escapeHtml(capitalize(c.firstName))},</p>
+       <div style="font-family:${BODY_FONT};font-size:15px;line-height:1.65;color:${INK};white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>`
+    : `<p style="margin:0;font-family:${BODY_FONT};font-size:16px;color:${INK}">Hi ${escapeHtml(capitalize(c.firstName))},</p>`;
+
+  const greetingRow = `<tr><td style="padding:${c.triggerLabel ? "4px" : "28px"} 32px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-left:3px solid ${ACCENT};border-radius:2px">
+      <tr><td style="padding:22px 24px">${greetingInner}</td></tr>
+    </table>
+  </td></tr>`;
+
+  // ── Venue display ──────────────────────────────────────────────────
+  const venueRow = `<tr><td style="padding:32px 32px 0">
+    <h1 style="margin:0;font-family:${BODY_FONT};font-size:30px;font-weight:400;line-height:1.15;letter-spacing:-0.01em;color:${INK}">${escapeHtml(c.venueName)}</h1>
+    <p style="margin:8px 0 0;font-family:${BODY_FONT};font-size:15px;color:${INK_SOFT};line-height:1.5">${escapeHtml(c.longDate)}</p>
+    ${c.venueAddress ? `<p style="margin:2px 0 0;font-family:${BODY_FONT};font-size:14px;color:${INK_SOFT};line-height:1.5">${escapeHtml(c.venueAddress)}</p>` : ""}
+    ${c.mapLink ? `<p style="margin:10px 0 0"><a href="${c.mapLink}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:13px;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(126,36,24,0.25);padding-bottom:1px">Open in Maps  →</a></p>` : ""}
+  </td></tr>`;
+
+  // ── Schedule table — Downbeat highlighted as the main event ────────
+  const timeRow = (
+    label: string,
+    value: string,
+    sub: string | null,
+    opts: { emphasize?: boolean; first?: boolean } = {},
+  ) => {
+    const labelStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? INK : INK_SOFT};font-size:${opts.emphasize ? "14px" : "13px"};font-weight:${opts.emphasize ? 700 : 400};padding:${opts.first ? "0" : "12px"} 0 12px;${opts.first ? "" : `border-top:1px solid ${LINE_SOFT};`}letter-spacing:${opts.emphasize ? "0.04em" : "0.02em"};text-transform:${opts.emphasize ? "uppercase" : "none"};vertical-align:top`;
+    const valueStyle = `font-family:${BODY_FONT};color:${opts.emphasize ? ACCENT : INK};font-size:${opts.emphasize ? "20px" : "15px"};font-weight:${opts.emphasize ? 600 : 400};text-align:right;padding:${opts.first ? "0" : "12px"} 0 12px;${opts.first ? "" : `border-top:1px solid ${LINE_SOFT};`};vertical-align:top;font-variant-numeric:tabular-nums`;
+    return `<tr>
+      <td style="${labelStyle}">${escapeHtml(label)}${sub ? `<div style="margin-top:4px;font-family:${BODY_FONT};font-size:11px;font-weight:400;color:${INK_MUTE};letter-spacing:0;text-transform:none;font-style:italic;line-height:1.5">${escapeHtml(sub)}</div>` : ""}</td>
+      <td style="${valueStyle}">${escapeHtml(value)}</td>
+    </tr>`;
+  };
+
+  const scheduleRows: string[] = [];
+  let isFirst = true;
+  if (c.loadIn) {
+    scheduleRows.push(timeRow("Load in", c.loadIn, null, { first: isFirst }));
+    isFirst = false;
+  }
+  if (c.soundcheck) {
+    scheduleRows.push(timeRow("Sound check", c.soundcheck, SOUNDCHECK_EXPLAINER, { first: isFirst }));
+    isFirst = false;
+  }
+  if (c.soundcheckEnd) {
+    scheduleRows.push(timeRow("Sound check complete", c.soundcheckEnd, "band is freed up after this time", { first: isFirst }));
+    isFirst = false;
+  }
+  if (c.call) {
+    scheduleRows.push(timeRow("Call", c.call, null, { first: isFirst }));
+    isFirst = false;
+  }
+  scheduleRows.push(timeRow("Downbeat", c.downbeat, null, { emphasize: true, first: isFirst }));
+  isFirst = false;
+  if (c.attire) scheduleRows.push(timeRow("Attire", c.attire, null, { first: isFirst }));
+
+  const scheduleBlock = `<tr><td style="padding:24px 32px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+      ${scheduleRows.join("")}
+    </table>
+  </td></tr>`;
+
+  // ── Loading info & notes ───────────────────────────────────────────
   const loadingNotesBody = [
     c.loadingInfo
-      ? `<p style="margin:0;font-size:13px;color:#111;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>`
+      ? `<p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.6;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>`
       : "",
     c.notes
-      ? `<p style="margin:${c.loadingInfo ? "10px" : "0"} 0 0;font-size:13px;color:#494336;line-height:1.55;white-space:pre-wrap">${escapeHtml(c.notes)}</p>`
+      ? `<p style="margin:${c.loadingInfo ? "12px" : "0"} 0 0;font-family:${BODY_FONT};font-size:14px;color:${INK_SOFT};line-height:1.6;white-space:pre-wrap">${escapeHtml(c.notes)}</p>`
       : "",
     c.loadingMapLink
-      ? `<p style="margin:${c.loadingInfo || c.notes ? "10px" : "0"} 0 0;font-size:12px"><a href="${c.loadingMapLink}" style="color:#7E2418;font-weight:600;text-decoration:underline">📍 Open load-in map →</a></p>`
+      ? `<p style="margin:${c.loadingInfo || c.notes ? "14px" : "0"} 0 0"><a href="${c.loadingMapLink}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:13px;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(126,36,24,0.25);padding-bottom:1px">📍  Open load-in map  →</a></p>`
       : "",
   ]
     .filter(Boolean)
     .join("");
+
   const loadingNotesBlock =
     c.loadingInfo || c.loadingMapLink || c.notes
-      ? `<div style="margin:16px 0 0;padding:14px 16px;background:#F8F4EC;border:1px solid #E5E2D8;border-radius:6px">
-          <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#7E2418;text-transform:uppercase">Special loading info &amp; notes</p>
-          ${loadingNotesBody}
-        </div>`
+      ? `<tr><td style="padding:28px 32px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:6px">
+            <tr><td style="padding:20px 24px">
+              ${eyebrow("Special loading info & notes")}
+              ${loadingNotesBody}
+            </td></tr>
+          </table>
+        </td></tr>`
       : "";
 
-  // Set list + materials — ALWAYS rendered in every email so musicians have
-  // a one-click path to whatever the bandleader has posted (or to the live
-  // gig sheet if it hasn't been posted yet — the band can refresh from there
-  // when it lands). Two separate, easy-to-tap rows on mobile.
+  // ── Set list + materials — proper button-style CTAs ────────────────
   const gigSheetUrl = `https://gigwright.com/g/${c.gigId}`;
-  const setlistRow = c.setlistUrl
-    ? `<p style="margin:0 0 8px;font-size:14px"><a href="${c.setlistUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 ${escapeHtml(c.setlistFileName ?? "Open set list")}</a></p>`
-    : `<p style="margin:0 0 8px;font-size:14px"><a href="${gigSheetUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📄 Set list — view on gig sheet</a><span style="color:#888;font-size:12px"> · check back, posts before downbeat</span></p>`;
-  const materialsRow = c.materialsUrl
-    ? `<p style="margin:0;font-size:14px"><a href="${c.materialsUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials folder →</a></p>`
-    : `<p style="margin:0;font-size:14px"><a href="${gigSheetUrl}" style="color:#7E2418;font-weight:600;text-decoration:underline">📁 Gig materials — view on gig sheet</a><span style="color:#888;font-size:12px"> · check back, posts when ready</span></p>`;
-  const linksBlock = `<div style="margin:18px 0 0;padding:14px 16px;background:#FBF9F4;border:1px solid #E5E2D8;border-radius:6px">
-      ${setlistRow}
-      ${materialsRow}
-    </div>`;
 
-  // (notes is now merged into the combined loadingNotesBlock above.)
+  // Single CTA "card" — a tappable link styled like a button row. The
+  // `last` flag drops the bottom margin so the second card sits flush.
+  const ctaButton = (
+    icon: string,
+    label: string,
+    sublabel: string | null,
+    href: string,
+    last: boolean,
+  ) => `<a href="${href}" style="display:block;text-decoration:none;background:#FFFFFF;border:1px solid ${LINE};border-radius:8px;padding:16px 18px;margin:0 0 ${last ? "0" : "10px"};color:${INK};font-family:${BODY_FONT}">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+          <tr>
+            <td style="font-size:18px;width:32px;vertical-align:middle;line-height:1">${icon}</td>
+            <td style="vertical-align:middle">
+              <div style="font-family:${BODY_FONT};font-size:14px;font-weight:700;color:${ACCENT};line-height:1.3;letter-spacing:0.01em">${escapeHtml(label)}</div>
+              ${sublabel ? `<div style="font-family:${BODY_FONT};font-size:12px;color:${INK_MUTE};line-height:1.5;margin-top:3px">${escapeHtml(sublabel)}</div>` : ""}
+            </td>
+            <td style="text-align:right;vertical-align:middle;font-family:${BODY_FONT};color:${ACCENT};font-size:18px;width:24px">→</td>
+          </tr>
+        </table>
+      </a>`;
+
+  const setlistCta = c.setlistUrl
+    ? ctaButton("📄", c.setlistFileName ?? "Open set list", "PDF · view or download", c.setlistUrl, false)
+    : ctaButton("📄", "Set list", "Posts before downbeat — view on gig sheet", gigSheetUrl, false);
+  const materialsCta = c.materialsUrl
+    ? ctaButton("📁", "Gig materials folder", "Charts, audio, references", c.materialsUrl, true)
+    : ctaButton("📁", "Gig materials", "Posts when ready — view on gig sheet", gigSheetUrl, true);
+
+  const linksBlock = `<tr><td style="padding:28px 32px 0">
+    ${eyebrow("Music & materials")}
+    ${setlistCta}
+    ${materialsCta}
+  </td></tr>`;
+
+  // ── Lineup ─────────────────────────────────────────────────────────
+  const lineupRows = c.lineup
+    .map(
+      (m, i) => `<tr>
+        <td style="padding:${i === 0 ? "0" : "10px"} 0 10px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.4">
+          ${escapeHtml(m.name)}${m.isLeader ? ` <span style="color:${ACCENT};font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-left:6px">Leader</span>` : ""}
+        </td>
+        <td style="padding:${i === 0 ? "0" : "10px"} 0 10px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4">
+          ${m.role ? escapeHtml(m.role) : ""}
+        </td>
+      </tr>`,
+    )
+    .join("");
+
   const lineupBlock =
     c.lineup.length > 0
-      ? `<div style="margin:20px 0 0;padding-top:16px;border-top:1px solid #E5E2D8">
-          <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;color:#888;text-transform:uppercase">Lineup</p>
-          <ul style="margin:0;padding:0;list-style:none;font-size:13px;color:#111;line-height:1.7">
-            ${c.lineup
-              .map(
-                (m) =>
-                  `<li>${escapeHtml(m.name)}${m.role ? ` <span style="color:#888">— ${escapeHtml(m.role)}</span>` : ""}${m.isLeader ? ` <span style="color:#7E2418;font-size:11px;font-weight:600">· leader</span>` : ""}</li>`,
-              )
-              .join("")}
-          </ul>
-        </div>`
+      ? `<tr><td style="padding:28px 32px 0">
+          ${eyebrow("Lineup")}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse">
+            ${lineupRows}
+          </table>
+        </td></tr>`
       : "";
-  // Common font stack for body text — same in greeting block, schedule
-  // table, and footer so the email reads as one cohesive piece. Headings
-  // (logo, venue name, key labels) use Georgia to match the brand.
-  const bodyFont =
-    "Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif";
+
+  // ── Footer ─────────────────────────────────────────────────────────
+  const footerBlock = `<tr><td style="padding:32px 32px 28px">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top:1px solid ${LINE};border-collapse:collapse">
+      <tr><td style="padding:18px 0 0">
+        <p style="margin:0"><a href="${gigSheetUrl}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:13px;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(126,36,24,0.25);padding-bottom:1px">View the full gig sheet  →</a></p>
+        <p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:12px;color:${INK_MUTE};line-height:1.6">
+          Sent on behalf of <span style="color:${INK_SOFT};font-weight:600">${escapeHtml(c.bandleader)}</span> via
+          <a href="https://gigwright.com" style="color:${INK_MUTE};text-decoration:none;border-bottom:1px solid ${LINE}">GigWright</a> —
+          the bandleader's workbench from the first call to the final payout.
+        </p>
+      </td></tr>
+    </table>
+  </td></tr>`;
+
+  // ── Header (wordmark) ──────────────────────────────────────────────
+  const headerBlock = `<tr><td style="padding:32px 32px 0">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-family:${BODY_FONT};font-size:20px;font-weight:500;letter-spacing:-0.01em;color:${INK};line-height:1">
+          Gig<span style="color:${ACCENT};font-weight:300;font-style:italic">Wright</span>
+        </td>
+        <td style="text-align:right;font-family:${BODY_FONT};font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:${INK_MUTE}">
+          Gig sheet
+        </td>
+      </tr>
+    </table>
+  </td></tr>`;
 
   return `<!DOCTYPE html>
 <html>
-  <body style="margin:0;padding:32px;background:#F3EFE6;font-family:${bodyFont};color:#0E0C09;">
-    <div style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
-      <div style="font-family:Georgia,serif;font-size:18px;font-weight:500;letter-spacing:-0.02em;padding-bottom:14px;border-bottom:1px solid #E5E2D8;color:#111">
-        Gig<span style="color:#7E2418;font-weight:300">Wright</span>
-      </div>
-
-      ${triggerHeading}
-      ${greetingBlock}
-
-      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:400;letter-spacing:-0.02em;line-height:1.15;margin:28px 0 4px;color:#111">
-        ${escapeHtml(c.venueName)}
-      </h1>
-      <p style="color:#555;font-size:14px;margin:0 0 6px;font-family:${bodyFont}">${escapeHtml(c.longDate)}</p>
-      ${c.venueAddress ? `<p style="margin:0;font-size:13px;color:#555;font-family:${bodyFont}">${escapeHtml(c.venueAddress)}</p>` : ""}
-      ${mapLine}
-
-      <table style="width:100%;margin-top:20px;border-top:1px solid #E5E2D8;border-collapse:collapse;font-size:14px;font-family:${bodyFont}">
-        ${c.loadIn ? `<tr><td style="color:#555;padding:6px 0">Load in</td><td style="color:#111;text-align:right;padding:6px 0">${escapeHtml(c.loadIn)}</td></tr>` : ""}
-        ${c.soundcheck ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check<br/><span style="font-size:11px;color:#888;font-style:italic">${SOUNDCHECK_EXPLAINER}</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${escapeHtml(c.soundcheck)}</td></tr>` : ""}
-        ${c.soundcheckEnd ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Sound check complete<br/><span style="font-size:11px;color:#888;font-style:italic">band is freed up after this time</span></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8;vertical-align:top">${escapeHtml(c.soundcheckEnd)}</td></tr>` : ""}
-        ${c.call ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Call</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.call)}</td></tr>` : ""}
-        <tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8"><strong>Downbeat</strong></td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8"><strong>${escapeHtml(c.downbeat)}</strong></td></tr>
-        ${c.attire ? `<tr><td style="color:#555;padding:6px 0;border-top:1px solid #F2EFE8">Attire</td><td style="color:#111;text-align:right;padding:6px 0;border-top:1px solid #F2EFE8">${escapeHtml(c.attire)}</td></tr>` : ""}
-      </table>
-
-      ${loadingNotesBlock}
-      ${linksBlock}
-      ${lineupBlock}
-
-      <!--RECIPIENTS-->
-
-      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E2D8;font-size:11px;color:#888;line-height:1.5">
-        <p style="margin:0">
-          <a href="https://gigwright.com/g/${c.gigId}" style="color:#7E2418">View the full gig sheet on GigWright →</a>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>${escapeHtml(c.venueName)} · ${escapeHtml(c.longDate)}</title>
+  </head>
+  <body style="margin:0;padding:0;background:${PAPER};color:${INK};font-family:${BODY_FONT};-webkit-font-smoothing:antialiased">
+    <!-- Preheader (shows in inbox preview, hidden in body) -->
+    <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escapeHtml(c.venueName)} · ${escapeHtml(c.longDate)} · downbeat ${escapeHtml(c.downbeat)}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER}">
+      <tr><td align="center" style="padding:32px 16px">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.08);border-radius:12px;box-shadow:0 1px 2px rgba(14,12,9,0.04)">
+          ${headerBlock}
+          ${triggerHeading}
+          ${greetingRow}
+          ${venueRow}
+          ${scheduleBlock}
+          ${loadingNotesBlock}
+          ${linksBlock}
+          ${lineupBlock}
+          ${footerBlock}
+        </table>
+        <p style="margin:14px 0 0;font-family:${BODY_FONT};font-size:11px;color:${INK_MUTE};text-align:center">
+          You're receiving this because ${escapeHtml(c.bandleader)} added you to a gig.
         </p>
-        <p style="margin:8px 0 0">Sent on behalf of <strong>${escapeHtml(c.bandleader)}</strong>.</p>
-      </div>
-    </div>
+      </td></tr>
+    </table>
+    <!--RECIPIENTS-->
   </body>
 </html>`;
 }
