@@ -42,15 +42,25 @@ export async function POST(req: Request): Promise<NextResponse> {
             "image/webp",
             "image/heic",
             "image/heif",
+            "application/pdf", // many venues hand out load-in PDFs
           ],
-          maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB — plenty for a map screenshot
+          maximumSizeInBytes: 10 * 1024 * 1024, // 10 MB — plenty for a map screenshot or short PDF
           tokenPayload: JSON.stringify({ gigId, userId: user.id }),
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
+        // Backup write path — the primary commit is the
+        // saveLoadingMapUploaded server action called from the client
+        // after upload(). Idempotent so we don't double-log.
         const payload = tokenPayload ? JSON.parse(tokenPayload) : {};
         const gigId = payload.gigId as string | undefined;
         if (!gigId) return;
+
+        const existing = await db.gig.findUnique({
+          where: { id: gigId },
+          select: { loadingMapUrl: true },
+        });
+        if (existing?.loadingMapUrl === blob.url) return;
 
         await db.gig.update({
           where: { id: gigId },
@@ -63,9 +73,6 @@ export async function POST(req: Request): Promise<NextResponse> {
             summary: "Loading map uploaded",
           },
         });
-        // Bust caches everywhere this gig surfaces so the upload is
-        // visible without a manual reload — same pattern as the
-        // setlist webhook.
         revalidatePath(`/gigs/${gigId}`);
         revalidatePath(`/gigs/${gigId}/edit`);
         revalidatePath(`/dashboard`);

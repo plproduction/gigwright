@@ -58,9 +58,16 @@ export async function POST(req: Request): Promise<NextResponse> {
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Server-to-server webhook: no cookies, no session. Trust the
-        // { gigId, userId, originalFileName } we baked into tokenPayload
-        // above (which only got set after auth + ownership check).
+        // BACKUP write path. The primary commit happens via the
+        // saveSetlistUploaded server action called from the client right
+        // after upload() resolves — that's reliable in our Netlify-hosted
+        // production. This webhook is the safety net: if the user's tab
+        // closed between upload completion and the server action firing,
+        // this still saves the URL.
+        //
+        // Idempotent: if the gig already has the same setlistUrl, skip.
+        // Avoids creating a duplicate Activity log entry every time both
+        // paths succeed (the common case).
         const payload = tokenPayload ? JSON.parse(tokenPayload) : {};
         const gigId = payload.gigId as string | undefined;
         const originalFileName = payload.originalFileName as
@@ -68,15 +75,18 @@ export async function POST(req: Request): Promise<NextResponse> {
           | undefined;
         if (!gigId) return;
 
-        // Prefer the original filename the user picked. Fall back to
-        // stripping our "setlists/{gigId}/{timestamp}-" prefix from the
-        // stored pathname so we don't show "1715221234-foo.pdf" in the UI.
+        const existing = await db.gig.findUnique({
+          where: { id: gigId },
+          select: { setlistUrl: true },
+        });
+        if (existing?.setlistUrl === blob.url) {
+          // Server action already saved this exact URL — nothing to do.
+          return;
+        }
+
         const fileName =
           originalFileName ??
-          blob.pathname
-            .split("/")
-            .pop()
-            ?.replace(/^\d+-/, "") ??
+          blob.pathname.split("/").pop()?.replace(/^\d+-/, "") ??
           "setlist.pdf";
 
         await db.gig.update({
@@ -94,10 +104,6 @@ export async function POST(req: Request): Promise<NextResponse> {
             summary: "Set list updated — band will be notified on fanout",
           },
         });
-        // Bust caches on every surface that surfaces this gig so the
-        // setlist update is immediately visible everywhere — admin
-        // detail page, edit form, dashboard activity, finance recents,
-        // and the affected musicians' portal.
         revalidatePath(`/gigs/${gigId}`);
         revalidatePath(`/gigs/${gigId}/edit`);
         revalidatePath(`/dashboard`);

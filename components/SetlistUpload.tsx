@@ -3,18 +3,21 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
+import { saveSetlistUploaded } from "@/lib/actions/gigs";
 
 // Drag-drop / click-to-pick PDF uploader for a gig's set list. Streams the
-// file straight from the browser to Vercel Blob (never through our server),
-// then the /api/upload/setlist onUploadCompleted hook writes the URL and
-// filename to the gig record.
+// file straight from the browser to Vercel Blob, then commits the resulting
+// URL onto the gig record via the saveSetlistUploaded server action.
 //
-// After a successful upload we trigger router.refresh() so EVERY
-// server-rendered piece of the gig page (activity log, lineup, "Set list
-// updated" timestamps, etc.) re-fetches with the new state. Combined
-// with the webhook's revalidatePath calls, an upload now saves and
-// surfaces the entire event automatically — the user doesn't have to
-// hit a separate Save button or reload the page.
+// We DON'T rely on the @vercel/blob onUploadCompleted webhook for the DB
+// write. That hook proved unreliable in production — uploads kept
+// "disappearing" because the webhook never reached our Netlify-hosted
+// route, so the gig record was never updated. Instead, after upload()
+// resolves on the client we explicitly call the server action with the
+// blob URL. The browser has cookies, so requireUser() inside the action
+// works, and the URL gets persisted as part of the same user gesture
+// that did the upload. Once saved, the URL stays on the gig until the
+// user explicitly replaces it.
 export function SetlistUpload({
   gigId,
   initialUrl,
@@ -54,13 +57,18 @@ export function SetlistUpload({
           setProgress(Math.round(e.percentage));
         },
       });
+      // Commit the URL to the gig record via server action (not via the
+      // unreliable Blob webhook). This is the line that makes the upload
+      // actually persist — without it, the file lives on Blob storage but
+      // the gig record never learns about it and the UI shows it
+      // "disappearing" on the next page load.
+      await saveSetlistUploaded(gigId, blob.url, file.name);
+
       setUrl(blob.url);
       setFileName(file.name);
       setProgress(null);
       // Re-fetch the page so server-rendered sections (activity log,
       // notification timestamps, etc.) reflect the upload immediately.
-      // Local useState above already shows the file in the uploader UI;
-      // this brings the rest of the page in sync.
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");

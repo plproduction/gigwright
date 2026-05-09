@@ -3,11 +3,20 @@
 import { useRef, useState, useTransition } from "react";
 import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
-import { updateGigField } from "@/lib/actions/gigs";
+import { updateGigField, saveLoadingMapUploaded } from "@/lib/actions/gigs";
 
-// Image uploader for the per-gig loading map. Streams the image straight to
-// Vercel Blob; on completion, the /api/upload/loading-map hook writes the
-// URL to gig.loadingMapUrl. Also offers a "Remove" affordance once uploaded.
+// Loading-map uploader. Accepts images (PNG/JPG/WebP/HEIC/HEIF) AND PDFs —
+// many venues hand out loading directions as a one-page PDF, no reason to
+// force them into a screenshot. Streams the file straight to Vercel Blob,
+// then commits the URL onto the gig record via the saveLoadingMapUploaded
+// server action.
+//
+// Why a server action and not the Blob onUploadCompleted webhook: the
+// webhook is unreliable in our Netlify-hosted production. Calling a
+// server action from the client right after upload() resolves is
+// bulletproof — the browser has cookies, so auth works, and the gig
+// row gets its loadingMapUrl persisted as part of the same user
+// gesture that did the upload.
 export function LoadingMapUpload({
   gigId,
   initialUrl,
@@ -25,12 +34,14 @@ export function LoadingMapUpload({
 
   async function handleFile(file: File) {
     setError(null);
-    if (!file.type.startsWith("image/")) {
-      setError("Map must be an image (PNG, JPG, WebP, HEIC)");
+    const isImage = file.type.startsWith("image/");
+    const isPdf = file.type === "application/pdf";
+    if (!isImage && !isPdf) {
+      setError("Map must be an image (PNG, JPG, WebP, HEIC) or a PDF");
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Image is larger than 10 MB");
+      setError("File is larger than 10 MB");
       return;
     }
     setProgress(0);
@@ -42,6 +53,11 @@ export function LoadingMapUpload({
         clientPayload: JSON.stringify({ gigId }),
         onUploadProgress: (e) => setProgress(Math.round(e.percentage)),
       });
+      // Commit the URL to the gig record. Doing this client-side with a
+      // server action (instead of relying on the Blob webhook) is what
+      // makes the upload reliably persist — see comment at the top of
+      // this file.
+      await saveLoadingMapUploaded(gigId, blob.url);
       setUrl(blob.url);
       setProgress(null);
       router.refresh();
@@ -72,8 +88,13 @@ export function LoadingMapUpload({
     if (f) handleFile(f);
   }
 
-  // Uploaded state: image preview + replace/remove controls
+  // Uploaded state: image preview (or PDF icon row) + replace/remove
+  // controls. PDFs can't be <img>-embedded, so we show an icon + filename
+  // tile instead and let the user click through to view.
   if (url && progress === null) {
+    const isPdf = /\.pdf($|\?)/i.test(url);
+    const fileNameFromUrl =
+      url.split("/").pop()?.split("?")[0]?.replace(/^\d+-/, "") ?? "loading-map";
     return (
       <div>
         <div className="overflow-hidden rounded-md border border-line bg-paper">
@@ -84,12 +105,26 @@ export function LoadingMapUpload({
             className="block"
             title="Open full size"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={url}
-              alt="Loading map"
-              className="h-auto w-full max-h-[280px] object-contain bg-paper-warm"
-            />
+            {isPdf ? (
+              <div className="flex items-center gap-3 bg-paper-warm px-5 py-6">
+                <span className="text-[28px]">📄</span>
+                <div className="flex flex-col">
+                  <span className="text-[13px] font-semibold text-ink">
+                    {fileNameFromUrl}
+                  </span>
+                  <span className="text-[11px] text-ink-mute">
+                    PDF · click to open
+                  </span>
+                </div>
+              </div>
+            ) : (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={url}
+                alt="Loading map"
+                className="h-auto w-full max-h-[280px] object-contain bg-paper-warm"
+              />
+            )}
           </a>
           <div className="flex items-center justify-between border-t border-line px-3 py-2 text-[11px]">
             <a
@@ -122,7 +157,7 @@ export function LoadingMapUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
           onChange={onPick}
           className="hidden"
         />
@@ -167,10 +202,10 @@ export function LoadingMapUpload({
         }`}
       >
         <div className="text-[12px] font-medium text-ink">
-          Upload map image
+          Upload loading map
         </div>
         <div className="text-[11px] text-ink-mute">
-          Drag &amp; drop or click · PNG, JPG, WebP, HEIC · 10 MB max
+          Drag &amp; drop or click · PNG, JPG, WebP, HEIC, or PDF · 10 MB max
         </div>
       </button>
       <input

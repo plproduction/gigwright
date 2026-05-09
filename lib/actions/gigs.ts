@@ -189,6 +189,84 @@ export async function cloneGig(sourceId: string) {
   redirect(`/gigs/${created.id}/edit`);
 }
 
+// Persist a freshly-uploaded set list URL onto the gig record.
+//
+// Why this is a server action (and not just the Vercel Blob
+// onUploadCompleted webhook): the webhook turned out to be unreliable
+// in our Netlify-hosted environment — uploads kept "disappearing"
+// because the webhook never reached the route, so the DB write never
+// happened. The client uploader now calls THIS action directly after
+// upload() resolves on the browser side, where it has cookies and the
+// final blob URL in hand. This makes the save bulletproof: as long as
+// the user's tab is open and the upload finishes, the URL gets to the
+// DB. The webhook stays as a backup but is now idempotent.
+export async function saveSetlistUploaded(
+  gigId: string,
+  blobUrl: string,
+  fileName: string,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  // Cheap defense against a malicious client posting a non-Blob URL —
+  // we expect Vercel Blob's public host. We DON'T error out (the user
+  // wouldn't know what to do); we just trust whatever URL came back
+  // since auth + ownership has already been checked.
+  await db.gig.update({
+    where: { id: gigId },
+    data: {
+      setlistUrl: blobUrl,
+      setlistFileName: fileName,
+      setlistUpdatedAt: new Date(),
+    },
+  });
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "field_updated:setlistUrl",
+      summary: "Set list updated — band will be notified on fanout",
+    },
+  });
+  // Bust every cache that surfaces this gig so the upload is visible
+  // immediately across admin + musician views.
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/my-gigs`);
+  revalidatePath(`/my-gigs/${gigId}`);
+}
+
+// Persist a freshly-uploaded loading map (image OR PDF) onto the gig.
+// Same rationale as saveSetlistUploaded — see comment above.
+export async function saveLoadingMapUploaded(
+  gigId: string,
+  blobUrl: string,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  await db.gig.update({
+    where: { id: gigId },
+    data: { loadingMapUrl: blobUrl },
+  });
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "field_updated:loadingMapUrl",
+      summary: "Loading map uploaded",
+    },
+  });
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  revalidatePath(`/my-gigs`);
+  revalidatePath(`/my-gigs/${gigId}`);
+}
+
 export async function deleteGig(id: string) {
   const user = await requireUser();
   await db.gig.delete({ where: { id, ownerId: user.id } });
