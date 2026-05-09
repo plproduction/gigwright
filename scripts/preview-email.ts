@@ -38,10 +38,10 @@ const scenarios = {
     notes:
       "Rooms have been reserved for those of you who have confirmed. Please double-confirm via email with me.",
     lineup: [
-      { name: "Patrick Lamb", role: "Sax / Leader", isLeader: true },
-      { name: "Dave Captein", role: "Bass", isLeader: false },
-      { name: "Eero Spence", role: "Drums", isLeader: false },
-      { name: "Camillo Loerakker", role: "Keys", isLeader: false },
+      { name: "Patrick Lamb", role: "Sax / Leader", isLeader: true, phone: "(561) 555-0140" },
+      { name: "Dave Captein", role: "Bass", isLeader: false, phone: "(503) 555-0188" },
+      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
+      { name: "Camillo Loerakker", role: "Keys", isLeader: false, phone: null },
     ],
   },
   update: {
@@ -69,9 +69,9 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Patrick Lamb", role: null, isLeader: true },
-      { name: "Dave Captein", role: "Bass", isLeader: false },
-      { name: "Eero Spence", role: "Drums", isLeader: false },
+      { name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" },
+      { name: "Dave Captein", role: "Bass", isLeader: false, phone: "(503) 555-0188" },
+      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
     ],
   },
   greeting: {
@@ -99,8 +99,8 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Patrick Lamb", role: null, isLeader: true },
-      { name: "Eero Spence", role: "Drums", isLeader: false },
+      { name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" },
+      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
     ],
   },
   minimal: {
@@ -126,7 +126,7 @@ const scenarios = {
     setlistFileName: null,
     materialsUrl: null,
     notes: null,
-    lineup: [{ name: "Patrick Lamb", role: null, isLeader: true }],
+    lineup: [{ name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" }],
   },
 };
 

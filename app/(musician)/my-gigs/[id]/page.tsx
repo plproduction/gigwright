@@ -207,29 +207,45 @@ export default async function MyGigDetailPage({
         {/* Column 3: Who's playing + Your pay + Notes */}
         <div className="px-6 py-5">
           <Section title={`Personnel · ${gig.personnel.length}`}>
-            <div className="flex flex-col gap-1.5 text-[13px]">
-              {gig.personnel.map((p) => (
-                <div
-                  key={p.id}
-                  className={`flex items-center gap-2 ${
-                    p.musician.userId === user.id
-                      ? "font-semibold text-ink"
-                      : "text-ink-soft"
-                  }`}
-                >
-                  <span>{p.musician.name.split(" ")[0]}</span>
-                  <span className="text-[11px] text-ink-mute">
-                    {p.musician.isLeader
-                      ? "Leader"
-                      : p.musician.roles.slice(0, 1).join("")}
-                  </span>
-                  {p.musician.userId === user.id && (
-                    <span className="rounded-full bg-accent-soft px-1.5 py-0 text-[9px] font-semibold uppercase tracking-[0.1em] text-accent">
-                      You
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="flex flex-col divide-y divide-line text-[13px]">
+              {gig.personnel.map((p) => {
+                const isMe = p.musician.userId === user.id;
+                const tel = p.musician.phone
+                  ? p.musician.phone.replace(/[^0-9+]/g, "")
+                  : null;
+                return (
+                  <div
+                    key={p.id}
+                    className="flex items-center justify-between gap-2 py-2"
+                  >
+                    <div
+                      className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${
+                        isMe ? "font-semibold text-ink" : "text-ink-soft"
+                      }`}
+                    >
+                      <span>{p.musician.name.split(" ")[0]}</span>
+                      <span className="text-[11px] text-ink-mute">
+                        {p.musician.isLeader
+                          ? "Leader"
+                          : p.musician.roles.slice(0, 1).join("")}
+                      </span>
+                      {isMe && (
+                        <span className="rounded-full bg-accent-soft px-1.5 py-0 text-[9px] font-semibold uppercase tracking-[0.1em] text-accent">
+                          You
+                        </span>
+                      )}
+                    </div>
+                    {tel && !isMe && (
+                      <a
+                        href={`tel:${tel}`}
+                        className="text-[12px] font-medium text-accent decoration-accent/40 underline-offset-4 hover:underline"
+                      >
+                        {p.musician.phone}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Section>
 

@@ -55,6 +55,7 @@ export async function fanOutGigUpdate(
     name: p.musician.name,
     role: p.roleLabel ?? p.musician.roles[0] ?? null,
     isLeader: p.musician.isLeader,
+    phone: p.musician.phone ?? null,
   }));
 
   // Single source of truth for the email context — used for both each

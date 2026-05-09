@@ -30,7 +30,12 @@ export type Ctx = {
   setlistFileName: string | null;
   materialsUrl: string | null;
   notes: string | null;
-  lineup: Array<{ name: string; role: string | null; isLeader: boolean }>;
+  lineup: Array<{
+    name: string;
+    role: string | null;
+    isLeader: boolean;
+    phone: string | null;
+  }>;
 };
 
 // Standard explanation for "Sound check" — always travels with the term so
@@ -152,7 +157,9 @@ export function renderText(c: Ctx): string {
 
   // (notes is now merged into the combined loading info & notes section above.)
 
-  // Lineup — who's on the gig.
+  // Lineup — who's on the gig. Phone numbers (when set) ride along on
+  // an indented continuation line so band members can call/text each
+  // other directly.
   if (c.lineup.length > 0) {
     lines.push("");
     lines.push(`Lineup:`);
@@ -160,6 +167,7 @@ export function renderText(c: Ctx): string {
       const tag = m.isLeader ? " (leader)" : "";
       const role = m.role ? ` — ${m.role}` : "";
       lines.push(`  • ${m.name}${role}${tag}`);
+      if (m.phone) lines.push(`     ${m.phone}`);
     }
   }
 
@@ -367,14 +375,28 @@ export function renderHtml(c: Ctx): string {
     return cleaned;
   };
 
+  // Phone numbers are rendered as tappable tel: links so band members
+  // can contact each other directly from the email — common case is
+  // "I'm running late, calling the bass player." We strip non-digit
+  // characters for the tel: href but keep the original string visible
+  // so the format the bandleader entered is preserved.
+  const phoneLine = (phone: string | null) => {
+    if (!phone) return "";
+    const tel = phone.replace(/[^0-9+]/g, "");
+    return `<div style="margin-top:3px;font-family:${BODY_FONT};font-size:12.5px;color:${INK_SOFT};line-height:1.4">
+        <a href="tel:${escapeHtml(tel)}" style="color:${ACCENT};text-decoration:none;border-bottom:1px solid rgba(126,36,24,0.2)">${escapeHtml(phone)}</a>
+      </div>`;
+  };
+
   const lineupRows = c.lineup
     .map((m, i) => {
       const role = cleanLeaderRole(m.role, m.isLeader);
       return `<tr>
-        <td style="padding:${i === 0 ? "2px" : "12px"} 0 12px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:14.5px;color:${INK};line-height:1.4">
+        <td style="padding:${i === 0 ? "2px" : "14px"} 0 14px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:14.5px;color:${INK};line-height:1.4;vertical-align:top">
           ${escapeHtml(m.name)}${m.isLeader ? ` <span style="color:${ACCENT};font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;margin-left:8px">Leader</span>` : ""}
+          ${phoneLine(m.phone)}
         </td>
-        <td style="padding:${i === 0 ? "2px" : "12px"} 0 12px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4;font-style:italic">
+        <td style="padding:${i === 0 ? "2px" : "14px"} 0 14px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4;font-style:italic;vertical-align:top">
           ${role ? escapeHtml(role) : ""}
         </td>
       </tr>`;
