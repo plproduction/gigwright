@@ -31,6 +31,7 @@ export function SetlistUpload({
   const [url, setUrl] = useState(initialUrl);
   const [fileName, setFileName] = useState(initialFileName);
   const [progress, setProgress] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -46,6 +47,7 @@ export function SetlistUpload({
       return;
     }
     setProgress(0);
+    let blobUrl: string | null = null;
     try {
       const pathname = `setlists/${gigId}/${Date.now()}-${sanitize(file.name)}`;
       const blob = await upload(pathname, file, {
@@ -57,22 +59,36 @@ export function SetlistUpload({
           setProgress(Math.round(e.percentage));
         },
       });
-      // Commit the URL to the gig record via server action (not via the
-      // unreliable Blob webhook). This is the line that makes the upload
-      // actually persist — without it, the file lives on Blob storage but
-      // the gig record never learns about it and the UI shows it
-      // "disappearing" on the next page load.
-      await saveSetlistUploaded(gigId, blob.url, file.name);
-
-      setUrl(blob.url);
-      setFileName(file.name);
+      blobUrl = blob.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
       setProgress(null);
+      return;
+    }
+
+    // Upload to Blob succeeded. Now commit the URL to the gig record.
+    // Treat this as its own phase with its own error message so a save
+    // failure doesn't silently masquerade as a successful upload.
+    setProgress(null);
+    setSaving(true);
+    try {
+      await saveSetlistUploaded(gigId, blobUrl, file.name);
+      setUrl(blobUrl);
+      setFileName(file.name);
+      setSaving(false);
       // Re-fetch the page so server-rendered sections (activity log,
       // notification timestamps, etc.) reflect the upload immediately.
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-      setProgress(null);
+      setSaving(false);
+      // Crucial: the file is on Blob storage but the gig record didn't
+      // get the URL. Show a strong, persistent error and the URL so the
+      // user can recover or copy/paste the URL into a support message.
+      setError(
+        `Saved to storage but failed to attach to the gig: ${
+          err instanceof Error ? err.message : "unknown error"
+        }. The file URL is: ${blobUrl}`,
+      );
     }
   }
 
@@ -120,6 +136,19 @@ export function SetlistUpload({
         {error && (
           <div className="mt-2 text-[11px] text-accent">{error}</div>
         )}
+      </div>
+    );
+  }
+
+  // Saving state — upload finished, now waiting for the gig record to
+  // commit. Distinct from the upload progress so the user can see whether
+  // a hang is on the network upload or the DB save.
+  if (saving) {
+    return (
+      <div className="rounded-md border border-accent/30 bg-accent/5 p-3">
+        <div className="text-[12px] font-medium text-accent">
+          Saving to gig…
+        </div>
       </div>
     );
   }

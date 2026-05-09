@@ -9,6 +9,7 @@ import { SetlistUpload } from "@/components/SetlistUpload";
 import { LoadingMapUpload } from "@/components/LoadingMapUpload";
 import { ShareGigButton } from "@/components/ShareGigButton";
 import { CloneGigButton } from "@/components/CloneGigButton";
+import { ActivityList } from "@/components/ActivityList";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import {
@@ -264,6 +265,40 @@ export default async function GigDetailPage({
             </div>
           </Section>
           </div>
+
+          {/* Clone + Activity moved here from Column 3 to reduce the
+              vertical scroll on the right column. Both are reference
+              utilities (not heavy edits), so they sit cleanly below
+              Personnel + Money. */}
+          <div className="hidden lg:block">
+          <Section title="Clone this gig">
+            <div className="flex items-start gap-3">
+              <CloneGigButton gigId={gig.id} />
+              <span className="flex-1 text-[11px] leading-[1.45] text-ink-mute">
+                Repeat this gig? Clone makes a fresh inquiry one week out
+                with the same venue and band.
+              </span>
+            </div>
+          </Section>
+          </div>
+
+          <div className="hidden lg:block">
+          <Section title="Activity">
+            <ActivityList
+              entries={gig.activity.map((a) => ({
+                id: a.id,
+                date: `${a.createdAt.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })} ${a.createdAt.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}`,
+                summary: a.summary,
+              }))}
+            />
+          </Section>
+          </div>
         </div>
 
         {/* Column 2: Times + Venue + Tech */}
@@ -460,46 +495,6 @@ export default async function GigDetailPage({
           <Section title="Share gig sheet">
             <ShareGigButton gigId={gig.id} />
           </Section>
-
-          <div className="hidden lg:block">
-          <Section title="Clone this gig">
-            <div className="flex items-center gap-3">
-              <CloneGigButton gigId={gig.id} />
-              <span className="text-[11px] text-ink-mute">
-                Repeating the same gig? Clone makes a fresh inquiry one week
-                out with the same venue and band.
-              </span>
-            </div>
-          </Section>
-          </div>
-
-          <div className="hidden lg:block">
-          <Section title="Activity">
-            {gig.activity.length === 0 ? (
-              <div className="text-[12px] text-ink-mute">
-                No activity yet.
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1 text-[12px]">
-                {gig.activity.map((a) => (
-                  <div key={a.id}>
-                    <span className="text-ink-mute">
-                      {a.createdAt.toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}{" "}
-                      {a.createdAt.toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </span>{" "}
-                    · {a.summary}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-          </div>
         </div>
       </div>
 

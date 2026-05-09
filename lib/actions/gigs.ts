@@ -205,37 +205,54 @@ export async function saveSetlistUploaded(
   blobUrl: string,
   fileName: string,
 ) {
-  const user = await requireUser();
-  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
-  if (!gig) throw new Error("Gig not found");
+  // Explicit logging so Netlify Functions logs show the call site if the
+  // user's setlist mysteriously "disappears" again — we'll know whether
+  // the server action ran, what the inputs were, and where it failed.
+  console.log(
+    `[saveSetlistUploaded] gigId=${gigId} url=${blobUrl} file=${fileName}`,
+  );
+  try {
+    const user = await requireUser();
+    const gig = await db.gig.findFirst({
+      where: { id: gigId, ownerId: user.id },
+    });
+    if (!gig) {
+      console.error(
+        `[saveSetlistUploaded] gig not found or not owned by user ${user.id}`,
+      );
+      throw new Error("Gig not found");
+    }
 
-  // Cheap defense against a malicious client posting a non-Blob URL —
-  // we expect Vercel Blob's public host. We DON'T error out (the user
-  // wouldn't know what to do); we just trust whatever URL came back
-  // since auth + ownership has already been checked.
-  await db.gig.update({
-    where: { id: gigId },
-    data: {
-      setlistUrl: blobUrl,
-      setlistFileName: fileName,
-      setlistUpdatedAt: new Date(),
-    },
-  });
-  await db.activity.create({
-    data: {
-      gigId,
-      action: "field_updated:setlistUrl",
-      summary: "Set list updated — band will be notified on fanout",
-    },
-  });
-  // Bust every cache that surfaces this gig so the upload is visible
-  // immediately across admin + musician views.
-  revalidatePath(`/gigs/${gigId}`);
-  revalidatePath(`/gigs/${gigId}/edit`);
-  revalidatePath(`/dashboard`);
-  revalidatePath(`/finance`);
-  revalidatePath(`/my-gigs`);
-  revalidatePath(`/my-gigs/${gigId}`);
+    await db.gig.update({
+      where: { id: gigId },
+      data: {
+        setlistUrl: blobUrl,
+        setlistFileName: fileName,
+        setlistUpdatedAt: new Date(),
+      },
+    });
+    await db.activity.create({
+      data: {
+        gigId,
+        action: "field_updated:setlistUrl",
+        summary: "Set list updated — band will be notified on fanout",
+      },
+    });
+    revalidatePath(`/gigs/${gigId}`);
+    revalidatePath(`/gigs/${gigId}/edit`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/finance`);
+    revalidatePath(`/my-gigs`);
+    revalidatePath(`/my-gigs/${gigId}`);
+    console.log(`[saveSetlistUploaded] ok gigId=${gigId}`);
+    return { ok: true } as const;
+  } catch (err) {
+    console.error(
+      `[saveSetlistUploaded] FAILED gigId=${gigId}`,
+      err instanceof Error ? err.message : err,
+    );
+    throw err;
+  }
 }
 
 // Persist a freshly-uploaded loading map (image OR PDF) onto the gig.
@@ -244,27 +261,45 @@ export async function saveLoadingMapUploaded(
   gigId: string,
   blobUrl: string,
 ) {
-  const user = await requireUser();
-  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
-  if (!gig) throw new Error("Gig not found");
+  console.log(`[saveLoadingMapUploaded] gigId=${gigId} url=${blobUrl}`);
+  try {
+    const user = await requireUser();
+    const gig = await db.gig.findFirst({
+      where: { id: gigId, ownerId: user.id },
+    });
+    if (!gig) {
+      console.error(
+        `[saveLoadingMapUploaded] gig not found or not owned by user ${user.id}`,
+      );
+      throw new Error("Gig not found");
+    }
 
-  await db.gig.update({
-    where: { id: gigId },
-    data: { loadingMapUrl: blobUrl },
-  });
-  await db.activity.create({
-    data: {
-      gigId,
-      action: "field_updated:loadingMapUrl",
-      summary: "Loading map uploaded",
-    },
-  });
-  revalidatePath(`/gigs/${gigId}`);
-  revalidatePath(`/gigs/${gigId}/edit`);
-  revalidatePath(`/dashboard`);
-  revalidatePath(`/finance`);
-  revalidatePath(`/my-gigs`);
-  revalidatePath(`/my-gigs/${gigId}`);
+    await db.gig.update({
+      where: { id: gigId },
+      data: { loadingMapUrl: blobUrl },
+    });
+    await db.activity.create({
+      data: {
+        gigId,
+        action: "field_updated:loadingMapUrl",
+        summary: "Loading map uploaded",
+      },
+    });
+    revalidatePath(`/gigs/${gigId}`);
+    revalidatePath(`/gigs/${gigId}/edit`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/finance`);
+    revalidatePath(`/my-gigs`);
+    revalidatePath(`/my-gigs/${gigId}`);
+    console.log(`[saveLoadingMapUploaded] ok gigId=${gigId}`);
+    return { ok: true } as const;
+  } catch (err) {
+    console.error(
+      `[saveLoadingMapUploaded] FAILED gigId=${gigId}`,
+      err instanceof Error ? err.message : err,
+    );
+    throw err;
+  }
 }
 
 export async function deleteGig(id: string) {

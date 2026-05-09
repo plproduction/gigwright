@@ -27,6 +27,7 @@ export function LoadingMapUpload({
   const router = useRouter();
   const [url, setUrl] = useState(initialUrl);
   const [progress, setProgress] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -45,6 +46,7 @@ export function LoadingMapUpload({
       return;
     }
     setProgress(0);
+    let blobUrl: string | null = null;
     try {
       const pathname = `loading-maps/${gigId}/${Date.now()}-${sanitize(file.name)}`;
       const blob = await upload(pathname, file, {
@@ -53,17 +55,31 @@ export function LoadingMapUpload({
         clientPayload: JSON.stringify({ gigId }),
         onUploadProgress: (e) => setProgress(Math.round(e.percentage)),
       });
-      // Commit the URL to the gig record. Doing this client-side with a
-      // server action (instead of relying on the Blob webhook) is what
-      // makes the upload reliably persist — see comment at the top of
-      // this file.
-      await saveLoadingMapUploaded(gigId, blob.url);
-      setUrl(blob.url);
-      setProgress(null);
-      router.refresh();
+      blobUrl = blob.url;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
       setProgress(null);
+      return;
+    }
+
+    // Upload to Blob succeeded. Now commit the URL to the gig record
+    // through the server action — see comment at the top of this file.
+    // We split this into its own phase so a save failure doesn't get
+    // silently swallowed inside an "Upload failed" message.
+    setProgress(null);
+    setSaving(true);
+    try {
+      await saveLoadingMapUploaded(gigId, blobUrl);
+      setUrl(blobUrl);
+      setSaving(false);
+      router.refresh();
+    } catch (err) {
+      setSaving(false);
+      setError(
+        `Saved to storage but failed to attach to the gig: ${
+          err instanceof Error ? err.message : "unknown error"
+        }. The file URL is: ${blobUrl}`,
+      );
     }
   }
 
@@ -162,6 +178,17 @@ export function LoadingMapUpload({
           className="hidden"
         />
         {error && <div className="mt-2 text-[11px] text-accent">{error}</div>}
+      </div>
+    );
+  }
+
+  // Saving state — upload finished, gig record commit in flight.
+  if (saving) {
+    return (
+      <div className="rounded-md border border-accent/30 bg-accent/5 p-3">
+        <div className="text-[12px] font-medium text-accent">
+          Saving to gig…
+        </div>
       </div>
     );
   }
