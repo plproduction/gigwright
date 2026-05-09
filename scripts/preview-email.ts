@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // Render the gig-update email to /tmp/gigwright-email-preview.html with
-// realistic mock data so we can eyeball the design without sending a real
-// email through Resend. Run: `node scripts/preview-email.mjs` (or with
-// `--scenario greeting | update | minimal | full`).
+// MOCK DATA so we can eyeball the design without sending a real email
+// through Resend. Run: `npx tsx scripts/preview-email.ts <scenario>`
+// where scenario is one of: full | update | greeting | minimal.
 //
-// We import the compiled TS source via tsx so we don't have to maintain a
-// duplicated copy of renderHtml.
+// IMPORTANT: every name, phone, address, and venue in this file is
+// fictional placeholder data ("Sample Leader", "555-0140" 555-prefixed
+// numbers reserved for fiction, etc.). It exists only here, in this
+// script, used only to render local HTML previews. None of these
+// values touch the database or get sent to actual musicians. Real
+// emails pull names from gig.personnel.musician via fanout.ts.
 
 import { renderHtml } from "../lib/email-render";
 import { writeFileSync } from "node:fs";
@@ -38,14 +42,14 @@ const scenarios = {
     notes:
       "Rooms have been reserved for those of you who have confirmed. Please double-confirm via email with me.",
     lineup: [
-      { name: "Patrick Lamb", role: "Sax / Leader", isLeader: true, phone: "(561) 555-0140" },
-      { name: "Dave Captein", role: "Bass", isLeader: false, phone: "(503) 555-0188" },
-      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
-      { name: "Camillo Loerakker", role: "Keys", isLeader: false, phone: null },
+      { name: "Sample Leader", role: "Sax / Leader", isLeader: true, phone: "(555) 555-0140" },
+      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
+      { name: "Sample Keys", role: "Keys", isLeader: false, phone: null },
     ],
   },
   update: {
-    firstName: "dave",
+    firstName: "bass-player",
     bandleader: "Patrick Lamb",
     triggerLabel: "Downbeat change",
     message:
@@ -69,13 +73,13 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" },
-      { name: "Dave Captein", role: "Bass", isLeader: false, phone: "(503) 555-0188" },
-      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
+      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" },
+      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
     ],
   },
   greeting: {
-    firstName: "eero",
+    firstName: "drummer",
     bandleader: "Patrick Lamb",
     triggerLabel: "Greetings",
     message:
@@ -99,12 +103,12 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" },
-      { name: "Eero Spence", role: "Drums", isLeader: false, phone: "(206) 555-0173" },
+      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
     ],
   },
   minimal: {
-    firstName: "camillo",
+    firstName: "keys-player",
     bandleader: "Patrick Lamb",
     triggerLabel: undefined,
     message: undefined,
@@ -126,7 +130,7 @@ const scenarios = {
     setlistFileName: null,
     materialsUrl: null,
     notes: null,
-    lineup: [{ name: "Patrick Lamb", role: null, isLeader: true, phone: "(561) 555-0140" }],
+    lineup: [{ name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" }],
   },
 };
 
