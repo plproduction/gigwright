@@ -99,7 +99,14 @@ export function InlineField({
     );
   }
 
-  // Display state — clickable to enter edit mode
+  // Display state — clickable to enter edit mode.
+  //
+  // The container now always has a visible (light) border so the field
+  // reads as "this is something you can click and type into" even when
+  // it already has content. Without that, the saved text looked like
+  // plain page copy and users couldn't tell where to click to add or
+  // edit. A small "Click to edit" hint appears below the text for
+  // multiline fields to make the affordance even more explicit.
   const display = saved ?? "";
   const enterEdit = () => setEditing(true);
 
@@ -114,7 +121,7 @@ export function InlineField({
           setEditing(true);
         }
       }}
-      className={`cursor-text rounded-md border border-transparent px-3 py-2 transition-colors hover:border-line hover:bg-paper/60 ${
+      className={`cursor-text rounded-md border border-line bg-paper/40 px-3 py-2 transition-colors hover:border-accent/50 hover:bg-paper/80 ${
         multiline ? "min-h-[72px]" : ""
       }`}
     >
@@ -130,9 +137,16 @@ export function InlineField({
             {linkLabel ?? displayUrl(display)}
           </a>
         ) : (
-          <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">
-            {display}
-          </div>
+          <>
+            <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">
+              {display}
+            </div>
+            {multiline && (
+              <div className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ink-mute">
+                Click to edit
+              </div>
+            )}
+          </>
         )
       ) : (
         <div className="text-[12px] italic text-ink-mute">
