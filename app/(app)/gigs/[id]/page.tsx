@@ -470,11 +470,11 @@ export default async function GigDetailPage({
           </div>
 
           <div className="hidden lg:block">
-          <Section title="Specific loading info">
+          <Section title="Special loading instructions">
             <div className="space-y-3">
               <div>
                 <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
-                  Notes
+                  Instructions
                 </div>
                 <InlineField
                   gigId={gig.id}
@@ -516,12 +516,13 @@ export default async function GigDetailPage({
         </div>
       </div>
 
-      {/* Notes — full width, click to edit. Hidden on mobile to keep the
-          gig detail view compact; still editable on desktop where there's
-          room for the freeform context. */}
+      {/* Other notes — full width, click to edit. Label matches the
+          email section name ("Other notes") so the bandleader's mental
+          model — "I type here, this comes out there" — stays
+          consistent across the page and the band-facing email. */}
       <div className="hidden border-t border-line bg-surface px-7 py-5 lg:block">
         <h5 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
-          Notes
+          Other notes
         </h5>
         <InlineField
           gigId={gig.id}
