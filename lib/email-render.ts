@@ -129,19 +129,23 @@ export function renderText(c: Ctx): string {
     lines.push(`Attire: ${c.attire}`);
   }
 
-  // Combined "Special loading info & notes" — merged single section.
-  if (c.loadingInfo || c.loadingMapLink || c.notes) {
+  // Loading info (logistics: how to get into the venue). Notes is now
+  // separate — see below.
+  if (c.loadingInfo || c.loadingMapLink) {
     lines.push("");
-    lines.push(`Special loading info & notes:`);
+    lines.push(`Special loading info:`);
     if (c.loadingInfo) lines.push(`  ${c.loadingInfo.replace(/\n/g, "\n  ")}`);
-    if (c.notes) {
-      if (c.loadingInfo) lines.push("");
-      lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
-    }
     if (c.loadingMapLink) {
-      if (c.loadingInfo || c.notes) lines.push("");
+      if (c.loadingInfo) lines.push("");
       lines.push(`  Load-in map: ${c.loadingMapLink}`);
     }
+  }
+
+  // Notes from the bandleader — freeform "anything worth remembering."
+  if (c.notes) {
+    lines.push("");
+    lines.push(`Notes from the bandleader:`);
+    lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
   }
 
   // Set list + materials — ALWAYS show both. If a real URL is posted, link
@@ -344,32 +348,48 @@ export function renderHtml(c: Ctx): string {
     </table>
   </td></tr>`;
 
-  // ── Loading info & notes ───────────────────────────────────────────
-  const loadingNotesBody = [
+  // ── Loading info (NOT notes — those get their own section below) ───
+  // Loading info + map link travel together because they're both about
+  // "how do I physically get into this venue." Notes is a different
+  // category — it's the freeform "anything worth remembering" field, so
+  // it deserves its own clearly-labelled section.
+  const loadingInfoBody = [
     c.loadingInfo
-      ? `<p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.6;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>`
-      : "",
-    c.notes
-      ? `<p style="margin:${c.loadingInfo ? "12px" : "0"} 0 0;font-family:${BODY_FONT};font-size:14px;color:${INK_SOFT};line-height:1.6;white-space:pre-wrap">${escapeHtml(c.notes)}</p>`
+      ? `<p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.65;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.loadingInfo)}</p>`
       : "",
     c.loadingMapLink
-      ? `<p style="margin:${c.loadingInfo || c.notes ? "14px" : "0"} 0 0"><a href="${c.loadingMapLink}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:13px;font-weight:700;text-decoration:none;border-bottom:1px solid rgba(126,36,24,0.25);padding-bottom:1px">📍 Open load-in map →</a></p>`
+      ? `<p style="margin:${c.loadingInfo ? "14px" : "0"} 0 0"><a href="${c.loadingMapLink}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:11.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${ACCENT_SOFT};padding-bottom:3px">Open load-in map</a></p>`
       : "",
   ]
     .filter(Boolean)
     .join("");
 
-  const loadingNotesBlock =
-    c.loadingInfo || c.loadingMapLink || c.notes
+  const loadingInfoBlock =
+    c.loadingInfo || c.loadingMapLink
       ? `<tr><td style="padding:36px 40px 0">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:6px">
-            <tr><td style="padding:20px 24px">
-              ${eyebrow("Special loading info & notes")}
-              ${loadingNotesBody}
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
+            <tr><td style="padding:24px 26px">
+              ${eyebrowPlain("Special loading info")}
+              ${loadingInfoBody}
             </td></tr>
           </table>
         </td></tr>`
       : "";
+
+  // Dedicated Notes section. Bandleader's freeform context — parking,
+  // green room, dress code clarifications, audience vibe, anything they
+  // want the band to know that doesn't fit anywhere else. Rendered as
+  // its own quiet panel so it doesn't get confused with loading info.
+  const notesBlock = c.notes
+    ? `<tr><td style="padding:24px 40px 0">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
+          <tr><td style="padding:24px 26px">
+            ${eyebrowPlain("Notes from the bandleader")}
+            <p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.7;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.notes)}</p>
+          </td></tr>
+        </table>
+      </td></tr>`
+    : "";
 
   // ── Set list + materials — proper button-style CTAs ────────────────
   const gigSheetUrl = `https://gigwright.com/g/${c.gigId}`;
@@ -514,7 +534,8 @@ export function renderHtml(c: Ctx): string {
           ${greetingRow}
           ${venueRow}
           ${scheduleBlock}
-          ${loadingNotesBlock}
+          ${loadingInfoBlock}
+          ${notesBlock}
           ${linksBlock}
           ${lineupBlock}
           ${footerBlock}
