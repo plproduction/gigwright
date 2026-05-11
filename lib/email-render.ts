@@ -133,7 +133,7 @@ export function renderText(c: Ctx): string {
   // separate — see below.
   if (c.loadingInfo || c.loadingMapLink) {
     lines.push("");
-    lines.push(`Special loading info:`);
+    lines.push(`Special loading instructions:`);
     if (c.loadingInfo) lines.push(`  ${c.loadingInfo.replace(/\n/g, "\n  ")}`);
     if (c.loadingMapLink) {
       if (c.loadingInfo) lines.push("");
@@ -144,7 +144,7 @@ export function renderText(c: Ctx): string {
   // Notes from the bandleader — freeform "anything worth remembering."
   if (c.notes) {
     lines.push("");
-    lines.push(`Notes from the bandleader:`);
+    lines.push(`Other notes:`);
     lines.push(`  ${c.notes.replace(/\n/g, "\n  ")}`);
   }
 
@@ -369,7 +369,7 @@ export function renderHtml(c: Ctx): string {
       ? `<tr><td style="padding:36px 40px 0">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
             <tr><td style="padding:24px 26px">
-              ${eyebrowPlain("Special loading info")}
+              ${eyebrowPlain("Special loading instructions")}
               ${loadingInfoBody}
             </td></tr>
           </table>
@@ -384,7 +384,7 @@ export function renderHtml(c: Ctx): string {
     ? `<tr><td style="padding:24px 40px 0">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
           <tr><td style="padding:24px 26px">
-            ${eyebrowPlain("Notes from the bandleader")}
+            ${eyebrowPlain("Other notes")}
             <p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.7;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.notes)}</p>
           </td></tr>
         </table>
