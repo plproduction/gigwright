@@ -471,41 +471,39 @@ export default async function GigDetailPage({
 
           <div className="hidden lg:block">
           <Section title="Special loading instructions">
-            <div className="space-y-3">
-              <div>
-                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
-                  Instructions
-                </div>
-                <InlineField
-                  gigId={gig.id}
-                  field="loadingInfo"
-                  initialValue={gig.loadingInfo}
-                  placeholder="e.g. Alley entrance, knock on service door, elevator to 3rd floor…"
-                  multiline
-                />
+            {/* Inline-field IS this section's primary content — no
+                redundant sub-label needed since "Special loading
+                instructions" already names it. Map image and the
+                alternate map link keep their sub-labels because
+                they're a different kind of input. */}
+            <InlineField
+              gigId={gig.id}
+              field="loadingInfo"
+              initialValue={gig.loadingInfo}
+              placeholder="e.g. Alley entrance, knock on service door, elevator to 3rd floor…"
+              multiline
+            />
+            <div className="mt-4">
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+                Map image
               </div>
-              <div>
-                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
-                  Map image
-                </div>
-                <LoadingMapUpload
-                  gigId={gig.id}
-                  initialUrl={gig.loadingMapUrl}
-                />
+              <LoadingMapUpload
+                gigId={gig.id}
+                initialUrl={gig.loadingMapUrl}
+              />
+            </div>
+            <div className="mt-4">
+              <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+                Alternate map link
               </div>
-              <div>
-                <div className="mb-1 text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
-                  Alternate map link
-                </div>
-                <InlineField
-                  gigId={gig.id}
-                  field="loadingMapLink"
-                  initialValue={gig.loadingMapLink}
-                  placeholder="Paste a Google/Apple Maps pin link"
-                  displayAs="link"
-                  linkLabel="Open map ↗"
-                />
-              </div>
+              <InlineField
+                gigId={gig.id}
+                field="loadingMapLink"
+                initialValue={gig.loadingMapLink}
+                placeholder="Paste a Google/Apple Maps pin link"
+                displayAs="link"
+                linkLabel="Open map ↗"
+              />
             </div>
           </Section>
           </div>
