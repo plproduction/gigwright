@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { isPaid } from "@/lib/plan";
 
 // Direct browser-to-Blob uploads. The client calls upload() from
 // @vercel/blob/client, which hits this route in TWO different contexts:
@@ -36,6 +37,13 @@ export async function POST(req: Request): Promise<NextResponse> {
         if (!email) throw new Error("Not authenticated");
         const user = await db.user.findUnique({ where: { email } });
         if (!user) throw new Error("Not authenticated");
+
+        // Set list PDF upload is a Pro feature. FREE users see the
+        // SetlistUpload component disabled, but the API still enforces
+        // the gate defensively.
+        if (!isPaid(user.plan)) {
+          throw new Error("Set list PDF upload is a Pro feature");
+        }
 
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
         const gigId = payload.gigId as string | undefined;

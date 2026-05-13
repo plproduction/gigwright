@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { FREE_LIMITS, isPaid } from "@/lib/plan";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
 import {
   formatDayNum,
   formatLongDate,
   formatMonthAbbr,
-  formatMoneyCents,
   formatTime,
   gigVenueLabel,
   isToday,
@@ -51,6 +52,14 @@ export default async function DashboardPage() {
   if (gigs.length === 0) {
     return <Onboarding firstName={(user.name ?? "").split(/\s+/)[0] || null} />;
   }
+
+  // FREE active-gig cap state. "Active" mirrors lib/plan.ts —
+  // anything not CANCELLED. The Upgrade banner is loud at-cap, quiet
+  // near-cap, hidden otherwise.
+  const activeGigCount = gigs.filter((g) => g.status !== "CANCELLED").length;
+  const paid = isPaid(user.plan);
+  const atGigCap = !paid && activeGigCount >= FREE_LIMITS.activeGigs;
+  const nearGigCap = !paid && activeGigCount >= FREE_LIMITS.activeGigs - 1;
 
   return (
     <>
@@ -107,19 +116,42 @@ export default async function DashboardPage() {
         </h4>
         <span className="text-[12px] tracking-[0.06em] text-ink-mute">
           · {upcoming.length} upcoming
+          {!paid && ` · ${activeGigCount} / ${FREE_LIMITS.activeGigs} active`}
         </span>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="cursor-default rounded-full bg-ink px-[10px] py-[6px] text-[12px] font-medium text-paper">
             Upcoming
           </span>
-          <Link
-            href="/gigs/new"
-            className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-[7px] text-[12px] font-medium text-paper hover:bg-black"
-          >
-            + New gig
-          </Link>
+          {atGigCap ? (
+            <Link
+              href="/settings/billing?upgrade=activeGigs"
+              className="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-[7px] text-[12px] font-medium text-paper hover:bg-[#611B11]"
+            >
+              Upgrade to add more
+            </Link>
+          ) : (
+            <Link
+              href="/gigs/new"
+              className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-[7px] text-[12px] font-medium text-paper hover:bg-black"
+            >
+              + New gig
+            </Link>
+          )}
         </div>
       </div>
+
+      {(atGigCap || nearGigCap) && (
+        <div className="mt-3">
+          <UpgradeBanner
+            reason="activeGigs"
+            message={
+              atGigCap
+                ? `You're at the Free plan limit of ${FREE_LIMITS.activeGigs} active gigs. Upgrade for unlimited.`
+                : `${activeGigCount} of ${FREE_LIMITS.activeGigs} active gigs used on Free. Upgrade for unlimited.`
+            }
+          />
+        </div>
+      )}
 
       <GigList gigs={upcoming} />
     </>
@@ -149,9 +181,6 @@ function TonightCard({
 
   const venue = gigVenueLabel(gig.venue);
   const personnelCount = gig.personnel.length;
-  const bandPay = gig.personnel
-    .filter((p) => !p.musician.isLeader)
-    .reduce((s, p) => s + p.payCents, 0);
   const today = isToday(gig.startAt);
 
   return (
@@ -179,16 +208,16 @@ function TonightCard({
             {venue.sub}
           </div>
         )}
-        {/* Meta row: Call + Downbeat only on mobile. On stage + Band pay
-            are admin info for a glance on desktop. */}
+        {/* Meta row: Call + Downbeat only on mobile. "On stage" surfaces
+            on desktop as a quick glance. Pay info is intentionally absent
+            from the dashboard so it never surfaces to a shoulder-surfer —
+            it lives only on the per-gig Payout Worksheet (private
+            financials). */}
         <div className="flex flex-wrap gap-5 border-t border-white/10 pt-3.5 md:gap-7">
           <Meta label="Call" value={formatTime(gig.callTimeAt)} />
           <Meta label="Downbeat" value={formatTime(gig.startAt)} />
           <div className="hidden md:block">
             <Meta label="On stage" value={String(personnelCount)} />
-          </div>
-          <div className="hidden md:block">
-            <Meta label="Band pay" value={formatMoneyCents(bandPay)} />
           </div>
         </div>
       </div>
@@ -287,10 +316,12 @@ function GigList({
     );
   }
 
-  // 9-column layout for desktop (lg+):
-  //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Pay · Status · Open
+  // 8-column layout for desktop (lg+). Pay is intentionally absent —
+  // per-gig pay belongs on the Payout Worksheet (private financials),
+  // not in a public-facing list on the front-page dashboard.
+  //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Status · Open
   const cols =
-    "grid-cols-[70px_1.3fr_1.5fr_94px_140px_94px_94px_86px_64px]";
+    "grid-cols-[70px_1.3fr_1.5fr_94px_140px_94px_86px_64px]";
 
   return (
     <div className="text-[13px]">
@@ -300,9 +331,6 @@ function GigList({
         {gigs.map((g) => {
           const venue = gigVenueLabel(g.venue);
           const today = isToday(g.startAt);
-          const bandPay = g.personnel
-            .filter((p) => !p.musician.isLeader)
-            .reduce((s, p) => s + p.payCents, 0);
           return (
             <Link
               key={g.id}
@@ -337,12 +365,7 @@ function GigList({
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <div className="font-serif text-[14px] tabular-nums">
-                  {formatMoneyCents(bandPay)}
-                </div>
-                <div className="mt-1">
-                  <StatusPill status={today ? "TONIGHT" : g.status} />
-                </div>
+                <StatusPill status={today ? "TONIGHT" : g.status} />
               </div>
             </Link>
           );
@@ -365,17 +388,12 @@ function GigList({
             </div>
           </div>
           <div>Downbeat</div>
-          <div>Pay</div>
           <div>Status</div>
           <div></div>
         </div>
         {gigs.map((g) => {
           const venue = gigVenueLabel(g.venue);
           const today = isToday(g.startAt);
-          const bandPay = g.personnel
-            .filter((p) => !p.musician.isLeader)
-            .reduce((s, p) => s + p.payCents, 0);
-          const sideCount = g.personnel.filter((p) => !p.musician.isLeader).length;
 
           return (
             <Link
@@ -410,14 +428,6 @@ function GigList({
               </div>
               <div className="font-serif text-[13px] tabular-nums text-ink">
                 {formatTime(g.startAt)}
-              </div>
-              <div className="font-serif text-[13px] tabular-nums">
-                {formatMoneyCents(bandPay)}
-                {sideCount > 0 && (
-                  <div className="mt-0.5 font-sans text-[10px] text-ink-mute">
-                    {sideCount} × band
-                  </div>
-                )}
               </div>
               <div>
                 <StatusPill status={today ? "TONIGHT" : g.status} />

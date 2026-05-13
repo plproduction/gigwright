@@ -4,12 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { assertCanAdd } from "@/lib/plan";
 
 export async function upsertVenue(id: string | null, formData: FormData) {
   const user = await requireUser();
 
   const name = String(formData.get("name") ?? "").trim();
   if (!name) throw new Error("Name is required");
+
+  // FREE plan caps the venue list at FREE_LIMITS.venues. Edit of an
+  // existing venue is always allowed; only *new* rows are gated.
+  if (!id) {
+    await assertCanAdd(user, "venues");
+  }
 
   const data = {
     name,

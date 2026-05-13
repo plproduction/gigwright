@@ -12,6 +12,8 @@ import { CloneGigButton } from "@/components/CloneGigButton";
 import { ActivityList } from "@/components/ActivityList";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
+import { LineupToggle } from "@/components/LineupToggle";
+import { isPaid } from "@/lib/plan";
 import {
   formatDayNum,
   formatLongDate,
@@ -192,12 +194,27 @@ export default async function GigDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3">
         {/* Column 1: Personnel + Money */}
         <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
-          <Section title={`Personnel · ${gig.personnel.length} on`}>
+          {/* Personnel — custom section so we can place a delicate "Include
+              in outgoing emails" eyebrow on the right of the title row,
+              aligned over the per-row checkbox column. Same letterpress
+              vocabulary used elsewhere on the page. */}
+          <div className="mb-[18px] border-b border-line pb-[18px]">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h5 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+                Personnel &middot; {gig.personnel.length} on
+              </h5>
+              <h5
+                className="max-w-[180px] text-right text-[9px] font-semibold uppercase leading-[1.35] tracking-[0.16em] text-ink-mute"
+                title="When checked, this person's name and contact info appear in the Lineup section of emails to the rest of the band."
+              >
+                Include in outgoing emails
+              </h5>
+            </div>
             <div className="flex flex-col gap-2.5">
               {gig.personnel.map((p) => (
                 <div
                   key={p.id}
-                  className="grid grid-cols-[24px_1fr_auto_auto] items-center gap-2.5"
+                  className="grid grid-cols-[24px_1fr_auto_auto_18px] items-center gap-2.5"
                 >
                   <Avatar
                     initials={p.musician.initials ?? p.musician.name.slice(0, 2).toUpperCase()}
@@ -232,10 +249,16 @@ export default async function GigDetailPage({
                     />
                   )}
                   {p.musician.isLeader && <div />}
+                  <LineupToggle
+                    gigId={gig.id}
+                    personnelId={p.id}
+                    initial={p.includeInLineup}
+                    musicianName={p.musician.name}
+                  />
                 </div>
               ))}
             </div>
-          </Section>
+          </div>
 
           <div className="hidden lg:block">
           <Section title="Money at a glance">
@@ -435,14 +458,33 @@ export default async function GigDetailPage({
           </Section>
 
           <Section title="Set list">
-            <SetlistUpload
-              gigId={gig.id}
-              initialUrl={gig.setlistUrl}
-              initialFileName={gig.setlistFileName}
-            />
-            <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
-              If this changes you will all get a text and email.
-            </div>
+            {isPaid(user.plan) ? (
+              <>
+                <SetlistUpload
+                  gigId={gig.id}
+                  initialUrl={gig.setlistUrl}
+                  initialFileName={gig.setlistFileName}
+                />
+                <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
+                  If this changes you will all get a text and email.
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-accent/30 bg-accent/5 px-4 py-3">
+                <span className="rounded bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">
+                  Pro
+                </span>
+                <span className="text-[12.5px] text-ink-soft">
+                  Set list PDF uploads are a Pro feature.
+                </span>
+                <Link
+                  href="/settings/billing?upgrade=setlistUpload"
+                  className="ml-auto rounded-md bg-accent px-3 py-1.5 text-[12px] font-semibold text-paper hover:bg-[#611B11]"
+                >
+                  Upgrade →
+                </Link>
+              </div>
+            )}
           </Section>
 
           <div className="hidden lg:block">
@@ -541,6 +583,7 @@ export default async function GigDetailPage({
               : `Gig · ${gig.startAt.toLocaleDateString()}`
           }
           initialClientPayCents={gig.clientPayCents}
+          initialPrivateFinanceNotes={gig.privateFinanceNotes}
           personnel={gig.personnel.map((p) => ({
             id: p.id,
             musicianId: p.musicianId,

@@ -44,10 +44,10 @@ const scenarios = {
     notes:
       "Rooms have been reserved for those of you who have confirmed. Please double-confirm via email with me.",
     lineup: [
-      { name: "Sample Leader", role: "Sax / Leader", isLeader: true, phone: "(555) 555-0140" },
-      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188" },
-      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
-      { name: "Sample Keys", role: "Keys", isLeader: false, phone: null },
+      { name: "Sample Leader", role: "Sax / Leader", isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" },
+      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188", email: "bass@example.com" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173", email: "drums@example.com" },
+      { name: "Sample Keys", role: "Keys", isLeader: false, phone: null, email: "keys@example.com" },
     ],
   },
   update: {
@@ -77,9 +77,9 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" },
-      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188" },
-      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
+      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" },
+      { name: "Sample Bassist", role: "Bass", isLeader: false, phone: "(555) 555-0188", email: "bass@example.com" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173", email: "drums@example.com" },
     ],
   },
   greeting: {
@@ -109,8 +109,8 @@ const scenarios = {
     materialsUrl: null,
     notes: null,
     lineup: [
-      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" },
-      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173" },
+      { name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" },
+      { name: "Sample Drummer", role: "Drums", isLeader: false, phone: "(555) 555-0173", email: "drums@example.com" },
     ],
   },
   minimal: {
@@ -138,7 +138,7 @@ const scenarios = {
     setlistFileName: null,
     materialsUrl: null,
     notes: null,
-    lineup: [{ name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140" }],
+    lineup: [{ name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" }],
   },
 };
 

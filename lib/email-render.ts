@@ -37,6 +37,7 @@ export type Ctx = {
     role: string | null;
     isLeader: boolean;
     phone: string | null;
+    email: string | null;
   }>;
 };
 
@@ -183,6 +184,7 @@ export function renderText(c: Ctx): string {
       const role = m.role ? ` — ${m.role}` : "";
       lines.push(`  • ${m.name}${role}${tag}`);
       if (m.phone) lines.push(`     ${m.phone}`);
+      if (m.email) lines.push(`     ${m.email}`);
     }
   }
 
@@ -455,6 +457,12 @@ export function renderHtml(c: Ctx): string {
         <a href="tel:${escapeHtml(tel)}" style="color:${ACCENT};text-decoration:none;border-bottom:1px solid ${ACCENT_SOFT}">${escapeHtml(phone)}</a>
       </div>`;
   };
+  const emailLine = (email: string | null) => {
+    if (!email) return "";
+    return `<div style="margin-top:5px;font-family:${BODY_FONT};font-size:12.5px;color:${INK_SOFT};line-height:1.4;letter-spacing:0.01em;word-break:break-all">
+        <a href="mailto:${escapeHtml(email)}" style="color:${ACCENT};text-decoration:none;border-bottom:1px solid ${ACCENT_SOFT}">${escapeHtml(email)}</a>
+      </div>`;
+  };
 
   const lineupRows = c.lineup
     .map((m, i) => {
@@ -463,6 +471,7 @@ export function renderHtml(c: Ctx): string {
         <td style="padding:${i === 0 ? "4px" : "16px"} 0 16px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:15px;color:${INK};line-height:1.4;vertical-align:top;letter-spacing:0.005em">
           <em style="font-style:italic">${escapeHtml(m.name)}</em>${m.isLeader ? ` <span style="color:${ACCENT};font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;margin-left:10px;font-style:normal">Leader</span>` : ""}
           ${phoneLine(m.phone)}
+          ${emailLine(m.email)}
         </td>
         <td style="padding:${i === 0 ? "4px" : "16px"} 0 16px;${i === 0 ? "" : `border-top:1px solid ${LINE_SOFT};`}font-family:${BODY_FONT};font-size:13px;color:${INK_MUTE};text-align:right;line-height:1.4;vertical-align:top;letter-spacing:0.06em;text-transform:uppercase">
           ${role ? escapeHtml(role) : ""}

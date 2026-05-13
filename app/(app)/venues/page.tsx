@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { UpgradeBanner } from "@/components/UpgradeBanner";
+import { FREE_LIMITS, isPaid } from "@/lib/plan";
 
 export default async function VenuesPage() {
   const user = await requireUser();
@@ -10,18 +12,40 @@ export default async function VenuesPage() {
     include: { _count: { select: { gigs: true } } },
   });
 
+  const paid = isPaid(user.plan);
+  const atCap = !paid && venues.length >= FREE_LIMITS.venues;
+
   return (
     <>
       <div className="mb-5 flex items-center gap-2 border-b border-line pb-3">
         <h4 className="font-serif text-[20px] font-normal tracking-tight">Venues</h4>
-        <span className="text-[12px] text-ink-mute">· {venues.length}</span>
-        <Link
-          href="/venues/new"
-          className="ml-auto rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-black"
-        >
-          + New venue
-        </Link>
+        <span className="text-[12px] text-ink-mute">
+          · {venues.length}
+          {!paid && ` / ${FREE_LIMITS.venues}`}
+        </span>
+        {atCap ? (
+          <Link
+            href="/settings/billing?upgrade=venues"
+            className="ml-auto rounded-md bg-accent px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-[#611B11]"
+          >
+            Upgrade to add more
+          </Link>
+        ) : (
+          <Link
+            href="/venues/new"
+            className="ml-auto rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-black"
+          >
+            + New venue
+          </Link>
+        )}
       </div>
+
+      {atCap && (
+        <UpgradeBanner
+          reason="venues"
+          message={`You're at the Free plan limit of ${FREE_LIMITS.venues} venues. Upgrade for unlimited.`}
+        />
+      )}
 
       {venues.length === 0 ? (
         <div className="py-12 text-center text-[13px] text-ink-mute">

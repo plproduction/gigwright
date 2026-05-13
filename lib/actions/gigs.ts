@@ -4,11 +4,21 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { assertCanAdd, requirePro } from "@/lib/plan";
 
 type GigStatus = "INQUIRY" | "HOLD" | "CONFIRMED" | "PLAYED" | "CANCELLED";
 
 export async function upsertGig(id: string | null, formData: FormData) {
   const user = await requireUser();
+
+  // FREE plan caps active gigs at FREE_LIMITS.activeGigs. Edits of
+  // existing gigs are always allowed; only *new* rows are gated.
+  // "Active" excludes CANCELLED. PLAYED still counts, by design —
+  // the gig roster is the user's working data, not a future-only
+  // calendar.
+  if (!id) {
+    await assertCanAdd(user, "activeGigs");
+  }
 
   // The form gives us a local date + individual time fields. We combine them
   // into DateTime values below. All gig times share the same calendar date.
@@ -129,6 +139,11 @@ export async function upsertGig(id: string | null, formData: FormData) {
 // and typically just changes the date.
 export async function cloneGig(sourceId: string) {
   const user = await requireUser();
+
+  // Clone counts against the active-gigs cap on FREE — otherwise
+  // users could bypass the cap by cloning instead of creating.
+  await assertCanAdd(user, "activeGigs");
+
   const src = await db.gig.findFirst({
     where: { id: sourceId, ownerId: user.id },
     include: { personnel: { orderBy: { position: "asc" } } },
@@ -415,6 +430,50 @@ export async function updatePersonnelPay(
   revalidatePath(`/my-earnings`);
 }
 
+// Toggle whether a personnel row appears in the Lineup section of
+// outgoing emails. Default is true; flipping to false suppresses the
+// row from other recipients' email — useful for crew/contractors
+// (sound, lights, booking agent) whose contact info shouldn't be
+// circulated to the rest of the band. The person still receives their
+// own email copy if their notify flags are on.
+export async function setPersonnelIncludeInLineup(
+  gigId: string,
+  personnelId: string,
+  include: boolean,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  const before = await db.gigPersonnel.findFirst({
+    where: { id: personnelId, gigId },
+    include: { musician: { select: { name: true } } },
+  });
+  if (!before) throw new Error("Personnel row not found");
+
+  if (before.includeInLineup === include) {
+    revalidatePath(`/gigs/${gigId}`);
+    return;
+  }
+
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: { includeInLineup: include },
+  });
+
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "personnel_lineup_visibility_changed",
+      summary: include
+        ? `${before.musician.name} will appear in outgoing email lineup`
+        : `${before.musician.name} hidden from outgoing email lineup`,
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
+}
+
 export async function removePersonnel(
   gigId: string,
   personnelId: string,
@@ -611,7 +670,8 @@ export async function updateGigField(
     | "meal"
     | "loadingInfo"
     | "loadingMapUrl"
-    | "loadingMapLink",
+    | "loadingMapLink"
+    | "privateFinanceNotes",
   value: string | null,
 ) {
   const user = await requireUser();
@@ -635,6 +695,7 @@ export async function updateGigField(
     loadingInfo: "Loading info updated",
     loadingMapUrl: "Loading map uploaded",
     loadingMapLink: "Alternate map link updated",
+    privateFinanceNotes: "Private finance notes updated",
   };
   await db.activity.create({
     data: {

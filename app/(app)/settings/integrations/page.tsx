@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { db } from "@/lib/db";
 import { listExpenseAccounts, QBO_ENVIRONMENT } from "@/lib/qbo";
+import { isPaid } from "@/lib/plan";
 
 type SearchParams = Promise<{
   qbo?: string;
@@ -195,7 +196,7 @@ export default async function IntegrationsPage({
               </button>
             </form>
           </div>
-        ) : (
+        ) : isPaid(user.plan) ? (
           <div className="mt-5">
             <a
               href="/api/qbo/connect"
@@ -207,6 +208,21 @@ export default async function IntegrationsPage({
               You’ll be redirected to Intuit, pick your Patrick Lamb Productions
               company, and come back here.
             </p>
+          </div>
+        ) : (
+          <div className="mt-5 flex flex-wrap items-center gap-3 rounded-[10px] border border-accent/30 bg-accent/5 px-4 py-3">
+            <span className="rounded bg-accent px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em] text-paper">
+              Pro
+            </span>
+            <span className="text-[13px] text-ink-soft">
+              QuickBooks sync is a Pro feature.
+            </span>
+            <Link
+              href="/settings/billing?upgrade=qbo"
+              className="ml-auto rounded-md bg-accent px-3 py-1.5 text-[12px] font-semibold text-paper hover:bg-[#611B11]"
+            >
+              Upgrade to Pro →
+            </Link>
           </div>
         )}
       </div>

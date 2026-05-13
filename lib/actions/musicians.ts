@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { assertCanAdd } from "@/lib/plan";
 
 export async function upsertMusician(
   id: string | null,
@@ -14,6 +15,13 @@ export async function upsertMusician(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) {
     throw new Error("Name is required");
+  }
+
+  // FREE plan caps the roster at FREE_LIMITS.musicians. The gate
+  // only fires on *new* rows, so existing musicians can always be
+  // edited even after a downgrade — the cap is on additions.
+  if (!id) {
+    await assertCanAdd(user, "musicians");
   }
 
   const roles = String(formData.get("roles") ?? "")

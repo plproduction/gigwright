@@ -38,7 +38,7 @@ export async function fanOutGigUpdate(
     where: { id: opts.gigId },
     include: {
       venue: true,
-      owner: { select: { name: true, email: true, senderEmail: true } },
+      owner: { select: { name: true, email: true, senderEmail: true, plan: true } },
       personnel: {
         include: { musician: true },
         orderBy: { position: "asc" },
@@ -51,12 +51,20 @@ export async function fanOutGigUpdate(
   // line; the leader is tagged so musicians can tell at a glance who's
   // driving. We use the per-row roleLabel if present, else the musician's
   // first role from their roster card.
-  const lineup = gig.personnel.map((p) => ({
-    name: p.musician.name,
-    role: p.roleLabel ?? p.musician.roles[0] ?? null,
-    isLeader: p.musician.isLeader,
-    phone: p.musician.phone ?? null,
-  }));
+  // Per-row "include in outgoing emails" toggle: when false, this person
+  // is hidden from the Lineup section that other recipients see. They can
+  // still RECEIVE the email themselves if their notify flags are on —
+  // this only suppresses their info from circulating to the rest of the
+  // band. Default is true, so existing rows are unaffected.
+  const lineup = gig.personnel
+    .filter((p) => p.includeInLineup)
+    .map((p) => ({
+      name: p.musician.name,
+      role: p.roleLabel ?? p.musician.roles[0] ?? null,
+      isLeader: p.musician.isLeader,
+      phone: p.musician.phone ?? null,
+      email: p.musician.email ?? null,
+    }));
 
   // Single source of truth for the email context — used for both each
   // musician's send AND the bandleader's self-copy at the end. Only the
@@ -126,11 +134,17 @@ export async function fanOutGigUpdate(
     errors: [],
   };
 
+  // SMS gating: requires Twilio credentials AND a paid plan (PRO or
+  // ADMIN). Email fanout stays free on the FREE tier; only SMS is
+  // reserved for paid plans. FREE owners with notifyBySms musicians
+  // get the email and skip the SMS silently (counts as smsSkipped).
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioToken = process.env.TWILIO_AUTH_TOKEN;
   const twilioMessagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
   const twilioFromNumber = process.env.TWILIO_PHONE_NUMBER;
+  const ownerIsPaid = gig.owner?.plan === "PRO" || gig.owner?.plan === "ADMIN";
   const smsEnabled = !!(
+    ownerIsPaid &&
     twilioSid &&
     twilioToken &&
     (twilioMessagingServiceSid || twilioFromNumber)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { upsertVendor, createBill } from "@/lib/qbo";
+import { isPaid } from "@/lib/plan";
 
 // POST /api/qbo/push-gig/[id]
 // Batch-posts a bill per paid musician for this gig into QuickBooks.
@@ -23,6 +24,15 @@ export async function POST(
 ) {
   const user = await requireUser();
   const { id: gigId } = await params;
+
+  // Pro/Admin gate. A FREE user with a stale connection from a prior
+  // Pro tier shouldn't be able to push — surface a clear 402.
+  if (!isPaid(user.plan)) {
+    return NextResponse.json(
+      { error: "QuickBooks sync is a Pro feature.", upgrade: true },
+      { status: 402 },
+    );
+  }
 
   const conn = await db.qboConnection.findUnique({
     where: { userId: user.id },

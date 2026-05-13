@@ -1,19 +1,40 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { TRIAL_DAYS } from "@/lib/stripe";
+import { FREE_LIMITS, PRO_ONLY_FEATURES } from "@/lib/plan";
+import { resyncSubscriptionFromStripe } from "@/lib/actions/billing";
+
+// Contextual headlines for the `?upgrade=X` query param. Matches the
+// `reason` values used by UpgradeBanner and the QBO/setlist gates so
+// the page reads like the rest of the journey rather than a generic
+// pricing wall.
+const UPGRADE_HEADLINES: Record<string, string> = {
+  musicians: `You've hit the Free roster limit of ${FREE_LIMITS.musicians} musicians. Upgrade for unlimited.`,
+  venues: `You've hit the Free venues limit of ${FREE_LIMITS.venues}. Upgrade for unlimited.`,
+  activeGigs: `You've hit the Free active-gigs limit of ${FREE_LIMITS.activeGigs}. Upgrade for unlimited.`,
+  qbo: `${PRO_ONLY_FEATURES.qbo} is a Pro feature. Upgrade to enable it.`,
+  setlistUpload: `${PRO_ONLY_FEATURES.setlistUpload} are a Pro feature. Upgrade to enable.`,
+  sms: `${PRO_ONLY_FEATURES.sms} are a Pro feature. Upgrade to enable.`,
+  calendarSync: `${PRO_ONLY_FEATURES.calendarSync} is a Pro feature. Upgrade to enable.`,
+};
 
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; upgrade?: string }>;
 }) {
   const user = await requireUser();
-  const { checkout } = await searchParams;
+  const { checkout, upgrade } = await searchParams;
 
   const plan = user.plan;
   const isAdmin = plan === "ADMIN";
   const isPro = plan === "PRO";
   const periodEnd = user.currentPeriodEnd;
+
+  const upgradeHeadline =
+    upgrade && upgrade in UPGRADE_HEADLINES
+      ? UPGRADE_HEADLINES[upgrade]
+      : null;
 
   return (
     <>
@@ -28,6 +49,63 @@ export default async function BillingPage({
           ← Settings
         </Link>
       </div>
+
+      {upgradeHeadline && !isPro && !isAdmin && (
+        <div className="mb-6 rounded-[10px] border border-accent/30 bg-accent/5 px-5 py-4">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+            Why you&rsquo;re here
+          </div>
+          <div className="mt-1 font-serif text-[16px] text-ink">
+            {upgradeHeadline}
+          </div>
+        </div>
+      )}
+
+      {/* Renewal-failure nudge. Driven by the invoice.payment_failed
+          webhook; cleared on next successful invoice.paid. */}
+      {user.paymentFailedAt && isPro && (
+        <div className="mb-6 rounded-[10px] border border-accent bg-accent/10 px-5 py-4">
+          <div className="font-serif text-[16px] text-accent">
+            Your last payment didn&rsquo;t go through.
+          </div>
+          <div className="mt-1 text-[13px] text-ink-soft">
+            Stripe will keep retrying for a few days. Update your card in the
+            Customer Portal to avoid losing Pro.
+          </div>
+          <form action="/api/billing/portal" method="POST" className="mt-3">
+            <button
+              type="submit"
+              className="rounded-md bg-accent px-4 py-2 text-[12.5px] font-semibold text-paper hover:bg-[#611B11]"
+            >
+              Update payment method
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Trial-ending nudge. Webhook fires ~3 days before the first
+          charge. Cleared on first successful invoice.paid. */}
+      {user.trialEndingAt && isPro && !user.paymentFailedAt && (
+        <div className="mb-6 rounded-[10px] border border-line-strong bg-paper-warm px-5 py-4">
+          <div className="font-serif text-[16px] text-ink">
+            Your trial ends soon.
+          </div>
+          <div className="mt-1 text-[13px] text-ink-soft">
+            Confirm your payment method in the Customer Portal so you don&rsquo;t
+            lose Pro when the trial ends
+            {periodEnd ? ` on ${periodEnd.toLocaleDateString("en-US", { month: "long", day: "numeric" })}` : ""}
+            .
+          </div>
+          <form action="/api/billing/portal" method="POST" className="mt-3">
+            <button
+              type="submit"
+              className="rounded-md border border-line-strong bg-transparent px-4 py-2 text-[12.5px] font-semibold text-ink hover:bg-paper"
+            >
+              Open Customer Portal
+            </button>
+          </form>
+        </div>
+      )}
 
       {checkout === "success" && (
         <div className="mb-6 rounded-[10px] border border-success/30 bg-success/10 px-5 py-4">
@@ -45,6 +123,12 @@ export default async function BillingPage({
           Checkout cancelled. No card was charged.
         </div>
       )}
+      {checkout === "already-pro" && (
+        <div className="mb-6 rounded-[10px] border border-line bg-paper-warm px-5 py-4 text-[13px] text-ink-soft">
+          You&rsquo;re already on Pro. To change your plan or update payment,
+          use the Manage subscription button below.
+        </div>
+      )}
 
       {/* Current plan */}
       <div className="mb-8 rounded-[10px] border border-line bg-paper p-5">
@@ -53,33 +137,62 @@ export default async function BillingPage({
         </div>
         <div className="flex items-baseline justify-between">
           <div>
-            <div className="font-serif text-[28px] font-light tracking-tight">
-              {isAdmin ? "Admin" : isPro ? "Pro" : "Free"}
+            <div className="flex items-baseline gap-3">
+              <div className="font-serif text-[28px] font-light tracking-tight">
+                {isAdmin ? "Admin" : isPro ? "Pro" : "Free"}
+              </div>
+              {isPro && user.cancelAtPeriodEnd && (
+                <span className="rounded-full border border-line-strong bg-paper-warm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-mute">
+                  Cancelled
+                </span>
+              )}
             </div>
             <div className="mt-1 text-[13px] text-ink-soft">
               {isAdmin &&
                 "Everything unlocked. You own the house."}
-              {isPro && periodEnd && (
+              {isPro && user.cancelAtPeriodEnd && periodEnd && (
+                <>
+                  Pro until{" "}
+                  {periodEnd.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  . Renewal turned off &mdash; you won&rsquo;t be charged again.
+                </>
+              )}
+              {isPro && !user.cancelAtPeriodEnd && periodEnd && (
                 <>Renews {periodEnd.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</>
               )}
               {!isAdmin && !isPro && (
                 <>
-                  Up to 10 musicians, 5 venues, 5 active gigs. No SMS alerts,
+                  Up to {FREE_LIMITS.musicians} musicians, {FREE_LIMITS.venues} venues, {FREE_LIMITS.activeGigs} active gigs. No SMS alerts,
                   no QuickBooks sync.
                 </>
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {!isAdmin && !isPro && (
-              <form action="/api/billing/checkout" method="POST">
-                <button
-                  type="submit"
-                  className="rounded-md bg-accent px-5 py-2.5 text-[13px] font-semibold text-paper hover:bg-[#611B11]"
-                >
-                  Start {TRIAL_DAYS}-day Pro trial
-                </button>
-              </form>
+              <>
+                <form action="/api/billing/checkout" method="POST">
+                  <input type="hidden" name="plan" value="month" />
+                  <button
+                    type="submit"
+                    className="rounded-md border border-line-strong bg-transparent px-4 py-2.5 text-[13px] font-semibold text-ink hover:bg-paper-warm"
+                  >
+                    Start {TRIAL_DAYS}-day trial · $20/mo
+                  </button>
+                </form>
+                <form action="/api/billing/checkout" method="POST">
+                  <input type="hidden" name="plan" value="year" />
+                  <button
+                    type="submit"
+                    className="rounded-md bg-accent px-5 py-2.5 text-[13px] font-semibold text-paper hover:bg-[#611B11]"
+                  >
+                    Start {TRIAL_DAYS}-day trial · $200/yr
+                    <span className="ml-1.5 rounded bg-paper/15 px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em]">
+                      Save $40
+                    </span>
+                  </button>
+                </form>
+              </>
             )}
             {isPro && (
               <form action="/api/billing/portal" method="POST">
@@ -93,6 +206,26 @@ export default async function BillingPage({
             )}
           </div>
         </div>
+
+        {/* Reconciliation: pull subscription state straight from Stripe.
+            Surfaced only when there's a Stripe customer attached, so it
+            doesn't appear on accounts that have never touched checkout.
+            Useful if a webhook ever gets dropped and the local plan
+            drifts from Stripe's authoritative state. */}
+        {user.stripeCustomerId && (
+          <form
+            action={resyncSubscriptionFromStripe}
+            className="mt-4 flex items-center justify-end border-t border-line pt-3"
+          >
+            <button
+              type="submit"
+              className="text-[11px] italic text-ink-mute underline decoration-line-strong underline-offset-4 hover:text-ink"
+              title="Re-pull subscription state from Stripe in case a webhook was missed"
+            >
+              Resync from Stripe
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Pricing cards */}
@@ -112,7 +245,7 @@ export default async function BillingPage({
           />
           <PlanCard
             name="Pro"
-            price="$29"
+            price="$20"
             priceSub="/month"
             active={isPro}
             highlight={!isPro}

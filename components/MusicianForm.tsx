@@ -2,6 +2,7 @@ import Link from "next/link";
 import { upsertMusician, deleteMusician } from "@/lib/actions/musicians";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { InviteMusicianButton } from "@/components/InviteMusicianButton";
+import { RequestW9Button } from "@/components/RequestW9Button";
 
 type M = {
   id: string;
@@ -20,6 +21,7 @@ type M = {
   notes: string | null;
   w9Received: boolean;
   w9ReceivedAt: Date | null;
+  w9RequestedAt: Date | null;
   invitedAt: Date | null;
 } | null;
 
@@ -223,6 +225,29 @@ export function MusicianForm({ musician }: { musician: M }) {
               )}
             </span>
           </label>
+          {/* Send W-9 request — appears only when this musician needs one
+              (not a leader, doesn't have one on file). Lives here on the
+              edit page instead of on every roster row so the list view
+              stays uncluttered. */}
+          {isEdit && musician && !musician.isLeader && !musician.w9Received && (
+            <div className="col-span-2 mt-1 flex flex-wrap items-center gap-3 rounded-md border border-line bg-paper-warm/60 px-3 py-2 text-[12px] text-ink-soft">
+              <span>Need their W-9?</span>
+              <RequestW9Button
+                musicianId={musician.id}
+                hasEmail={!!musician.email}
+                requestedAt={musician.w9RequestedAt}
+              />
+              {musician.w9RequestedAt && (
+                <span className="text-[11px] italic text-ink-mute">
+                  Last sent{" "}
+                  {musician.w9RequestedAt.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="col-span-2 flex items-center gap-2 pt-5">
