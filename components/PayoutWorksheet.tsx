@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { savePayout } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
 import { MarkAllPaidButton } from "@/components/MarkAllPaidButton";
+import { InlineField } from "@/components/InlineField";
 import {
   IRS_MILEAGE_RATE_USD,
   GSA_PER_DIEM_USD,
@@ -82,6 +83,7 @@ export function PayoutWorksheet({
   gigId,
   gigTitle,
   initialClientPayCents,
+  initialPrivateFinanceNotes = null,
   personnel,
   expenses,
   roster = [],
@@ -90,6 +92,7 @@ export function PayoutWorksheet({
   gigTitle?: string;
   initialClientPayCents: number | null;
   initialClientDepositCents?: number | null;
+  initialPrivateFinanceNotes?: string | null;
   personnel: PersonnelIn[];
   expenses: ExpenseIn[];
   roster?: RosterOption[];
@@ -557,6 +560,29 @@ export function PayoutWorksheet({
           </div>
         </div>
         </div>
+      </div>
+
+      {/* Private finance notes — bandleader-only. NEVER sent to musicians
+          in the email fanout, NEVER rendered on the public gig sheet, NEVER
+          shown in the musician portal. Lives at the bottom of the Payout
+          Worksheet card so it reads as part of the leader's finance
+          scratchpad. */}
+      <div className="border-t border-line bg-paper/40 px-5 py-4 md:px-6">
+        <div className="mb-1.5 flex items-baseline gap-2">
+          <h5 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
+            Private finance notes
+          </h5>
+          <span className="text-[10px] italic text-ink-mute">
+            Only you can see this — never sent to the band.
+          </span>
+        </div>
+        <InlineField
+          gigId={gigId}
+          field="privateFinanceNotes"
+          initialValue={initialPrivateFinanceNotes}
+          multiline
+          placeholder="Deposit math, deal-memo reminders, invoice-by dates, tax-time annotations — anything the band shouldn't see."
+        />
       </div>
     </section>
   );

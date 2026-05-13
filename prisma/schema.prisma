@@ -43,6 +43,20 @@ model User {
   stripeSubscriptionId String?  @unique
   currentPeriodEnd     DateTime?
 
+  // Set when Stripe reports a renewal payment failed (invoice.payment_failed
+  // webhook). Cleared on the next successful invoice. The billing page reads
+  // this to render a "Your last payment failed — update your card" nudge.
+  paymentFailedAt DateTime?
+  // Set when Stripe sends the trial_will_end event (~3 days before charge).
+  // Cleared once a successful invoice lands. Surfaces a "trial ends soon"
+  // banner with a link to add/confirm a payment method.
+  trialEndingAt   DateTime?
+  // Mirrors Stripe's cancel_at_period_end flag on the active subscription.
+  // When true, the user has cancelled but their Pro access remains until
+  // currentPeriodEnd. UI shows "Cancelled — Pro until [date]" so they
+  // aren't confused that the cancel didn't take effect.
+  cancelAtPeriodEnd Boolean @default(false)
+
   // Custom sender for outbound fanout emails. When set, fanout sends as
   // "{User.name}" <{senderEmail}> (and the user's domain must be verified
   // at Resend). When null, fanout falls back to "{User.name} via GigWright"
@@ -271,6 +285,13 @@ model Gig {
 
   notes String?
 
+  // Private finance notes — bandleader-only scratchpad on the Payout
+  // Worksheet. NEVER included in the email fanout, the public gig sheet,
+  // or the musician portal. Use for deal-memo reminders, deposit math,
+  // tax-time annotations, "client wants invoice by Friday" — anything the
+  // band shouldn't see.
+  privateFinanceNotes String?
+
   // QuickBooks sync state. qboSyncedAt is set every time we push this gig's
   // bills to QBO; if updatedAt > qboSyncedAt, the UI shows "Changes unsynced
   // — Re-push" state. qboSyncError caches the last push error for display.
@@ -350,6 +371,15 @@ model GigPersonnel {
 
   calendarSynced Boolean   @default(false)
   calendarSyncedAt DateTime?
+
+  // Whether this personnel row appears in the Lineup section of the
+  // band-facing email fanout. Defaults to true. The bandleader can
+  // uncheck it for crew/contractors (sound, lights, booking agent)
+  // whose contact info shouldn't be circulated to the rest of the
+  // band. The person themselves still receives their own copy of the
+  // email if their notify flags are on — they're just hidden from
+  // *other* recipients' Lineup section.
+  includeInLineup Boolean @default(true)
 
   // Per-row QBO pointers so we can update/void the exact bill if the pay
   // amount changes post-push.

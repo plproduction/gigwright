@@ -15,7 +15,8 @@ type Field =
   | "attire"
   | "meal"
   | "loadingInfo"
-  | "loadingMapLink";
+  | "loadingMapLink"
+  | "privateFinanceNotes";
 
 // Click-to-edit inline field. Blur or ⌘↵ saves; Escape cancels.
 // Renders the current value as display text when not editing.
