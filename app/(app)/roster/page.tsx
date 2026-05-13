@@ -96,7 +96,6 @@ function MusicianRow({
     isLeader: boolean;
     calendarProvider: string;
     paymentMethod: string | null;
-    w9Received: boolean;
   };
 }) {
   const initials =
@@ -173,17 +172,7 @@ function MusicianRow({
           <span className="font-normal text-ink-mute">—</span>
         )}
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-2.5 whitespace-nowrap">
-        <span
-          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] ${
-            m.w9Received
-              ? "border-success/30 bg-success/10 text-success"
-              : "border-warn/30 bg-warn/10 text-warn"
-          }`}
-          title={m.w9Received ? "W-9 received" : "W-9 not received — request one from this musician's edit page"}
-        >
-          {m.w9Received ? "W-9 ✓" : "W-9"}
-        </span>
+      <div className="ml-auto flex shrink-0 items-center whitespace-nowrap">
         <span className="text-[14px] text-ink-mute transition-colors group-hover:text-accent">
           →
         </span>
