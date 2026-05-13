@@ -10,23 +10,43 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// Resolve the connection URL once, with a loud error if it isn't set.
-// Prisma 7's native error for an undefined url reads "The datasource.url
-// property is required in your Prisma config file when using prisma
-// migrate deploy" — which sends people debugging the config file when
-// the real fix is to set DATABASE_URL in the build environment.
-const databaseUrl = process.env["DATABASE_URL"];
+// Resolve the connection URL. If it's missing, behavior depends on
+// where we are:
+//
+//   • Netlify (or local / CI): throw a loud error so the operator knows
+//     to set DATABASE_URL. Prisma 7's native error reads "The
+//     datasource.url property is required..." which sends people
+//     debugging the config file instead of the env.
+//
+//   • Vercel preview builds: silently fall back to a placeholder. Vercel
+//     is connected via the GitHub App but isn't an active deploy target
+//     for GigWright (production = Netlify). Vercel's build runs `npm
+//     install` which triggers `prisma generate` via postinstall —
+//     that step does NOT use the datasource URL, so a placeholder is
+//     fine. Vercel's build never runs `migrate deploy`, so the
+//     placeholder is never queried as a real connection.
+let databaseUrl: string | undefined = process.env["DATABASE_URL"];
 if (!databaseUrl) {
-  throw new Error(
-    "DATABASE_URL is not set in the build environment. " +
-      "Production builds on Netlify — add it under Site settings → " +
-      "Environment variables (scope: All deploy contexts, including " +
-      "Builds). If this error is firing on Vercel, that integration " +
-      "isn't actively used by GigWright and can safely be ignored or " +
-      "disconnected. Same value used by Prisma Client at runtime — " +
-      "typically the pooled Postgres connection string ending in " +
-      "?sslmode=require.",
-  );
+  if (process.env["VERCEL"]) {
+    console.warn(
+      "[prisma.config] Vercel build detected without DATABASE_URL. " +
+        "Using a placeholder URL so `prisma generate` can complete. " +
+        "GigWright doesn't actually deploy on Vercel — to silence " +
+        "these failed-build emails permanently, disconnect the Vercel " +
+        "GitHub App from this repo in the Vercel dashboard.",
+    );
+    databaseUrl =
+      "postgresql://placeholder:placeholder@localhost:5432/none?schema=public";
+  } else {
+    throw new Error(
+      "DATABASE_URL is not set in the build environment. " +
+        "Production builds on Netlify — add it under Site settings → " +
+        "Environment variables (scope: All deploy contexts, including " +
+        "Builds). Same value used by Prisma Client at runtime — " +
+        "typically the pooled Postgres connection string ending in " +
+        "?sslmode=require.",
+    );
+  }
 }
 
 export default defineConfig({
