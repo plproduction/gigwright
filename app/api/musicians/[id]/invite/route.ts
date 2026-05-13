@@ -85,23 +85,17 @@ function inviteText(opts: {
   const bl = opts.bandleaderName;
   return `Hi ${firstName},
 
-${bl} uses GigWright to organize gigs and send the band call sheets. You're now on their roster, which means a couple of things:
+${bl} uses GigWright to organize gigs and send the band call sheets. You're now on their roster, which means two things:
 
   • You'll start getting gig updates by email (and text, once that goes live) — venue, times, attire, set list, the works.
-  • You can also log in to see your own gig calendar and update your own contact info so ${bl} doesn't have to chase you for it.
+  • Please log in and tell ${bl} how you want to be paid — Cash App, Venmo, Zelle, PayPal, Check, or however else — plus the handle / address that goes with it. Once it's on your profile, payments don't get stuck waiting on you to text back a handle on gig night.
 
-Once you're logged in you can:
-
-  • Update your phone, email, photo, and roles
-  • Set how you're paid (Venmo / Zelle / Cash / etc.) and your payout handle, so payments don't get stuck
-  • See every gig ${bl} has put you on, with full sheets and maps
-
-Logging in is free for you — GigWright is something ${bl} pays for, not you. No password to remember — just click the link below and you'll get a one-time sign-in link emailed to this address.
-
-Log in here:
+Log in here (no password — just a one-time sign-in link emailed to this address):
 ${opts.signInUrl}
 
-If you'd rather skip the login and just receive gig updates via email/text, you can ignore this — that works too.
+While you're in there you can also update your phone, email, photo, and roles, and see every gig ${bl} has put you on with full sheets and maps. Logging in is free for you — GigWright is something ${bl} pays for, not you.
+
+If you'd rather skip the login, you can ignore this and you'll still receive gig updates by email (and text, once it's live) — but the payment method really helps everyone, so please do it when you get a minute.
 
 — Sent on behalf of ${bl} via GigWright
 `;
@@ -126,36 +120,27 @@ function inviteHtml(opts: {
         ${escapeHtml(bl)} just added you to GigWright.
       </h1>
       <p style="color:#494336;font-size:14.5px;line-height:1.6;margin:0 0 14px;">
-        ${escapeHtml(bl)} uses GigWright to organize gigs and send the band call sheets. You&rsquo;re now on their roster, which means a couple of things:
+        ${escapeHtml(bl)} uses GigWright to organize gigs and send the band call sheets. You&rsquo;re now on their roster, which means two things:
       </p>
-      <ul style="color:#494336;font-size:14px;line-height:1.6;margin:0 0 22px;padding-left:20px;">
-        <li style="margin-bottom:6px;">
+      <ul style="color:#494336;font-size:14px;line-height:1.65;margin:0 0 22px;padding-left:20px;">
+        <li style="margin-bottom:10px;">
           <strong style="color:#111;">You&rsquo;ll start getting gig updates by email</strong> (and text, once that goes live) &mdash; venue, times, attire, set list, the works.
         </li>
         <li>
-          <strong style="color:#111;">You can also log in</strong> to see your own gig calendar and update your own contact info so ${escapeHtml(bl)} doesn&rsquo;t have to chase you for it.
+          <strong style="color:#111;">Please log in and tell ${escapeHtml(bl)} how you want to be paid</strong> &mdash; Cash App, Venmo, Zelle, PayPal, Check, or however else &mdash; plus the handle or address that goes with it. Once it&rsquo;s on your profile, payments don&rsquo;t get stuck waiting on you to text back a handle on gig night.
         </li>
       </ul>
 
-      <p style="color:#111;font-size:13px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 10px;">
-        Once you&rsquo;re logged in you can
-      </p>
-      <ul style="color:#494336;font-size:14px;line-height:1.6;margin:0 0 24px;padding-left:20px;">
-        <li style="margin-bottom:4px;">Update your phone, email, photo, and roles</li>
-        <li style="margin-bottom:4px;">Set how you&rsquo;re paid (Venmo / Zelle / Cash / etc.) and your payout handle, so payments don&rsquo;t get stuck</li>
-        <li>See every gig ${escapeHtml(bl)} has put you on, with full sheets and maps</li>
-      </ul>
-
-      <p style="color:#494336;font-size:13.5px;line-height:1.6;margin:0 0 22px;">
-        Logging in is <strong style="color:#111;">free for you</strong> &mdash; GigWright is something ${escapeHtml(bl)} pays for, not you. No password to remember &mdash; just click below and you&rsquo;ll get a one-time sign-in link emailed to this address.
-      </p>
-
       <a href="${opts.signInUrl}" style="display:inline-block;padding:13px 22px;background:#7E2418;color:#FBFAF6;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;letter-spacing:0.01em;">
-        Log in to GigWright →
+        Log in to set your payment method →
       </a>
 
-      <p style="color:#857F72;font-size:12px;line-height:1.55;margin:28px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;">
-        Prefer to skip the login? You can ignore this and you&rsquo;ll still receive gig updates by email (and text once it&rsquo;s live). Sent on behalf of <strong>${escapeHtml(bl)}</strong>.
+      <p style="color:#857F72;font-size:12px;line-height:1.55;margin:22px 0 0;">
+        No password to remember &mdash; just click above and you&rsquo;ll get a one-time sign-in link emailed to this address. While you&rsquo;re in there you can also update your phone, email, photo, and roles, and see every gig ${escapeHtml(bl)} has put you on with full sheets and maps. Logging in is free for you &mdash; GigWright is something ${escapeHtml(bl)} pays for, not you.
+      </p>
+
+      <p style="color:#857F72;font-size:12px;line-height:1.55;margin:18px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;">
+        Prefer to skip the login? You&rsquo;ll still receive gig updates by email (and text once it&rsquo;s live), but the payment method really helps everyone &mdash; please do it when you get a minute. Sent on behalf of <strong>${escapeHtml(bl)}</strong>.
       </p>
     </div>
   </body>
