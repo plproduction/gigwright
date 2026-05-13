@@ -216,27 +216,39 @@ export default async function GigDetailPage({
                   key={p.id}
                   className="grid grid-cols-[24px_1fr_auto_auto_18px] items-center gap-2.5"
                 >
-                  <Avatar
-                    initials={p.musician.initials ?? p.musician.name.slice(0, 2).toUpperCase()}
-                    leader={p.musician.isLeader}
-                    avatarUrl={p.musician.avatarUrl}
-                    name={p.musician.name}
-                  />
-                  <div>
-                    <div className="font-serif text-[14px] font-medium">
-                      {p.musician.name}
+                  {/* Avatar + name + meta are a Link to the musician's
+                      edit page so the bandleader can jump to their
+                      profile (send invite, change contact info, etc.)
+                      directly from any gig sheet without having to
+                      navigate through the Roster page. LineupToggle
+                      stays outside the Link so the checkbox isn't
+                      a nested-interactive issue. */}
+                  <Link
+                    href={`/roster/${p.musicianId}/edit`}
+                    className="contents"
+                  >
+                    <Avatar
+                      initials={p.musician.initials ?? p.musician.name.slice(0, 2).toUpperCase()}
+                      leader={p.musician.isLeader}
+                      avatarUrl={p.musician.avatarUrl}
+                      name={p.musician.name}
+                    />
+                    <div className="-mx-1.5 rounded-md px-1.5 py-1 hover:bg-paper-warm/70">
+                      <div className="font-serif text-[14px] font-medium underline-offset-4 hover:text-accent hover:underline decoration-accent/40">
+                        {p.musician.name}
+                      </div>
+                      <div className="text-[11px] text-ink-mute">
+                        {p.musician.isLeader ? "Leader · " : ""}
+                        {p.musician.roles.join(", ")}
+                        {p.musician.paymentMethod && !p.musician.isLeader && (
+                          <span className="text-ink-soft">
+                            {" · "}
+                            {paymentMethodLabel(p.musician.paymentMethod)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-ink-mute">
-                      {p.musician.isLeader ? "Leader · " : ""}
-                      {p.musician.roles.join(", ")}
-                      {p.musician.paymentMethod && !p.musician.isLeader && (
-                        <span className="text-ink-soft">
-                          {" · "}
-                          {paymentMethodLabel(p.musician.paymentMethod)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  </Link>
                   <div className="font-serif text-[14px] tabular-nums">
                     {p.musician.isLeader ? "—" : formatMoneyCents(p.payCents)}
                   </div>
