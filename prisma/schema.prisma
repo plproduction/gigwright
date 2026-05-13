@@ -8,6 +8,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // URL is intentionally not declared here. Prisma 7 dropped the
+  // `url = env(...)` form in favor of declaring connection details
+  // exclusively in prisma.config.ts (so the same config drives both
+  // CLI tooling and the runtime Client). See prisma.config.ts.
 }
 
 // ═══════════════════════════════════════════════════════════════
