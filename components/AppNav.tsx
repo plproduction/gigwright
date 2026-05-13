@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 const NAV = [
   { label: "Gigs", href: "/dashboard", matches: ["/dashboard", "/gigs"] },
@@ -43,16 +44,7 @@ export function AppNav({ userInitials }: { userInitials: string }) {
         })}
       </nav>
       <div className="ml-auto flex items-center gap-[14px]">
-        <div className="relative w-[220px]">
-          <input
-            type="text"
-            placeholder="Search gigs, venues, people…"
-            className="w-full rounded-md border border-line bg-paper py-[7px] pl-[30px] pr-3 text-[12px] text-ink placeholder-ink-mute outline-none focus:border-accent"
-          />
-          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[14px] text-ink-mute">
-            ⌕
-          </span>
-        </div>
+        <GlobalSearch />
         <Link
           href="/settings"
           aria-label="Account"
