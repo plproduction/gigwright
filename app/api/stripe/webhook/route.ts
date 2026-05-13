@@ -7,12 +7,18 @@ import { db } from "@/lib/db";
 // keeps the User.plan / stripeSubscriptionId / currentPeriodEnd in sync.
 //
 // Events handled:
-//   - checkout.session.completed        → first successful checkout
-//   - customer.subscription.created     → subscription exists (incl. trial)
-//   - customer.subscription.updated     → plan, status, period end changes
-//   - customer.subscription.deleted     → cancellation → drop to FREE
-//   - invoice.paid                      → confirms paid status
-//   - invoice.payment_failed            → optional: flag for UI nudge
+//   - checkout.session.completed             → first successful checkout
+//   - customer.subscription.created          → subscription exists (incl. trial)
+//   - customer.subscription.updated          → plan, status, period end changes
+//   - customer.subscription.deleted          → cancellation → drop to FREE
+//   - customer.subscription.trial_will_end   → fires 3 days before charge,
+//                                              used to surface a "card on
+//                                              file?" nudge in the UI
+//   - invoice.paid                           → confirms paid status (no-op;
+//                                              subscription events carry it)
+//   - invoice.payment_failed                 → renewal card declined; flag
+//                                              the user record so billing
+//                                              page can show a nudge
 export async function POST(req: Request) {
   if (!STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json(
@@ -52,6 +58,14 @@ export async function POST(req: Request) {
           : null);
       if (userId && typeof session.subscription === "string") {
         await applySubscription(userId, session.subscription);
+      } else if (!userId) {
+        // Stripe sent a checkout.completed that we can't attribute to a
+        // GigWright user. Logged so it's discoverable in Netlify logs
+        // — usually a sign of a manually-created subscription in Stripe
+        // or a metadata mismatch.
+        console.warn(
+          `[stripe webhook] checkout.session.completed without matching user: session=${session.id} customer=${typeof session.customer === "string" ? session.customer : session.customer?.id}`,
+        );
       }
       break;
     }
@@ -78,16 +92,71 @@ export async function POST(req: Request) {
             plan: "FREE",
             stripeSubscriptionId: null,
             currentPeriodEnd: null,
+            paymentFailedAt: null,
+            trialEndingAt: null,
+            cancelAtPeriodEnd: false,
           },
         });
       }
       break;
     }
-    case "invoice.paid":
-    case "invoice.payment_failed":
-      // Intentionally no-op for MVP — subscription events carry the state
-      // we care about. Payment-failure nudges can live here later.
+    case "customer.subscription.trial_will_end": {
+      // Fires ~3 days before the trial ends. We surface this on the
+      // billing page so users get a nudge to confirm payment before
+      // the first charge instead of getting a payment-failed email
+      // a few days later.
+      const sub = event.data.object as Stripe.Subscription;
+      const userId = await findUserByCustomer(
+        typeof sub.customer === "string" ? sub.customer : sub.customer.id,
+      );
+      if (userId) {
+        await db.user.update({
+          where: { id: userId },
+          data: { trialEndingAt: new Date() },
+        });
+      }
       break;
+    }
+    case "invoice.paid": {
+      // A successful invoice clears both warning flags. We don't try
+      // to confirm plan state here — subscription.updated arrives in
+      // the same delivery and carries the authoritative status.
+      const inv = event.data.object as Stripe.Invoice;
+      const customerId =
+        typeof inv.customer === "string"
+          ? inv.customer
+          : inv.customer?.id ?? null;
+      if (customerId) {
+        const userId = await findUserByCustomer(customerId);
+        if (userId) {
+          await db.user.update({
+            where: { id: userId },
+            data: { paymentFailedAt: null, trialEndingAt: null },
+          });
+        }
+      }
+      break;
+    }
+    case "invoice.payment_failed": {
+      // Renewal card declined. We don't immediately downgrade —
+      // Stripe gives the customer a grace period and will retry. We
+      // just flag the user so the billing page can render the nudge.
+      const inv = event.data.object as Stripe.Invoice;
+      const customerId =
+        typeof inv.customer === "string"
+          ? inv.customer
+          : inv.customer?.id ?? null;
+      if (customerId) {
+        const userId = await findUserByCustomer(customerId);
+        if (userId) {
+          await db.user.update({
+            where: { id: userId },
+            data: { paymentFailedAt: new Date() },
+          });
+        }
+      }
+      break;
+    }
   }
 
   return NextResponse.json({ received: true });
@@ -141,6 +210,9 @@ async function applySubscriptionFromObject(
       plan,
       stripeSubscriptionId: sub.id,
       currentPeriodEnd,
+      // Mirror Stripe's cancel_at_period_end so the UI can render
+      // "Cancelled — Pro until [date]" without re-querying Stripe.
+      cancelAtPeriodEnd: !!sub.cancel_at_period_end,
     },
   });
 }
