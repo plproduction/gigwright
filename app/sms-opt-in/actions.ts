@@ -3,13 +3,11 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { CONSENT_TEXT } from "./consent-text";
 
-// EXACT consent text shown on the form and stored verbatim with every
-// opt-in record. If a carrier or TCR ever audits a specific opt-in we
-// can show them precisely what the user agreed to at submit time. Keep
-// this string in lockstep with what the form renders.
-export const CONSENT_TEXT =
-  "I agree to receive operational SMS from GigWright on behalf of the bandleader who hired me. Messages contain gig coordination details (venue, call time, downbeat, address, attire, set-list updates, morning-of reminders, and changes to any of the above). Message frequency varies — typically 0–10 messages per gig and 1–20 per month. Message and data rates may apply. Reply HELP for help, STOP to opt out. See gigwright.com/privacy and gigwright.com/terms for full terms.";
+// CONSENT_TEXT lives in ./consent-text.ts because Next.js "use server"
+// modules can only export async functions, not constants. We import it
+// here to stamp every opt-in record with the exact wording the user saw.
 
 // Normalize a US phone to E.164 (+15035551234) format. Returns null if
 // the input doesn't look like a US 10- or 11-digit phone.

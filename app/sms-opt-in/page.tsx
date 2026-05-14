@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { submitSmsOptIn, CONSENT_TEXT } from "./actions";
+import { submitSmsOptIn } from "./actions";
 
 // Public SMS opt-in form. This is the TCR-verifiable Call to Action for
 // our A2P 10DLC campaign — a carrier or TCR reviewer can navigate here,
