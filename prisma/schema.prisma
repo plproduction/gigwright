@@ -417,3 +417,43 @@ model Activity {
 
   @@index([gigId, createdAt])
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SMS opt-in (public web form)
+// ═══════════════════════════════════════════════════════════════
+
+// Record of an end-user explicitly opting in to receive SMS via the
+// public form at /sms-opt-in. This exists primarily as the TCR-verifiable
+// Call to Action for our A2P 10DLC campaign: regulators (and any TCR
+// reviewer) can navigate to the form, submit it, see a confirmation, and
+// verify a row landed here. Our day-to-day flow is the offline
+// contractor-onboarding conversation between bandleader and musician,
+// but TCR requires a public web mechanism they can test directly. Both
+// paths coexist; this is the testable surface.
+model SmsOptIn {
+  id String @id @default(cuid())
+
+  // Phone number stored in E.164 (+15035551234) format. The form
+  // normalizes whatever the user types.
+  phone String
+
+  // Optional metadata to help the bandleader match this opt-in to a
+  // real musician on their roster.
+  name       String?
+  bandleader String? // free-text "who hired you" so we can route correctly
+
+  // EXACT consent language shown to the user at the moment they
+  // submitted, captured verbatim. This is the audit trail TCR and
+  // carriers ask for if they ever review a specific opt-in.
+  consentText String
+
+  // Audit metadata — IP + user-agent at submit time. Required by some
+  // carriers if there's ever a dispute over whether consent was given.
+  userAgent String?
+  ipAddress String?
+
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+  @@index([createdAt])
+}

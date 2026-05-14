@@ -86,7 +86,13 @@ export default function PrivacyPage() {
             Recipients can opt out at any time by replying <strong>STOP</strong>, <strong>UNSUBSCRIBE</strong>, <strong>CANCEL</strong>, <strong>QUIT</strong>, or <strong>END</strong>. Opt-out is honored immediately and persistently at the carrier level. Replying <strong>HELP</strong> returns contact information for the bandleader and for GigWright support.
           </p>
           <p>
-            See our public <Link href="/sms-consent" className="text-accent underline-offset-4 hover:underline">SMS Consent &amp; Opt-In page</Link> for a full description of how musicians consent to receive SMS through GigWright.
+            Musicians can opt in directly via our public{" "}
+            <Link href="/sms-opt-in" className="text-accent underline-offset-4 hover:underline">SMS Opt-In form</Link>{" "}
+            (typing in a mobile number and checking a consent box), or be opted
+            in by their bandleader as part of the offline contractor-onboarding
+            conversation. See our public{" "}
+            <Link href="/sms-consent" className="text-accent underline-offset-4 hover:underline">SMS Consent &amp; Opt-In policy</Link>{" "}
+            for the full description of both paths and what consent covers.
           </p>
 
           <H2>The Permission Wall</H2>
@@ -154,7 +160,7 @@ export default function PrivacyPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS consent</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS consent</Link> · <Link href="/sms-opt-in" className="hover:text-ink">SMS opt-in</Link>
         </div>
       </footer>
     </div>

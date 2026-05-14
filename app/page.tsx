@@ -729,6 +729,7 @@ function Footer() {
               ["Privacy", "/privacy"],
               ["Terms", "/terms"],
               ["SMS consent", "/sms-consent"],
+              ["SMS opt-in", "/sms-opt-in"],
             ]}
           />
         </div>

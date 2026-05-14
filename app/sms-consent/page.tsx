@@ -51,10 +51,46 @@ export default function SmsConsentPage() {
 
           <H2>How consent is collected</H2>
           <p>
-            Musicians do <strong>not</strong> opt in through a public sign-up form on this website. Consent is collected <strong>offline</strong>, prior to a musician&rsquo;s phone number being entered into GigWright, as part of the ordinary contractor-onboarding conversation between Bandleader and musician.
+            There are two ways a musician can consent to receive GigWright SMS,
+            and both are valid:
           </p>
+
+          <H3>Path A: Public web form opt-in (testable)</H3>
           <p>
-            The flow, end to end:
+            Any musician can opt in directly by filling out the public form at{" "}
+            <Link
+              href="/sms-opt-in"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              gigwright.com/sms-opt-in
+            </Link>
+            . They enter their mobile number, name, and (optionally) the
+            bandleader they&rsquo;re working with, then check a consent box that
+            reads in full:
+          </p>
+          <blockquote className="border-l-2 border-accent/40 pl-4 italic text-ink-soft">
+            &ldquo;I agree to receive operational SMS from GigWright on behalf
+            of the bandleader who hired me. Messages contain gig coordination
+            details (venue, call time, downbeat, address, attire, set-list
+            updates, morning-of reminders, and changes to any of the above).
+            Message frequency varies &mdash; typically 0&ndash;10 messages per
+            gig and 1&ndash;20 per month. Message and data rates may apply.
+            Reply HELP for help, STOP to opt out at any time.&rdquo;
+          </blockquote>
+          <p>
+            On submit, the consent record is written to our database with the
+            exact wording above, the submission timestamp, and the user&rsquo;s
+            IP and user-agent string for audit. The user is taken to a
+            confirmation page acknowledging the opt-in.
+          </p>
+
+          <H3>Path B: Offline contractor-onboarding consent</H3>
+          <p>
+            In practice, most musicians on a bandleader&rsquo;s roster have a
+            pre-existing working relationship and consent verbally as part of
+            the same conversation in which they&rsquo;re hired for the gig.
+            That flow is captured offline, prior to the musician&rsquo;s phone
+            number being entered into GigWright. Step by step:
           </p>
           <ol className="list-decimal pl-5 space-y-2">
             <li>
@@ -161,7 +197,7 @@ export default function SmsConsentPage() {
 
       <footer className="border-t border-line bg-paper-warm py-10">
         <div className="mx-auto max-w-[1240px] px-8 text-center text-[12px] text-ink-mute">
-          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS Consent</Link>
+          © 2026 GigWright · <Link href="/privacy" className="hover:text-ink">Privacy</Link> · <Link href="/terms" className="hover:text-ink">Terms</Link> · <Link href="/sms-consent" className="hover:text-ink">SMS consent</Link> · <Link href="/sms-opt-in" className="hover:text-ink">SMS opt-in</Link>
         </div>
       </footer>
     </div>
@@ -170,7 +206,7 @@ export default function SmsConsentPage() {
 
 function Prose({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-5 text-[15px] leading-[1.7] text-ink-soft [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-[22px] [&_h2]:font-normal [&_h2]:tracking-tight [&_h2]:text-ink [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_strong]:font-semibold [&_strong]:text-ink">
+    <div className="space-y-5 text-[15px] leading-[1.7] text-ink-soft [&_h2]:mb-3 [&_h2]:mt-10 [&_h2]:font-serif [&_h2]:text-[22px] [&_h2]:font-normal [&_h2]:tracking-tight [&_h2]:text-ink [&_h3]:mb-2 [&_h3]:mt-6 [&_h3]:font-serif [&_h3]:text-[17px] [&_h3]:font-normal [&_h3]:tracking-tight [&_h3]:text-ink [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:space-y-2 [&_blockquote]:my-3 [&_strong]:font-semibold [&_strong]:text-ink">
       {children}
     </div>
   );
@@ -178,6 +214,10 @@ function Prose({ children }: { children: React.ReactNode }) {
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2>{children}</h2>;
+}
+
+function H3({ children }: { children: React.ReactNode }) {
+  return <h3>{children}</h3>;
 }
 
 function Sample({ children }: { children: React.ReactNode }) {
