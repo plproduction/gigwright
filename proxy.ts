@@ -17,6 +17,15 @@ export default auth(function proxy(req) {
     pathname.startsWith("/terms") ||
     pathname.startsWith("/about") ||
     pathname.startsWith("/changelog") ||
+    // SMS compliance pages — these MUST be publicly accessible so TCR and
+    // carrier reviewers can verify the Call to Action. Two prior A2P 10DLC
+    // rejections were traced back to this very file: /sms-consent (the
+    // policy) and /sms-opt-in (the public form) were auth-gated, so the
+    // TCR reviewer clicked the CTA URL we gave them, got bounced to
+    // /signin, and rejected the campaign with "issues verifying the Call
+    // to Action." Never auth-gate these.
+    pathname.startsWith("/sms-consent") ||
+    pathname.startsWith("/sms-opt-in") ||
     // Public read-only gig pages for SMS/email click-throughs
     pathname.startsWith("/g/") ||
     pathname.startsWith("/api/") || // API routes handle their own auth
