@@ -30,6 +30,8 @@ export type Ctx = {
   loadingMapLink: string | null;
   setlistUrl: string | null;
   setlistFileName: string | null;
+  stagePlotUrl: string | null;
+  stagePlotFileName: string | null;
   materialsUrl: string | null;
   notes: string | null;
   lineup: Array<{
@@ -169,6 +171,14 @@ export function renderText(c: Ctx): string {
     lines.push("");
     lines.push(`Gig materials: not yet posted — view gig sheet for updates`);
     lines.push(`  ${gigSheetUrl}`);
+  }
+  // Stage plot — only included when the bandleader has uploaded one. We
+  // don't print a "not yet posted" placeholder for this because most gigs
+  // don't have a stage plot at all (small combos, no production rider).
+  if (c.stagePlotUrl) {
+    lines.push("");
+    lines.push(`Stage plot: ${c.stagePlotFileName ?? "Open stage plot"}`);
+    lines.push(`  ${c.stagePlotUrl}`);
   }
 
   // (notes is now merged into the combined loading info & notes section above.)
@@ -417,9 +427,24 @@ export function renderHtml(c: Ctx): string {
         </table>
       </a>`;
 
+  // Stage plot only renders a CTA when one's uploaded — unlike set list +
+  // materials which always show (with a "view on gig sheet" fallback),
+  // because most gigs don't have a stage plot at all. When it's there,
+  // it slots between set list and materials so the visual grouping is
+  // [music] [stage] [folder].
+  const hasStagePlot = !!c.stagePlotUrl;
   const setlistCta = c.setlistUrl
     ? ctaButton("📄", c.setlistFileName ?? "Set list (PDF)", null, c.setlistUrl, false)
     : ctaButton("📄", "Set list", "Posts before downbeat — view on gig sheet", gigSheetUrl, false);
+  const stagePlotCta = hasStagePlot
+    ? ctaButton(
+        "🎚️",
+        c.stagePlotFileName ?? "Stage plot",
+        "Stage layout / monitor mix",
+        c.stagePlotUrl!,
+        false,
+      )
+    : "";
   const materialsCta = c.materialsUrl
     ? ctaButton("📁", "Gig materials folder", "Charts, audio, references", c.materialsUrl, true)
     : ctaButton("📁", "Gig materials", "Posts when ready — view on gig sheet", gigSheetUrl, true);
@@ -427,6 +452,7 @@ export function renderHtml(c: Ctx): string {
   const linksBlock = `<tr><td style="padding:36px 40px 0">
     ${eyebrow("Music & materials")}
     ${setlistCta}
+    ${stagePlotCta}
     ${materialsCta}
   </td></tr>`;
 

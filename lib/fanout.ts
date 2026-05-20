@@ -98,6 +98,8 @@ export async function fanOutGigUpdate(
       loadingMapLink: gig!.loadingMapLink,
       setlistUrl: gig!.setlistUrl,
       setlistFileName: gig!.setlistFileName,
+      stagePlotUrl: gig!.stagePlotUrl,
+      stagePlotFileName: gig!.stagePlotFileName,
       materialsUrl: gig!.materialsUrl,
       notes: gig!.notes,
       lineup,

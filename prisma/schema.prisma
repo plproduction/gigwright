@@ -287,6 +287,13 @@ model Gig {
   loadingMapUrl  String? // Vercel Blob URL for the uploaded map image
   loadingMapLink String? // external map link, e.g. https://maps.app.goo.gl/…
 
+  // Stage plot — PDF or image (PNG/JPG) showing the stage layout, mic
+  // positions, monitor mix, etc. Same upload pattern as loadingMapUrl:
+  // Vercel Blob URL + original filename. Email/portal renders it as a
+  // clickable "Stage plot ↗" link (not embedded inline).
+  stagePlotUrl      String?
+  stagePlotFileName String?
+
   notes String?
 
   // Private finance notes — bandleader-only scratchpad on the Payout

@@ -40,6 +40,8 @@ const scenarios = {
     loadingMapLink: "https://maps.app.goo.gl/abc123",
     setlistUrl: "https://example.com/setlist.pdf",
     setlistFileName: "CoasterPlayhouse-2026-05-17.pdf",
+    stagePlotUrl: "https://example.com/stage-plot.pdf",
+    stagePlotFileName: "CoasterPlayhouse-stage-plot.pdf",
     materialsUrl: "https://drive.google.com/drive/folders/abc123",
     notes:
       "Rooms have been reserved for those of you who have confirmed. Please double-confirm via email with me.",
@@ -74,6 +76,8 @@ const scenarios = {
     loadingMapLink: null,
     setlistUrl: null,
     setlistFileName: null,
+    stagePlotUrl: null,
+    stagePlotFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [
@@ -106,6 +110,8 @@ const scenarios = {
     loadingMapLink: null,
     setlistUrl: null,
     setlistFileName: null,
+    stagePlotUrl: null,
+    stagePlotFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [
@@ -136,6 +142,8 @@ const scenarios = {
     loadingMapLink: null,
     setlistUrl: null,
     setlistFileName: null,
+    stagePlotUrl: null,
+    stagePlotFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [{ name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" }],

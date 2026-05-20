@@ -220,6 +220,19 @@ export default async function MyGigDetailPage({
               </a>
             </Section>
           )}
+
+          {gig.stagePlotUrl && (
+            <Section title="Stage plot">
+              <a
+                href={gig.stagePlotUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block truncate text-[13px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+              >
+                🎚️ {gig.stagePlotFileName ?? "Open stage plot"}
+              </a>
+            </Section>
+          )}
         </div>
 
         {/* Column 3: Who's playing + Your pay + Notes */}

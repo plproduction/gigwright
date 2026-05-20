@@ -7,6 +7,7 @@ import { PayoutWorksheet } from "@/components/PayoutWorksheet";
 import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
 import { LoadingMapUpload } from "@/components/LoadingMapUpload";
+import { StagePlotUpload } from "@/components/StagePlotUpload";
 import { ShareGigButton } from "@/components/ShareGigButton";
 import { CloneGigButton } from "@/components/CloneGigButton";
 import { ActivityList } from "@/components/ActivityList";
@@ -190,10 +191,51 @@ export default async function GigDetailPage({
         </div>
       </div>
 
-      {/* Three columns — stack vertically on mobile, 3-up on lg+ */}
+      {/* Three columns — stack vertically on mobile, 3-up on lg+
+          Reading flow follows the bandleader's mental model:
+            Column 1 — WHO / WHERE  (venue · personnel · money)
+            Column 2 — WHEN / WHAT  (times · tech & attire · stage plot)
+            Column 3 — PAPERWORK    (set list · materials · loading · other notes · share · clone · activity)
+          Venue is top-left because the first question on any gig sheet
+          is "where am I going." Other notes lives in Column 3 (no longer
+          a full-width band below) to keep the vertical rhythm tight. */}
       <div className="grid grid-cols-1 lg:grid-cols-3">
-        {/* Column 1: Personnel + Money */}
+        {/* ── Column 1 — WHO / WHERE ───────────────────────────────── */}
         <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
+          {gig.venue && (
+            <Section title="Venue">
+              <div className="font-serif text-[17px]">{gig.venue.name}</div>
+              <div className="mt-1.5 text-[13px] text-ink-soft">
+                {gig.venue.addressL1 && (
+                  <>
+                    {gig.venue.addressL1}
+                    <br />
+                  </>
+                )}
+                {gig.venue.city && gig.venue.state && (
+                  <>
+                    {gig.venue.city}, {gig.venue.state} {gig.venue.postalCode}
+                    <br />
+                  </>
+                )}
+                {gig.venue.phone}
+              </div>
+              {(() => {
+                const href = mapLink(gig.venue);
+                return href ? (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                  >
+                    Open in Maps →
+                  </a>
+                ) : null;
+              })()}
+            </Section>
+          )}
+
           {/* Personnel — custom section so we can place a delicate "Include
               in outgoing emails" eyebrow on the right of the title row,
               aligned over the per-row checkbox column. Same letterpress
@@ -300,43 +342,9 @@ export default async function GigDetailPage({
             </div>
           </Section>
           </div>
-
-          {/* Clone + Activity moved here from Column 3 to reduce the
-              vertical scroll on the right column. Both are reference
-              utilities (not heavy edits), so they sit cleanly below
-              Personnel + Money. */}
-          <div className="hidden lg:block">
-          <Section title="Clone this gig">
-            <div className="flex items-start gap-3">
-              <CloneGigButton gigId={gig.id} />
-              <span className="flex-1 text-[11px] leading-[1.45] text-ink-mute">
-                Repeat this gig? Clone makes a fresh inquiry one week out
-                with the same venue and band.
-              </span>
-            </div>
-          </Section>
-          </div>
-
-          <div className="hidden lg:block">
-          <Section title="Activity">
-            <ActivityList
-              entries={gig.activity.map((a) => ({
-                id: a.id,
-                date: `${a.createdAt.toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })} ${a.createdAt.toLocaleTimeString("en-US", {
-                  hour: "numeric",
-                  minute: "2-digit",
-                })}`,
-                summary: a.summary,
-              }))}
-            />
-          </Section>
-          </div>
         </div>
 
-        {/* Column 2: Times + Venue + Tech */}
+        {/* ── Column 2 — WHEN / WHAT ────────────────────────────────── */}
         <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
           <Section title="Times">
             <div className="grid grid-cols-2 gap-3">
@@ -374,40 +382,6 @@ export default async function GigDetailPage({
               )}
             </div>
           </Section>
-
-          {gig.venue && (
-            <Section title="Venue">
-              <div className="font-serif text-[17px]">{gig.venue.name}</div>
-              <div className="mt-1.5 text-[13px] text-ink-soft">
-                {gig.venue.addressL1 && (
-                  <>
-                    {gig.venue.addressL1}
-                    <br />
-                  </>
-                )}
-                {gig.venue.city && gig.venue.state && (
-                  <>
-                    {gig.venue.city}, {gig.venue.state} {gig.venue.postalCode}
-                    <br />
-                  </>
-                )}
-                {gig.venue.phone}
-              </div>
-              {(() => {
-                const href = mapLink(gig.venue);
-                return href ? (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
-                  >
-                    Open in Maps →
-                  </a>
-                ) : null;
-              })()}
-            </Section>
-          )}
 
           <Section title="Tech & attire">
             <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
@@ -455,20 +429,22 @@ export default async function GigDetailPage({
               />
             </div>
           </Section>
-        </div>
 
-        {/* Column 3: Gig Materials + Set List + Activity */}
-        <div className="px-5 py-5 md:px-6">
-          <Section title="Gig materials">
-            <InlineField
+          {/* Stage plot — PDF or image. Sits as its own section under Tech
+              & attire so the file uploader has space to breathe and the
+              text-input grid above stays clean. Email/portal renders this
+              as a clickable "Stage plot ↗" link, not embedded inline. */}
+          <Section title="Stage plot">
+            <StagePlotUpload
               gigId={gig.id}
-              field="materialsUrl"
-              initialValue={gig.materialsUrl}
-              placeholder="Paste link (Google Drive, Dropbox, OneDrive…)"
-              displayAs="link"
+              initialUrl={gig.stagePlotUrl}
+              initialFileName={gig.stagePlotFileName}
             />
           </Section>
+        </div>
 
+        {/* ── Column 3 — PAPERWORK & META ───────────────────────────── */}
+        <div className="px-5 py-5 md:px-6">
           <Section title="Set list">
             {isPaid(user.plan) ? (
               <>
@@ -499,29 +475,15 @@ export default async function GigDetailPage({
             )}
           </Section>
 
-          <div className="hidden lg:block">
-          <Section title="Calendar sync · pending">
-            <div className="flex flex-wrap gap-1.5">
-              {gig.personnel.map((p) => (
-                <span
-                  key={p.id}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-line-strong px-2.5 py-1 text-[11px] text-ink-soft"
-                >
-                  <span className="h-1 w-1 rounded-full bg-line-strong" />
-                  <em className="font-serif text-[12px] not-italic text-ink">
-                    {p.musician.name.split(" ")[0]}
-                  </em>
-                  <span>
-                    {calendarLabel(p.musician.calendarProvider)}
-                  </span>
-                </span>
-              ))}
-            </div>
-            <div className="mt-2.5 border-t border-dashed border-line-strong pt-2.5 text-[11px] leading-[1.45] text-ink-mute">
-              Two-way iCloud and Google calendar sync is Phase 1 work. The plumbing is there; the providers are next.
-            </div>
+          <Section title="Gig materials">
+            <InlineField
+              gigId={gig.id}
+              field="materialsUrl"
+              initialValue={gig.materialsUrl}
+              placeholder="Paste link (Google Drive, Dropbox, OneDrive…)"
+              displayAs="link"
+            />
           </Section>
-          </div>
 
           <div className="hidden lg:block">
           <Section title="Special loading instructions">
@@ -562,27 +524,58 @@ export default async function GigDetailPage({
           </Section>
           </div>
 
+          {/* Other notes — was a full-width band below all three columns,
+              moved here so the right column carries all of the soft-text
+              paperwork in one place. Same field name, same email surface,
+              so the "I type here, this comes out there" mental model
+              still holds. */}
+          <Section title="Other notes">
+            <InlineField
+              gigId={gig.id}
+              field="notes"
+              initialValue={gig.notes}
+              multiline
+              placeholder="Parking, green room, audience vibe, anything worth remembering…"
+            />
+          </Section>
+
           <Section title="Share gig sheet">
             <ShareGigButton gigId={gig.id} />
           </Section>
-        </div>
-      </div>
 
-      {/* Other notes — full width, click to edit. Label matches the
-          email section name ("Other notes") so the bandleader's mental
-          model — "I type here, this comes out there" — stays
-          consistent across the page and the band-facing email. */}
-      <div className="hidden border-t border-line bg-surface px-7 py-5 lg:block">
-        <h5 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
-          Other notes
-        </h5>
-        <InlineField
-          gigId={gig.id}
-          field="notes"
-          initialValue={gig.notes}
-          multiline
-          placeholder="Parking, green room, audience vibe, anything worth remembering…"
-        />
+          <div className="hidden lg:block">
+          <Section title="Clone this gig">
+            <div className="flex items-start gap-3">
+              <CloneGigButton
+                gigId={gig.id}
+                sourceStartAt={gig.startAt.toISOString().slice(0, 10)}
+              />
+              <span className="flex-1 text-[11px] leading-[1.45] text-ink-mute">
+                Repeat this gig? Pick a date — clone keeps the same venue,
+                band, and clock times.
+              </span>
+            </div>
+          </Section>
+          </div>
+
+          <div className="hidden lg:block">
+          <Section title="Activity">
+            <ActivityList
+              entries={gig.activity.map((a) => ({
+                id: a.id,
+                date: `${a.createdAt.toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })} ${a.createdAt.toLocaleTimeString("en-US", {
+                  hour: "numeric",
+                  minute: "2-digit",
+                })}`,
+                summary: a.summary,
+              }))}
+            />
+          </Section>
+          </div>
+        </div>
       </div>
 
       {/* Full Payout Worksheet — live totaling, editable everything */}
@@ -770,13 +763,6 @@ function StatusPill({ status }: { status: string }) {
       {status.charAt(0) + status.slice(1).toLowerCase()}
     </span>
   );
-}
-
-function calendarLabel(c: string): string {
-  if (c === "ICLOUD") return "iCloud";
-  if (c === "GOOGLE") return "Google";
-  if (c === "OUTLOOK") return "Outlook";
-  return "No calendar";
 }
 
 function paymentMethodLabel(m: string): string {

@@ -132,12 +132,17 @@ export async function upsertGig(id: string | null, formData: FormData) {
   }
 }
 
-// Clone a gig as an INQUIRY on today's date. Copies venue, personnel (as
-// GigPersonnel rows with same pay, no paidAt), the tech/attire/meal block,
-// set list, materials URL, and notes. Doesn't copy expenses, paid state,
-// QBO sync state, or activity. The user lands on the new gig in edit mode
-// and typically just changes the date.
-export async function cloneGig(sourceId: string) {
+// Clone a gig as an INQUIRY on a user-picked date. Copies venue, personnel
+// (as GigPersonnel rows with same pay, no paidAt), the tech/attire/meal
+// block, set list, materials URL, and notes. Doesn't copy expenses, paid
+// state, QBO sync state, or activity.
+//
+// `newStartDateISO` is a "YYYY-MM-DD" string from the date picker the
+// CloneGigButton renders. Every time field (load-in, soundcheck, call,
+// downbeat, finish, 2nd set) shifts by the same day-delta as startAt, so
+// the new gig's clock-times for each beat match the source. The user lands
+// on the new gig in edit mode and can tweak from there.
+export async function cloneGig(sourceId: string, newStartDateISO: string) {
   const user = await requireUser();
 
   // Clone counts against the active-gigs cap on FREE — otherwise
@@ -150,15 +155,20 @@ export async function cloneGig(sourceId: string) {
   });
   if (!src) throw new Error("Source gig not found");
 
-  // Default the new gig to 1 week out at the same times. Nine times out of ten
-  // that's closer to what the user wants than "today".
+  // Parse the user-picked date into a Date with the SAME clock time as the
+  // source gig's startAt — so if the source was Sat 8:00 PM and the user
+  // picks the next Sat, the new gig is also 8:00 PM. Every other time field
+  // shifts by the same day-delta so each beat lands the same number of
+  // hours before/after the new startAt as it did the source.
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(newStartDateISO);
+  if (!m) throw new Error("Invalid date — expected YYYY-MM-DD");
+  const [, yStr, monStr, dStr] = m;
   const weekLater = new Date(src.startAt);
-  weekLater.setDate(weekLater.getDate() + 7);
+  weekLater.setFullYear(Number(yStr), Number(monStr) - 1, Number(dStr));
+  const dayDeltaMs = weekLater.getTime() - src.startAt.getTime();
   const bump = (d: Date | null) => {
     if (!d) return null;
-    const out = new Date(d);
-    out.setDate(out.getDate() + 7);
-    return out;
+    return new Date(d.getTime() + dayDeltaMs);
   };
 
   const created = await db.gig.create({
@@ -318,6 +328,59 @@ export async function saveLoadingMapUploaded(
   } catch (err) {
     console.error(
       `[saveLoadingMapUploaded] FAILED gigId=${gigId}`,
+      err instanceof Error ? err.message : err,
+    );
+    throw err;
+  }
+}
+
+// Persist a freshly-uploaded stage plot (image OR PDF) onto the gig.
+// Same disappearing-after-edit defense as setlist + loading map: this is a
+// dedicated server action, NOT part of upsertGig's payload. Once uploaded,
+// the file URL + filename stick to the gig until explicitly replaced or
+// cleared via updateGigField.
+export async function saveStagePlotUploaded(
+  gigId: string,
+  blobUrl: string,
+  fileName: string,
+) {
+  console.log(
+    `[saveStagePlotUploaded] gigId=${gigId} url=${blobUrl} file=${fileName}`,
+  );
+  try {
+    const user = await requireUser();
+    const gig = await db.gig.findFirst({
+      where: { id: gigId, ownerId: user.id },
+    });
+    if (!gig) {
+      console.error(
+        `[saveStagePlotUploaded] gig not found or not owned by user ${user.id}`,
+      );
+      throw new Error("Gig not found");
+    }
+
+    await db.gig.update({
+      where: { id: gigId },
+      data: { stagePlotUrl: blobUrl, stagePlotFileName: fileName },
+    });
+    await db.activity.create({
+      data: {
+        gigId,
+        action: "field_updated:stagePlotUrl",
+        summary: "Stage plot uploaded",
+      },
+    });
+    revalidatePath(`/gigs/${gigId}`);
+    revalidatePath(`/gigs/${gigId}/edit`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/finance`);
+    revalidatePath(`/my-gigs`);
+    revalidatePath(`/my-gigs/${gigId}`);
+    console.log(`[saveStagePlotUploaded] ok gigId=${gigId}`);
+    return { ok: true } as const;
+  } catch (err) {
+    console.error(
+      `[saveStagePlotUploaded] FAILED gigId=${gigId}`,
       err instanceof Error ? err.message : err,
     );
     throw err;
@@ -671,6 +734,8 @@ export async function updateGigField(
     | "loadingInfo"
     | "loadingMapUrl"
     | "loadingMapLink"
+    | "stagePlotUrl"
+    | "stagePlotFileName"
     | "privateFinanceNotes",
   value: string | null,
 ) {
@@ -684,6 +749,11 @@ export async function updateGigField(
   if (field === "setlistUrl") {
     data.setlistUpdatedAt = new Date();
   }
+  // Clearing the stage plot URL also clears the stored filename so the
+  // empty-state UI matches the empty-state data.
+  if (field === "stagePlotUrl" && clean === null) {
+    data.stagePlotFileName = null;
+  }
 
   await db.gig.update({ where: { id: gigId }, data });
 
@@ -695,6 +765,8 @@ export async function updateGigField(
     loadingInfo: "Loading info updated",
     loadingMapUrl: "Loading map uploaded",
     loadingMapLink: "Alternate map link updated",
+    stagePlotUrl: "Stage plot uploaded",
+    stagePlotFileName: "Stage plot filename updated",
     privateFinanceNotes: "Private finance notes updated",
   };
   await db.activity.create({

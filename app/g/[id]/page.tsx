@@ -74,6 +74,8 @@ export default async function PublicGigPage({
       materialsUrl: true,
       setlistUrl: true,
       setlistFileName: true,
+      stagePlotUrl: true,
+      stagePlotFileName: true,
       loadingInfo: true,
       loadingMapUrl: true,
       loadingMapLink: true,
@@ -293,8 +295,12 @@ export default async function PublicGigPage({
           </Section>
         )}
 
-        {/* Set list + materials */}
-        {(gig.setlistUrl || gig.materialsUrl) && (
+        {/* Set list + stage plot + materials — all "click to open a file"
+            references. Stage plot slots between set list and materials so
+            tech (stage layout) sits with music (set list) and reference
+            files (charts/materials) — the natural reading order before
+            walking on stage. */}
+        {(gig.setlistUrl || gig.stagePlotUrl || gig.materialsUrl) && (
           <Section title="Music">
             <ul className="flex flex-col gap-2 text-[14px]">
               {gig.setlistUrl && (
@@ -306,6 +312,18 @@ export default async function PublicGigPage({
                     className="font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
                   >
                     📄 {gig.setlistFileName ?? "Set list"}
+                  </a>
+                </li>
+              )}
+              {gig.stagePlotUrl && (
+                <li>
+                  <a
+                    href={gig.stagePlotUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+                  >
+                    🎚️ {gig.stagePlotFileName ?? "Stage plot"}
                   </a>
                 </li>
               )}

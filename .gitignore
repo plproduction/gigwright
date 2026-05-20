@@ -50,3 +50,6 @@ next-env.d.ts
 # WTG scraper download droppings
 wtg-*.json
 .env*.local
+
+# Local Netlify folder
+.netlify
