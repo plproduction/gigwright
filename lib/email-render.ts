@@ -202,6 +202,9 @@ export function renderText(c: Ctx): string {
   lines.push(`Full gig sheet (no login needed):`);
   lines.push(`https://gigwright.com/g/${c.gigId}`);
   lines.push("");
+  lines.push(`One-page printable (clip to a music stand):`);
+  lines.push(`https://gigwright.com/g/${c.gigId}/print`);
+  lines.push("");
   lines.push(`— GigWright, on behalf of ${titleCaseName(c.bandleader)}`);
   return lines.join("\n");
 }
@@ -525,7 +528,8 @@ export function renderHtml(c: Ctx): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr><td align="center" style="border-top:1px solid ${LINE_SOFT};padding:28px 0 0">
         <div style="margin:0 auto 18px;width:36px;height:1px;background:${GOLD};line-height:1px;font-size:1px">&nbsp;</div>
-        <p style="margin:0 0 18px"><a href="${gigSheetUrl}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:11.5px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;text-decoration:none">View the Full Gig Sheet</a></p>
+        <p style="margin:0 0 10px"><a href="${gigSheetUrl}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:11.5px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;text-decoration:none">View the Full Gig Sheet</a></p>
+        <p style="margin:0 0 18px"><a href="${gigSheetUrl}/print" style="font-family:${BODY_FONT};color:${INK_SOFT};font-size:10.5px;font-weight:600;letter-spacing:0.2em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${LINE}">Print One-Page Sheet&nbsp;↗</a></p>
         <p style="margin:0;font-family:${BODY_FONT};font-size:12.5px;color:${INK_MUTE};line-height:1.7;letter-spacing:0.01em;font-style:italic">
           Sent on behalf of <span style="color:${INK_SOFT};font-weight:400;font-style:normal">${escapeHtml(titleCaseName(c.bandleader))}</span> via <a href="https://gigwright.com" style="color:${INK_MUTE};text-decoration:none;border-bottom:1px solid ${LINE};font-style:normal">GigWright</a><br/>
           The bandleader's workbench, from the first call to the final payout.
