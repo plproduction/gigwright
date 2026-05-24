@@ -1,12 +1,17 @@
 import { AppNav } from "@/components/AppNav";
-import { requireUser, initialsFor } from "@/lib/session";
+import { requireBandleader, initialsFor } from "@/lib/session";
 
 export default async function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await requireUser();
+  // Bandleader-only shell. Musicians (role === MUSICIAN) get redirected
+  // to /my-gigs by requireBandleader so they don't see the leader's
+  // Gigs / Roster / Venues / Finance / Settings nav by accident — that
+  // was the bug a musician reported when their account appeared with
+  // a "Payment methods you accept" panel that's leader-only.
+  const user = await requireBandleader();
   const initials = initialsFor(user.name || user.email);
 
   return (

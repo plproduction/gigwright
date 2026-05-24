@@ -57,3 +57,14 @@ em, i, cite {
 }
 textarea.input { resize: vertical; min-height: 72px; }
 select.input { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23857F72' stroke-width='1.5'%3e%3cpath d='m6 9 6 6 6-6'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 34px; }
+
+/* Horizontally-scrollable rows where the scrollbar would be visual noise
+   — e.g. the top nav on mobile. Touch swipe still works; we just hide
+   the gutter the OS would draw. */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* WebKit */
+}
