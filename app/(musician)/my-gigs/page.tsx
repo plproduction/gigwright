@@ -189,6 +189,11 @@ function GigRow({
       </div>
       <div className="font-serif text-[16px] leading-tight">
         {venue.name}
+        {gig.eventName && (
+          <div className="mt-0.5 font-serif text-[12.5px] italic text-accent">
+            {gig.eventName}
+          </div>
+        )}
         {venue.sub && (
           <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
             {venue.sub}

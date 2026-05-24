@@ -41,7 +41,13 @@ export async function generateMetadata({
     include: { venue: true },
   });
   const name = gig?.venue?.name ?? "Gig";
-  return { title: `${name} · GigWright` };
+  // If the bandleader gave the gig an event name (e.g. "Patrick Lamb
+  // Quartet" or "Smith Wedding"), prefer that for the tab title — it's
+  // what they actually scan for. Falls back to the venue when blank.
+  const titleHead = (gig as { eventName?: string | null } | null)?.eventName
+    ? `${(gig as { eventName: string }).eventName} · ${name}`
+    : name;
+  return { title: `${titleHead} · GigWright` };
 }
 
 export default async function GigDetailPage({
@@ -163,6 +169,11 @@ export default async function GigDetailPage({
           <h2 className="font-serif text-[26px] font-normal leading-[1.05] tracking-tight md:text-[30px]">
             {gig.venue?.name ?? "TBD"}
           </h2>
+          {gig.eventName && (
+            <div className="mt-1 font-serif text-[15px] italic leading-tight text-accent md:text-[16px]">
+              {gig.eventName}
+            </div>
+          )}
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-ink-soft">
             {gig.venue?.city && (
               <span>
@@ -239,6 +250,20 @@ export default async function GigDetailPage({
               })()}
             </Section>
           )}
+
+          {/* Event name — optional override / adornment for what's
+              actually happening at this venue. Examples: "Patrick Lamb
+              Quartet", "Smith Wedding", "NYE Show". Lives between Venue
+              and Personnel so it reads as "where + what" before "who."
+              Click-to-edit InlineField; empty when blank. */}
+          <Section title="Event name">
+            <InlineField
+              gigId={gig.id}
+              field="eventName"
+              initialValue={gig.eventName}
+              placeholder="Patrick Lamb Quartet · Smith Wedding · NYE Show…"
+            />
+          </Section>
 
           {/* Personnel — custom section so we can place a delicate "Include
               in outgoing emails" eyebrow on the right of the title row,

@@ -14,6 +14,11 @@ export type Ctx = {
   message?: string; // bandleader's free-form note for this update
   gigId: string;
   venueName: string;
+  // Optional event/performance name, e.g. "Patrick Lamb Quartet" or
+  // "Smith Wedding". Renders in italic burgundy directly under the
+  // venue heading and gets folded into the subject line so the band's
+  // inbox shows what's happening, not just where.
+  eventName: string | null;
   venueAddress: string;
   mapLink: string | null;
   longDate: string;
@@ -101,6 +106,7 @@ export function renderText(c: Ctx): string {
   // Meat and potatoes — date, venue, map.
   lines.push(`📅 ${c.longDate}`);
   lines.push(`📍 ${c.venueName}${c.venueAddress ? ` — ${c.venueAddress}` : ""}`);
+  if (c.eventName) lines.push(`   ${c.eventName}`);
   if (c.mapLink) lines.push(`   Map: ${c.mapLink}`);
   lines.push("");
 
@@ -286,6 +292,7 @@ export function renderHtml(c: Ctx): string {
   // typographic "rule above" the byline rather than a heavy break.
   const venueRow = `<tr><td style="padding:40px 40px 0">
     <h1 style="margin:0;font-family:${BODY_FONT};font-size:36px;font-weight:400;line-height:1.08;letter-spacing:-0.018em;color:${INK}">${escapeHtml(c.venueName)}</h1>
+    ${c.eventName ? `<div style="margin:6px 0 0;font-family:${BODY_FONT};font-size:17px;font-style:italic;line-height:1.2;color:${ACCENT}">${escapeHtml(c.eventName)}</div>` : ""}
     <div style="margin:16px 0 12px;width:36px;height:1px;background:${GOLD};line-height:1px;font-size:1px">&nbsp;</div>
     <p style="margin:0;font-family:${BODY_FONT};font-size:15px;color:${INK_SOFT};line-height:1.55;letter-spacing:0.01em">${escapeHtml(c.longDate)}</p>
     ${c.venueAddress ? `<p style="margin:3px 0 0;font-family:${BODY_FONT};font-size:13.5px;color:${INK_SOFT};line-height:1.55;letter-spacing:0.01em">${escapeHtml(c.venueAddress)}</p>` : ""}

@@ -64,6 +64,7 @@ export default async function PublicGigPage({
       secondStartAt: true,
       secondEndAt: true,
       status: true,
+      eventName: true,
       sound: true,
       soundContactName: true,
       soundContactPhone: true,
@@ -128,6 +129,11 @@ export default async function PublicGigPage({
           <h1 className="mb-2 font-serif text-[40px] font-light leading-[1.1] tracking-tight">
             {gig.venue?.name ?? "Gig"}
           </h1>
+          {gig.eventName && (
+            <div className="mb-2 font-serif text-[20px] italic leading-tight text-accent">
+              {gig.eventName}
+            </div>
+          )}
           <div className="text-[16px] text-ink-soft">
             {formatLongDate(gig.startAt)}, {formatYear(gig.startAt)}
           </div>

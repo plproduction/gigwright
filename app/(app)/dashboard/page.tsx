@@ -412,6 +412,11 @@ function GigList({
                 <div className="truncate font-serif text-[16px] leading-tight">
                   {venue.name}
                 </div>
+                {g.eventName && (
+                  <div className="mt-0.5 truncate font-serif text-[12px] italic text-accent">
+                    {g.eventName}
+                  </div>
+                )}
                 {venue.sub && (
                   <div className="mt-0.5 truncate text-[11px] text-ink-mute">
                     {venue.sub}
@@ -476,6 +481,11 @@ function GigList({
               </div>
               <div className="font-serif text-[16px] leading-tight">
                 {venue.name}
+                {g.eventName && (
+                  <div className="mt-0.5 font-serif text-[12.5px] italic text-accent">
+                    {g.eventName}
+                  </div>
+                )}
                 {venue.sub && (
                   <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
                     {venue.sub}

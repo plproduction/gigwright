@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { updateGigField } from "@/lib/actions/gigs";
 
 type Field =
+  | "eventName"
   | "notes"
   | "materialsUrl"
   | "setlistUrl"

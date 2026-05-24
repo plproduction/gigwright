@@ -47,6 +47,7 @@ export default async function PrintableGigSheet({
     where: { id },
     select: {
       id: true,
+      eventName: true,
       startAt: true,
       loadInAt: true,
       soundcheckAt: true,
@@ -266,6 +267,20 @@ export default async function PrintableGigSheet({
         <div>
           <div className="ps-eyebrow">Gig sheet · {dow}</div>
           <h1 className="ps-h1">{gig.venue?.name ?? "Gig"}</h1>
+          {gig.eventName && (
+            <div
+              className="ps-subline"
+              style={{
+                fontStyle: "italic",
+                color: "#6B1F15",
+                fontSize: 14,
+                marginTop: 2,
+                marginBottom: 2,
+              }}
+            >
+              {gig.eventName}
+            </div>
+          )}
           <div className="ps-subline">
             {formatLongDate(gig.startAt)}, {formatYear(gig.startAt)}
           </div>

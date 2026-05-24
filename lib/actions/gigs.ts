@@ -51,6 +51,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
   // edit something else" bug.
   const data = {
     venueId: nullIfEmpty(formData.get("venueId")),
+    eventName: nullIfEmpty(formData.get("eventName")),
     startAt,
     loadInAt,
     soundcheckAt,
@@ -184,6 +185,7 @@ export async function cloneGig(sourceId: string, newStartDateISO: string) {
       secondEndAt: bump(src.secondEndAt),
       endAt: bump(src.endAt),
       status: "INQUIRY", // never clone a CONFIRMED / PLAYED status
+      eventName: src.eventName,
       clientPayCents: src.clientPayCents,
       clientDepositCents: null,
       sound: src.sound,
@@ -721,6 +723,7 @@ export async function savePayout(
 export async function updateGigField(
   gigId: string,
   field:
+    | "eventName"
     | "notes"
     | "materialsUrl"
     | "setlistUrl"
@@ -758,6 +761,7 @@ export async function updateGigField(
   await db.gig.update({ where: { id: gigId }, data });
 
   const labels: Record<string, string> = {
+    eventName: "Event name updated",
     notes: "Notes updated",
     materialsUrl: "Gig materials link updated",
     setlistUrl: "Set list updated — band will be notified on fanout",

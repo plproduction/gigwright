@@ -280,6 +280,14 @@ model Gig {
   attire            String? // e.g. "Black on black"
   meal              String? // e.g. "After check · green room"
 
+  // Optional event/performance name. Used when the venue name alone
+  // doesn't say what's actually happening — e.g. "Patrick Lamb Quartet",
+  // "Smith Wedding", "NYE Show", "Saxophone Sundays". Renders subtly
+  // under the venue name on the gig page, on the dashboard list, in
+  // emails, and on the public gig sheet. Null when not set; never
+  // overrides the venue name, just adorns it.
+  eventName String?
+
   // Clickable link to the folder/drive with all charts, arrangements, audio
   materialsUrl String?
 

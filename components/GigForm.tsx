@@ -6,6 +6,7 @@ import { DeleteGigButton } from "@/components/DeleteGigButton";
 type GigFormData = {
   id: string;
   venueId: string | null;
+  eventName: string | null;
   startAt: Date;
   loadInAt: Date | null;
   soundcheckAt: Date | null;
@@ -99,6 +100,25 @@ export function GigForm({
               </option>
             ))}
           </select>
+        </Field>
+
+        {/* Optional event name. Useful when the venue alone doesn't say
+            what's actually happening — e.g. "Patrick Lamb Quartet" for
+            a venue that hosts many acts, or "Smith Wedding" for a
+            private function at a club. Shows up next to the venue
+            everywhere a gig is listed. */}
+        <Field
+          span3
+          label="Event name"
+          help="Optional — performer or event (e.g. 'Patrick Lamb Quartet', 'Smith Wedding')"
+        >
+          <input
+            type="text"
+            name="eventName"
+            defaultValue={gig?.eventName ?? ""}
+            placeholder="Patrick Lamb Quartet · Smith Wedding · NYE Show…"
+            className="input"
+          />
         </Field>
 
         {/* Schedule row 1: Date, Downbeat, Finish (Downbeat & Finish paired

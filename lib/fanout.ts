@@ -77,6 +77,7 @@ export async function fanOutGigUpdate(
       message: opts.message,
       gigId: gig!.id,
       venueName: gig!.venue?.name ?? "Venue TBD",
+      eventName: gig!.eventName ?? null,
       venueAddress: [
         gig!.venue?.addressL1,
         [gig!.venue?.city, gig!.venue?.state].filter(Boolean).join(", "),
@@ -163,9 +164,14 @@ export async function fanOutGigUpdate(
       continue;
     }
     try {
+      // Subject prefers the event name when present so the band scans
+      // "Smith Wedding" or "Patrick Lamb Quartet" rather than "The
+      // Funky Biscuit" three times in a row. Venue is still in the
+      // body — this is just inbox-line scanning.
+      const subjectHead = gig.eventName || gig.venue?.name || "Gig";
       const subject = opts.triggerLabel
-        ? `GigWright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
-        : `GigWright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
+        ? `GigWright · ${opts.triggerLabel} · ${subjectHead} ${formatDayShort(gig.startAt)}`
+        : `GigWright · ${subjectHead} ${formatDayShort(gig.startAt)}`;
       const emailRes = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -222,6 +228,7 @@ export async function fanOutGigUpdate(
           triggerLabel: opts.triggerLabel,
           gigId: gig.id,
           venueName: gig.venue?.name ?? "Venue TBD",
+          eventName: gig.eventName ?? null,
           longDate: formatLongDate(gig.startAt),
           downbeat: formatTime(gig.startAt),
         });
@@ -272,9 +279,10 @@ export async function fanOutGigUpdate(
   // email on file or AUTH_RESEND_KEY is missing.
   if (gig.owner?.email && apiKey) {
     try {
+      const subjectHead = gig.eventName || gig.venue?.name || "Gig";
       const subject = opts.triggerLabel
-        ? `[your copy] GigWright · ${opts.triggerLabel} · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`
-        : `[your copy] GigWright · ${gig.venue?.name ?? "Gig"} ${formatDayShort(gig.startAt)}`;
+        ? `[your copy] GigWright · ${opts.triggerLabel} · ${subjectHead} ${formatDayShort(gig.startAt)}`
+        : `[your copy] GigWright · ${subjectHead} ${formatDayShort(gig.startAt)}`;
       const ctx = buildCtx({
         firstName: bandleader.split(" ")[0] ?? bandleader,
       });
@@ -346,11 +354,15 @@ function renderSms(c: {
   triggerLabel?: string;
   gigId: string;
   venueName: string;
+  eventName: string | null;
   longDate: string;
   downbeat: string;
 }): string {
   const lead = c.triggerLabel
     ? `${c.bandleader}: ${c.triggerLabel}`
     : `${c.bandleader} sent gig info`;
-  return `${lead}\n${c.venueName} · ${c.longDate} · ${c.downbeat}\nFull sheet: https://gigwright.com/g/${c.gigId}`;
+  const placeLine = c.eventName
+    ? `${c.eventName} at ${c.venueName}`
+    : c.venueName;
+  return `${lead}\n${placeLine} · ${c.longDate} · ${c.downbeat}\nFull sheet: https://gigwright.com/g/${c.gigId}`;
 }
