@@ -61,9 +61,18 @@ export function MarkAllPaidButton({
             <button
               key={m.value}
               type="button"
-              onClick={() => apply(m.value)}
-              disabled={pending}
-              className="rounded-md bg-ink px-2.5 py-1 text-[11px] font-semibold text-paper hover:bg-black disabled:opacity-50"
+              onClick={() => !m.disabled && apply(m.value)}
+              disabled={pending || m.disabled}
+              title={
+                m.disabled
+                  ? "Zelle is currently unavailable in GigWright"
+                  : undefined
+              }
+              className={
+                m.disabled
+                  ? "cursor-not-allowed rounded-md border border-line-strong bg-paper-warm px-2.5 py-1 text-[11px] font-semibold text-ink-mute"
+                  : "rounded-md bg-ink px-2.5 py-1 text-[11px] font-semibold text-paper hover:bg-black disabled:opacity-50"
+              }
             >
               {m.label}
             </button>
@@ -84,9 +93,13 @@ export function MarkAllPaidButton({
   );
 }
 
-const METHODS: Array<{ value: string; label: string }> = [
+const METHODS: Array<{ value: string; label: string; disabled?: boolean }> = [
   { value: "VENMO", label: "Venmo" },
-  { value: "ZELLE", label: "Zelle" },
+  // Zelle stays in the list (so existing gigs still show it) but is
+  // explicitly disabled — the bandleader can't bulk-mark anyone paid by
+  // Zelle from this dropdown. Label carries the reason inline so the
+  // disabled row reads as intentional, not broken.
+  { value: "ZELLE", label: "Zelle — unable to pay by Zelle", disabled: true },
   { value: "CASHAPP", label: "Cash App" },
   { value: "PAYPAL", label: "PayPal" },
   { value: "CHECK", label: "Check" },

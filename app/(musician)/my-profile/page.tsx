@@ -128,7 +128,9 @@ export default async function MyProfilePage() {
             <option value="">—</option>
             <option value="VENMO">Venmo</option>
             <option value="PAYPAL">PayPal</option>
-            <option value="ZELLE">Zelle</option>
+            <option value="ZELLE" disabled>
+              Zelle — unable to pay by Zelle
+            </option>
             <option value="CASHAPP">Cash App</option>
             <option value="CASH">Cash</option>
             <option value="CHECK">Check</option>
@@ -137,7 +139,7 @@ export default async function MyProfilePage() {
           </select>
         </Field>
 
-        <Field span label="Payment address / handle" help="Zelle email/phone · Venmo @handle · PayPal.me link · Cash App $cashtag">
+        <Field span label="Payment address / handle" help="Venmo @handle · PayPal.me link · Cash App $cashtag">
           <input
             name="payoutAddress"
             defaultValue={primary.payoutAddress ?? ""}

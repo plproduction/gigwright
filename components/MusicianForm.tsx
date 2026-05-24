@@ -143,7 +143,7 @@ export function MusicianForm({ musician }: { musician: M }) {
           </select>
         </Field>
 
-        <Field label="Preferred payment">
+        <Field label="Preferred payment" help="Zelle is currently unavailable — use Venmo, PayPal, Cash App, or another method.">
           <select
             name="paymentMethod"
             defaultValue={musician?.paymentMethod ?? ""}
@@ -152,7 +152,9 @@ export function MusicianForm({ musician }: { musician: M }) {
             <option value="">—</option>
             <option value="VENMO">Venmo</option>
             <option value="PAYPAL">PayPal</option>
-            <option value="ZELLE">Zelle</option>
+            <option value="ZELLE" disabled>
+              Zelle — unable to pay by Zelle
+            </option>
             <option value="CASHAPP">Cash App</option>
             <option value="CASH">Cash</option>
             <option value="CHECK">Check</option>
@@ -165,7 +167,7 @@ export function MusicianForm({ musician }: { musician: M }) {
           <input
             name="payoutAddress"
             defaultValue={musician?.payoutAddress ?? ""}
-            placeholder="Zelle: email or phone · Venmo: @handle · PayPal: paypal.me link · Cash App: $cashtag"
+            placeholder="Venmo: @handle · PayPal: paypal.me link · Cash App: $cashtag"
             className="input"
           />
         </Field>
@@ -264,14 +266,20 @@ export function MusicianForm({ musician }: { musician: M }) {
             Cancel
           </Link>
           {del && (
-            <form action={del} className="ml-auto">
-              <button
-                type="submit"
-                className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-accent hover:bg-accent-soft"
-              >
-                Delete
-              </button>
-            </form>
+            // HTML doesn't allow nested <form> elements. Wrapping this in
+            // its own <form action={del}> looked right but the browser
+            // silently stripped the inner form, so every Delete click was
+            // submitting the OUTER (upsert) form — i.e. clicking Delete
+            // was actually firing Save. `formAction` on the button itself
+            // overrides the outer form's action for this single submit,
+            // which is exactly the HTML5 escape hatch for this case.
+            <button
+              type="submit"
+              formAction={del}
+              className="ml-auto rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-accent hover:bg-accent-soft"
+            >
+              Delete
+            </button>
           )}
         </div>
       </form>
@@ -284,11 +292,13 @@ function Field({
   children,
   required,
   span,
+  help,
 }: {
   label: string;
   children: React.ReactNode;
   required?: boolean;
   span?: boolean;
+  help?: string;
 }) {
   return (
     <label className={`flex flex-col gap-1.5 ${span ? "col-span-2" : ""}`}>
@@ -297,6 +307,9 @@ function Field({
         {required && <span className="ml-1 text-accent">*</span>}
       </span>
       {children}
+      {help && (
+        <span className="text-[11px] leading-[1.4] text-ink-mute">{help}</span>
+      )}
     </label>
   );
 }

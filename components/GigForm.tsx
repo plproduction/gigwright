@@ -232,7 +232,7 @@ export function GigForm({
             {gig.personnel.map((p) => (
               <div
                 key={p.id}
-                className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-md border border-line bg-paper px-4 py-2.5 text-[13px]"
+                className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-3 rounded-md border border-line bg-paper px-4 py-2.5 text-[13px]"
               >
                 <div className="font-serif text-[15px]">
                   {p.musician.name}
@@ -251,7 +251,18 @@ export function GigForm({
                     musicianName={p.musician.name}
                   />
                 )}
-                {!p.musician.isLeader && (
+                {/* Edit jumps to /roster/{musicianId}/edit so the
+                    bandleader can update this musician's payment method,
+                    contact info, or invite them from the gig context
+                    without bouncing back through the Roster page. */}
+                <Link
+                  href={`/roster/${p.musicianId}/edit`}
+                  className="rounded border border-line-strong bg-transparent px-2 py-1 text-[11px] font-medium text-ink-soft hover:bg-surface hover:text-accent"
+                  title={`Edit ${p.musician.name}'s roster profile`}
+                >
+                  Edit
+                </Link>
+                {!p.musician.isLeader ? (
                   <form action={removePersonnel.bind(null, gig.id, p.id)}>
                     <button
                       type="submit"
@@ -260,8 +271,9 @@ export function GigForm({
                       Remove
                     </button>
                   </form>
+                ) : (
+                  <div />
                 )}
-                {p.musician.isLeader && <div />}
               </div>
             ))}
 
