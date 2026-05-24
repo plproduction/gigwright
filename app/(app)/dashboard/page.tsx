@@ -13,8 +13,18 @@ import {
   personnelSummary,
 } from "@/lib/format";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const user = await requireUser();
+  const sp = await searchParams;
+  // Two views: "upcoming" (default) and "past". Past gets sorted
+  // newest-first so the gig the bandleader just played is at the top
+  // — which is the whole reason you switch to past (pay people you
+  // owe from last night's show).
+  const view: "upcoming" | "past" = sp.view === "past" ? "past" : "upcoming";
 
   const gigs = await db.gig.findMany({
     where: { ownerId: user.id },
@@ -30,6 +40,10 @@ export default async function DashboardPage() {
 
   const now = new Date();
   const upcoming = gigs.filter((g) => g.startAt >= startOfDay(now));
+  const past = gigs
+    .filter((g) => g.startAt < startOfDay(now))
+    .reverse(); // DESC by startAt (most recent first)
+  const visible = view === "past" ? past : upcoming;
   const tonight = upcoming.find((g) => isToday(g.startAt)) ?? upcoming[0];
 
   // Stats: simple derived values. Will become richer later.
@@ -110,18 +124,41 @@ export default async function DashboardPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="mb-1 flex items-center gap-[10px] border-b border-line pb-[10px] pt-[14px]">
+      <div className="mb-1 flex flex-wrap items-center gap-[10px] border-b border-line pb-[10px] pt-[14px]">
         <h4 className="font-serif text-[20px] font-normal tracking-tight">
           Gigs
         </h4>
         <span className="text-[12px] tracking-[0.06em] text-ink-mute">
-          · {upcoming.length} upcoming
+          ·{" "}
+          {view === "past"
+            ? `${past.length} past`
+            : `${upcoming.length} upcoming`}
           {!paid && ` · ${activeGigCount} / ${FREE_LIMITS.activeGigs} active`}
         </span>
         <div className="ml-auto flex items-center gap-1.5">
-          <span className="cursor-default rounded-full bg-ink px-[10px] py-[6px] text-[12px] font-medium text-paper">
+          {/* Upcoming ↔ Past toggle. Two pills, the active one filled,
+              the inactive one outlined. URL-driven (?view=past) so the
+              choice is bookmarkable and survives refresh. */}
+          <Link
+            href="/dashboard"
+            className={
+              view === "upcoming"
+                ? "cursor-default rounded-full bg-ink px-[10px] py-[6px] text-[12px] font-medium text-paper"
+                : "rounded-full border border-line-strong bg-transparent px-[10px] py-[6px] text-[12px] font-medium text-ink-soft transition-colors hover:bg-paper-warm hover:text-ink"
+            }
+          >
             Upcoming
-          </span>
+          </Link>
+          <Link
+            href="/dashboard?view=past"
+            className={
+              view === "past"
+                ? "cursor-default rounded-full bg-ink px-[10px] py-[6px] text-[12px] font-medium text-paper"
+                : "rounded-full border border-line-strong bg-transparent px-[10px] py-[6px] text-[12px] font-medium text-ink-soft transition-colors hover:bg-paper-warm hover:text-ink"
+            }
+          >
+            Past
+          </Link>
           {atGigCap ? (
             <Link
               href="/settings/billing?upgrade=activeGigs"
@@ -153,7 +190,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <GigList gigs={upcoming} />
+      <GigList gigs={visible} view={view} />
     </>
   );
 }
@@ -305,13 +342,37 @@ function Stat({
 
 function GigList({
   gigs,
+  view,
 }: {
   gigs: Awaited<ReturnType<typeof getFakeType>>;
+  view: "upcoming" | "past";
 }) {
   if (gigs.length === 0) {
     return (
       <div className="py-16 text-center text-[13px] text-ink-mute">
-        No upcoming gigs. <Link href="/gigs/new" className="text-accent underline-offset-4 hover:underline">Add one</Link>.
+        {view === "past" ? (
+          <>
+            No past gigs yet.{" "}
+            <Link
+              href="/dashboard"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Back to upcoming
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            No upcoming gigs.{" "}
+            <Link
+              href="/gigs/new"
+              className="text-accent underline-offset-4 hover:underline"
+            >
+              Add one
+            </Link>
+            .
+          </>
+        )}
       </div>
     );
   }
@@ -365,7 +426,11 @@ function GigList({
                 </div>
               </div>
               <div className="shrink-0 text-right">
-                <StatusPill status={today ? "TONIGHT" : g.status} />
+                {view === "past" && g.status !== "CANCELLED" ? (
+                  <PayPill personnel={g.personnel} />
+                ) : (
+                  <StatusPill status={today ? "TONIGHT" : g.status} />
+                )}
               </div>
             </Link>
           );
@@ -430,7 +495,11 @@ function GigList({
                 {formatTime(g.startAt)}
               </div>
               <div>
-                <StatusPill status={today ? "TONIGHT" : g.status} />
+                {view === "past" && g.status !== "CANCELLED" ? (
+                  <PayPill personnel={g.personnel} />
+                ) : (
+                  <StatusPill status={today ? "TONIGHT" : g.status} />
+                )}
               </div>
               <div className="flex justify-end text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
                 Open →
@@ -440,6 +509,48 @@ function GigList({
         })}
       </div>
     </div>
+  );
+}
+
+// Past-view pill — replaces the status pill on gigs the bandleader has
+// already played. Shows "X / Y paid" so unpaid gigs are scannable at a
+// glance. Only counts sidemen (the leader pays themselves, so it would
+// always read 0/N + 1 leader if we included them).
+function PayPill({
+  personnel,
+}: {
+  personnel: Awaited<ReturnType<typeof getFakeType>>[number]["personnel"];
+}) {
+  const sidemen = personnel.filter((p) => !p.musician.isLeader);
+  const total = sidemen.length;
+  const paid = sidemen.filter((p) => p.paidAt).length;
+
+  if (total === 0) {
+    return (
+      <span className="inline-flex items-center whitespace-nowrap rounded-full border border-line-strong px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-mute">
+        Solo
+      </span>
+    );
+  }
+
+  const allPaid = paid === total;
+  const style = allPaid
+    ? "border-success/40 bg-success/10 text-success"
+    : paid === 0
+      ? "border-accent/40 bg-accent/5 text-accent"
+      : "border-warn/40 bg-warn/5 text-warn";
+
+  return (
+    <span
+      className={`inline-flex items-center whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] tabular-nums ${style}`}
+      title={
+        allPaid
+          ? "Everyone paid"
+          : `${total - paid} of ${total} still unpaid`
+      }
+    >
+      {paid} / {total} paid
+    </span>
   );
 }
 
