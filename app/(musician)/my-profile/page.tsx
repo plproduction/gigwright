@@ -121,6 +121,7 @@ export default async function MyProfilePage({
           </select>
         </Field>
 
+        <div id="payment" className="col-span-2 scroll-mt-20" />
         <Field label="Payment method">
           <select
             name="paymentMethod"

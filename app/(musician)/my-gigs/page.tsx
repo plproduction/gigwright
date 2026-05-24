@@ -14,12 +14,32 @@ export default async function MyGigsPage() {
   const user = await requireMusician();
 
   // All Musician rows linked to this user (could be across multiple
-  // bandleaders' rosters, one email = one login).
+  // bandleaders' rosters, one email = one login). Pull paymentMethod
+  // + payoutAddress + owner so we can show a prominent "set your payment
+  // method" banner when none of these roster links has a method set —
+  // the band reported "we can't find where to put payment credentials"
+  // because nothing on this landing page pointed at /my-profile.
   const myMusicians = await db.musician.findMany({
     where: { userId: user.id },
-    select: { id: true },
+    select: {
+      id: true,
+      paymentMethod: true,
+      payoutAddress: true,
+      owner: { select: { name: true, email: true } },
+    },
+    orderBy: { createdAt: "asc" },
   });
   const myIds = myMusicians.map((m) => m.id);
+
+  // Show the banner when at least one of their roster links has no
+  // payment method or address. We trigger on the *least* set-up link
+  // so a musician who's set Venmo for one leader but not another still
+  // gets nudged; it makes the most sense to fill it in once for all.
+  const needsPaymentSetup = myMusicians.some(
+    (m) => !m.paymentMethod || !m.payoutAddress,
+  );
+  const primaryLeaderName =
+    myMusicians[0]?.owner?.name || myMusicians[0]?.owner?.email || "your bandleader";
 
   // Gigs the user is booked on. Include the bandleader's owner info so we
   // can show "Patrick Lamb Productions" for cross-bandleader context.
@@ -52,6 +72,38 @@ export default async function MyGigsPage() {
           {upcoming.length} upcoming · {past.length > 0 ? `${past.length} recent` : ""}
         </div>
       </div>
+
+      {/* Payment-method setup banner. The single most common question
+          from a freshly-invited musician is "where do I tell my
+          bandleader how to pay me?" The "My profile" nav link wasn't
+          discoverable enough on its own — this banner spells out the
+          action, names the bandleader for context, and disappears the
+          moment they finish setup. */}
+      {needsPaymentSetup && (
+        <div className="mb-6 rounded-[10px] border border-accent/40 bg-accent/5 px-5 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+                One quick thing
+              </div>
+              <h5 className="font-serif text-[17px] font-normal leading-tight text-ink">
+                Tell {primaryLeaderName} how you want to be paid.
+              </h5>
+              <p className="mt-1 text-[12.5px] leading-[1.5] text-ink-soft">
+                Pick a payment method (Venmo, PayPal, Cash App, Check, etc.)
+                and your handle or address so payments don&rsquo;t get stuck
+                waiting on a text on gig night. You only have to do this once.
+              </p>
+            </div>
+            <Link
+              href="/my-profile#payment"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-[12.5px] font-semibold text-paper hover:bg-[#611B11]"
+            >
+              Set up payment →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {upcoming.length === 0 && past.length === 0 && (
         <div className="rounded-[10px] border border-dashed border-line-strong bg-paper p-8 text-center">
