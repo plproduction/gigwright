@@ -4,22 +4,36 @@ import { db } from "@/lib/db";
 import {
   ALL_METHODS,
   effectiveEnabledMethods,
+  pickerOptions,
 } from "@/lib/payment-methods";
-import { updateEnabledPaymentMethods } from "@/lib/actions/user-settings";
+import {
+  updateEnabledPaymentMethods,
+  saveLeaderPayment,
+} from "@/lib/actions/user-settings";
 
 export default async function SettingsPage() {
   const user = await requireUser();
 
   // Pull the full User row (requireUser returns a slimmed view) so we
   // have the current enabledPaymentMethods array to seed the checkbox
-  // state below.
-  const fullUser = await db.user.findUnique({
-    where: { id: user.id },
-    select: { enabledPaymentMethods: true },
-  });
+  // state below. Also fetch the bandleader's OWN leader Musician row so
+  // the "Your payment info" section below can show their current
+  // preferred method + handle (or render empty if they don't have a
+  // leader row yet — the save action upserts it on first save).
+  const [fullUser, leader] = await Promise.all([
+    db.user.findUnique({
+      where: { id: user.id },
+      select: { enabledPaymentMethods: true },
+    }),
+    db.musician.findFirst({
+      where: { ownerId: user.id, isLeader: true },
+      select: { paymentMethod: true, payoutAddress: true },
+    }),
+  ]);
   const enabled = new Set(
     effectiveEnabledMethods(fullUser?.enabledPaymentMethods),
   );
+  const methodOptions = pickerOptions(fullUser?.enabledPaymentMethods);
 
   async function doSignOut() {
     "use server";
@@ -66,6 +80,60 @@ export default async function SettingsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Your own payment info — preferred method + handle/address.
+          Lives on the bandleader's leader Musician row so it shows up on
+          every gig sheet and in the band-facing email. Different from
+          "Payment methods you accept" below: this is YOUR payout info;
+          that section configures which methods you'll PAY others with. */}
+      <div className="mb-7 rounded-[10px] border border-line bg-paper p-5">
+        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+          Your payment info
+        </div>
+        <p className="mb-4 text-[12px] leading-[1.5] text-ink-soft">
+          How clients pay you (and how another bandleader would pay you if
+          you sub on their gig). Shows up on your gig sheets and on your
+          own roster card.
+        </p>
+        <form action={saveLeaderPayment} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Preferred payment method
+            </span>
+            <select
+              name="paymentMethod"
+              defaultValue={leader?.paymentMethod ?? ""}
+              className="input"
+            >
+              <option value="">—</option>
+              {methodOptions.map((m) => (
+                <option key={m.value} value={m.value} disabled={m.disabled}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Payment address / handle
+            </span>
+            <input
+              name="payoutAddress"
+              defaultValue={leader?.payoutAddress ?? ""}
+              placeholder="Venmo: @handle · PayPal: paypal.me/you · Cash App: $cashtag"
+              className="input"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded-md bg-ink px-4 py-2 text-[12px] font-medium text-paper hover:bg-black"
+            >
+              Save your payment info
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="mb-7 rounded-[10px] border border-line bg-paper p-5">
