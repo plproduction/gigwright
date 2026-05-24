@@ -3,13 +3,20 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { pickerOptions } from "@/lib/payment-methods";
+import { saveMyProfile } from "@/lib/actions/my-profile";
 
 // Musician's self-serve profile page. Because a single musician email can
 // be in multiple bandleaders' rosters (same person, different leaders), we
 // aggregate linked Musician rows — edits apply to ALL of them so the
 // musician has one source of truth regardless of who booked them.
-export default async function MyProfilePage() {
+export default async function MyProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const user = await requireMusician();
+  const sp = await searchParams;
+  const justSaved = sp.saved === "1";
 
   const mine = await db.musician.findMany({
     where: { userId: user.id },
@@ -52,37 +59,6 @@ export default async function MyProfilePage() {
       .join("")
       .toUpperCase();
 
-  async function savePrefs(formData: FormData) {
-    "use server";
-    const data = {
-      email: nullIfEmpty(formData.get("email")),
-      phone: nullIfEmpty(formData.get("phone")),
-      calendarProvider: (String(formData.get("calendarProvider") ?? "NONE") as
-        | "ICLOUD"
-        | "GOOGLE"
-        | "OUTLOOK"
-        | "NONE"),
-      paymentMethod: nullIfEmpty(formData.get("paymentMethod")) as
-        | null
-        | "VENMO"
-        | "PAYPAL"
-        | "ZELLE"
-        | "CASHAPP"
-        | "CASH"
-        | "CHECK"
-        | "DIRECT_DEPOSIT"
-        | "OTHER",
-      payoutAddress: nullIfEmpty(formData.get("payoutAddress")),
-      notifyBySms: formData.get("notifyBySms") === "on",
-      notifyByEmail: formData.get("notifyByEmail") === "on",
-      w9Received: formData.get("w9Received") === "on",
-    };
-    await db.musician.updateMany({
-      where: { userId: user.id },
-      data,
-    });
-  }
-
   return (
     <>
       <div className="mb-6 flex items-baseline justify-between border-b border-line pb-3">
@@ -107,7 +83,14 @@ export default async function MyProfilePage() {
         />
       </div>
 
-      <form action={savePrefs} className="grid max-w-[680px] grid-cols-2 gap-x-5 gap-y-4">
+      {justSaved && (
+        <div className="mb-5 max-w-[680px] rounded-md border border-success/40 bg-success/10 px-4 py-2.5 text-[13px] text-success">
+          ✓ Saved — your bandleader(s) will see your updated info next time
+          they open a gig sheet.
+        </div>
+      )}
+
+      <form action={saveMyProfile} className="grid max-w-[680px] grid-cols-2 gap-x-5 gap-y-4">
         <Field label="Name">
           <input disabled value={primary.name} className="input opacity-70" />
         </Field>
@@ -242,7 +225,3 @@ function Field({
   );
 }
 
-function nullIfEmpty(v: FormDataEntryValue | null): string | null {
-  const s = v == null ? "" : String(v).trim();
-  return s === "" ? null : s;
-}
