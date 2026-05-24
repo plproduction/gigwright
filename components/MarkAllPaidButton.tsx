@@ -3,16 +3,22 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { markAllPaid } from "@/lib/actions/gigs";
+import { pickerOptions } from "@/lib/payment-methods";
 
 // Single-click bulk "mark everyone paid today". Opens a method picker
-// inline — Venmo / Zelle / Check / Cash / other — then marks every
-// unpaid GigPersonnel on the gig as paid today via that method.
+// inline — Venmo / Cash App / Check / Cash / other — then marks every
+// unpaid GigPersonnel on the gig as paid today via that method. Methods
+// the bandleader has opted out of on Settings render as a disabled,
+// muted chip so the row stays scannable (the leader can SEE the method
+// exists, just can't click it).
 export function MarkAllPaidButton({
   gigId,
   unpaidCount,
+  enabledPaymentMethods = [],
 }: {
   gigId: string;
   unpaidCount: number;
+  enabledPaymentMethods?: string[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -57,7 +63,7 @@ export function MarkAllPaidButton({
       ) : (
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-[11px] text-ink-mute">How?</span>
-          {METHODS.map((m) => (
+          {pickerOptions(enabledPaymentMethods).map((m) => (
             <button
               key={m.value}
               type="button"
@@ -65,7 +71,7 @@ export function MarkAllPaidButton({
               disabled={pending || m.disabled}
               title={
                 m.disabled
-                  ? "Zelle is currently unavailable in GigWright"
+                  ? `You don't currently accept ${m.value.toLowerCase()} — enable on Settings → Payment methods`
                   : undefined
               }
               className={
@@ -93,17 +99,3 @@ export function MarkAllPaidButton({
   );
 }
 
-const METHODS: Array<{ value: string; label: string; disabled?: boolean }> = [
-  { value: "VENMO", label: "Venmo" },
-  // Zelle stays in the list (so existing gigs still show it) but is
-  // explicitly disabled — the bandleader can't bulk-mark anyone paid by
-  // Zelle from this dropdown. Label carries the reason inline so the
-  // disabled row reads as intentional, not broken.
-  { value: "ZELLE", label: "Zelle — unable to pay by Zelle", disabled: true },
-  { value: "CASHAPP", label: "Cash App" },
-  { value: "PAYPAL", label: "PayPal" },
-  { value: "CHECK", label: "Check" },
-  { value: "CASH", label: "Cash" },
-  { value: "DIRECT_DEPOSIT", label: "Direct deposit" },
-  { value: "OTHER", label: "Other" },
-];

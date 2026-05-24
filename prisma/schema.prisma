@@ -67,6 +67,15 @@ model User {
   // <{EMAIL_FROM}>.
   senderEmail String?
 
+  // Payment methods this bandleader actually offers to their band. When
+  // empty (default), the app treats it as "all supported methods except
+  // Zelle" — that matches the global rollout where Zelle was disabled
+  // network-wide. Bandleaders can opt Zelle back in (and remove others
+  // they don't actually use) on the Settings page; every payment-method
+  // dropdown in the app filters to this list so musicians can't pick a
+  // method their leader doesn't pay with.
+  enabledPaymentMethods String[] @default([])
+
   accounts  Account[]
   sessions  Session[]
   venues    Venue[]

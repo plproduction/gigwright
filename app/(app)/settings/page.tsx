@@ -1,8 +1,25 @@
 import { auth, signOut } from "@/auth";
 import { requireUser } from "@/lib/session";
+import { db } from "@/lib/db";
+import {
+  ALL_METHODS,
+  effectiveEnabledMethods,
+} from "@/lib/payment-methods";
+import { updateEnabledPaymentMethods } from "@/lib/actions/user-settings";
 
 export default async function SettingsPage() {
   const user = await requireUser();
+
+  // Pull the full User row (requireUser returns a slimmed view) so we
+  // have the current enabledPaymentMethods array to seed the checkbox
+  // state below.
+  const fullUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { enabledPaymentMethods: true },
+  });
+  const enabled = new Set(
+    effectiveEnabledMethods(fullUser?.enabledPaymentMethods),
+  );
 
   async function doSignOut() {
     "use server";
@@ -49,6 +66,49 @@ export default async function SettingsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      <div className="mb-7 rounded-[10px] border border-line bg-paper p-5">
+        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+          Payment methods you accept
+        </div>
+        <p className="mb-4 text-[12px] leading-[1.5] text-ink-soft">
+          Pick the methods you actually pay your band with. Anything you
+          uncheck here gets greyed out in every dropdown — both yours and
+          your musicians&apos; when they set their own payment preferences.
+          Existing data on musicians isn&apos;t changed; they just can&apos;t
+          switch TO a method you don&apos;t accept.
+        </p>
+        <form action={updateEnabledPaymentMethods}>
+          <div className="grid grid-cols-2 gap-y-2 sm:grid-cols-4">
+            {ALL_METHODS.map((m) => (
+              <label
+                key={m.value}
+                className="flex items-center gap-2 text-[13px]"
+              >
+                <input
+                  type="checkbox"
+                  name="method"
+                  value={m.value}
+                  defaultChecked={enabled.has(m.value)}
+                  className="h-4 w-4"
+                />
+                <span>{m.label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="mt-4 flex items-center gap-3 text-[11px] text-ink-mute">
+            <button
+              type="submit"
+              className="rounded-md bg-ink px-3 py-1.5 text-[12px] font-medium text-paper hover:bg-black"
+            >
+              Save payment methods
+            </button>
+            <span className="italic">
+              Default (no boxes touched): everything except Zelle.
+            </span>
+          </div>
+        </form>
       </div>
 
       <h5 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { pickerOptions } from "@/lib/payment-methods";
 
 // Musician's self-serve profile page. Because a single musician email can
 // be in multiple bandleaders' rosters (same person, different leaders), we
@@ -12,7 +13,15 @@ export default async function MyProfilePage() {
 
   const mine = await db.musician.findMany({
     where: { userId: user.id },
-    include: { owner: { select: { name: true, email: true } } },
+    include: {
+      owner: {
+        select: {
+          name: true,
+          email: true,
+          enabledPaymentMethods: true,
+        },
+      },
+    },
     orderBy: { createdAt: "asc" },
   });
   const primary = mine[0];
@@ -23,6 +32,16 @@ export default async function MyProfilePage() {
       </div>
     );
   }
+
+  // Use the primary bandleader's enabled methods to drive the picker. If
+  // a musician is on multiple leaders' rosters and they have different
+  // preferences, the primary (most recently created roster link) wins —
+  // the musician can always toggle methods that the primary leader
+  // accepts and trust that any leader who DOESN'T accept it just won't
+  // see that pay pill render their address.
+  const methodOptions = pickerOptions(
+    primary.owner?.enabledPaymentMethods ?? [],
+  );
 
   const initials =
     primary.initials ??
@@ -126,16 +145,11 @@ export default async function MyProfilePage() {
             className="input"
           >
             <option value="">—</option>
-            <option value="VENMO">Venmo</option>
-            <option value="PAYPAL">PayPal</option>
-            <option value="ZELLE" disabled>
-              Zelle — unable to pay by Zelle
-            </option>
-            <option value="CASHAPP">Cash App</option>
-            <option value="CASH">Cash</option>
-            <option value="CHECK">Check</option>
-            <option value="DIRECT_DEPOSIT">Direct deposit</option>
-            <option value="OTHER">Other</option>
+            {methodOptions.map((m) => (
+              <option key={m.value} value={m.value} disabled={m.disabled}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </Field>
 

@@ -29,6 +29,12 @@ type PersonnelIn = {
   payoutAddress?: string | null;
   payCents: number;
   paidAt: Date | null;
+  // Email + invite history are pulled through so the worksheet row can
+  // surface a "Send invite" link inline for musicians the bandleader
+  // hasn't onboarded yet — handy for the "you owe Joe but he hasn't set
+  // a payment method" workflow. Optional so older callers still compile.
+  email?: string | null;
+  invitedAt?: Date | null;
 };
 
 type ExpenseKindT =
@@ -61,6 +67,10 @@ type Row = {
   hint?: string;         // role / payment method display
   paymentMethod?: string | null;
   payoutAddress?: string | null;
+  // Carried through so the personnel row can show inline Edit + Invite
+  // links (Invite only shown when email present and not yet invited).
+  email?: string | null;
+  invitedAt?: Date | null;
   // Tax-aware expense fields (only meaningful when kind === "expense")
   taxKind?: ExpenseKindT;
   taxMiles?: number | null;
@@ -87,6 +97,7 @@ export function PayoutWorksheet({
   personnel,
   expenses,
   roster = [],
+  enabledPaymentMethods = [],
 }: {
   gigId: string;
   gigTitle?: string;
@@ -96,6 +107,7 @@ export function PayoutWorksheet({
   personnel: PersonnelIn[];
   expenses: ExpenseIn[];
   roster?: RosterOption[];
+  enabledPaymentMethods?: string[];
 }) {
   const initialRows: Row[] = [
     ...personnel
@@ -111,6 +123,8 @@ export function PayoutWorksheet({
         hint: p.paymentMethod ? paymentLabel(p.paymentMethod) : undefined,
         paymentMethod: p.paymentMethod ?? null,
         payoutAddress: p.payoutAddress ?? null,
+        email: p.email ?? null,
+        invitedAt: p.invitedAt ?? null,
       })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
@@ -262,6 +276,7 @@ export function PayoutWorksheet({
           <MarkAllPaidButton
             gigId={gigId}
             unpaidCount={personnel.filter((p) => !p.isLeader && !p.paidAt).length}
+            enabledPaymentMethods={enabledPaymentMethods}
           />
           {savedAt && (
             <span className="text-[11px] text-ink-mute">
@@ -310,7 +325,7 @@ export function PayoutWorksheet({
             {/* Label */}
             <div>
               {row.kind === "personnel" ? (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-serif text-[15px] text-ink">
                     {row.label}
                   </span>
@@ -331,6 +346,34 @@ export function PayoutWorksheet({
                     amountCents={fieldToCents(row.amountField) || undefined}
                     note={gigTitle ? `Gig: ${gigTitle}` : undefined}
                   />
+                  {/* Edit jumps straight to /roster/{id}/edit so the
+                      bandleader can update payment method, contact info,
+                      or invite this musician without leaving the gig
+                      mental context. Lives inline next to the pay pill,
+                      where the bandleader's eye already is. */}
+                  {row.musicianId && (
+                    <a
+                      href={`/roster/${row.musicianId}/edit`}
+                      className="rounded border border-line-strong bg-transparent px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:bg-paper-warm hover:text-accent"
+                      title="Open this musician's roster profile"
+                    >
+                      Edit
+                    </a>
+                  )}
+                  {/* "Send invite" surfaces only when the musician has
+                      an email on file and hasn't been invited yet —
+                      keeps the row clean once everyone's onboarded.
+                      Links to the roster edit page where the invite
+                      button lives; one click away to actually fire. */}
+                  {row.musicianId && row.email && !row.invitedAt && (
+                    <a
+                      href={`/roster/${row.musicianId}/edit#invite`}
+                      className="rounded border border-accent/30 bg-accent-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-accent hover:bg-accent hover:text-paper"
+                      title="They haven't been invited to set their payment preferences — send them an invite"
+                    >
+                      Send invite
+                    </a>
+                  )}
                 </div>
               ) : (
                 <input

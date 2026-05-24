@@ -3,6 +3,7 @@ import { upsertMusician, deleteMusician } from "@/lib/actions/musicians";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { InviteMusicianButton } from "@/components/InviteMusicianButton";
 import { RequestW9Button } from "@/components/RequestW9Button";
+import { pickerOptions } from "@/lib/payment-methods";
 
 type M = {
   id: string;
@@ -25,10 +26,19 @@ type M = {
   invitedAt: Date | null;
 } | null;
 
-export function MusicianForm({ musician }: { musician: M }) {
+export function MusicianForm({
+  musician,
+  enabledPaymentMethods,
+}: {
+  musician: M;
+  // Payment methods the bandleader actually offers. Empty array falls
+  // back to "all except Zelle" inside pickerOptions().
+  enabledPaymentMethods: string[];
+}) {
   const isEdit = musician != null;
   const upsert = upsertMusician.bind(null, musician?.id ?? null);
   const del = musician ? deleteMusician.bind(null, musician.id) : null;
+  const methodOptions = pickerOptions(enabledPaymentMethods);
 
   return (
     <>
@@ -65,7 +75,7 @@ export function MusicianForm({ musician }: { musician: M }) {
               }
             />
           </div>
-          <div className="rounded-[10px] border border-line bg-paper p-4">
+          <div id="invite" className="rounded-[10px] border border-line bg-paper p-4 scroll-mt-20">
             <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
               Login invite
             </div>
@@ -143,23 +153,21 @@ export function MusicianForm({ musician }: { musician: M }) {
           </select>
         </Field>
 
-        <Field label="Preferred payment" help="Zelle is currently unavailable — use Venmo, PayPal, Cash App, or another method.">
+        <Field
+          label="Preferred payment"
+          help="Bandleaders pick which methods they accept on Settings → Payment methods. Disabled options are ones you don't currently use."
+        >
           <select
             name="paymentMethod"
             defaultValue={musician?.paymentMethod ?? ""}
             className="input"
           >
             <option value="">—</option>
-            <option value="VENMO">Venmo</option>
-            <option value="PAYPAL">PayPal</option>
-            <option value="ZELLE" disabled>
-              Zelle — unable to pay by Zelle
-            </option>
-            <option value="CASHAPP">Cash App</option>
-            <option value="CASH">Cash</option>
-            <option value="CHECK">Check</option>
-            <option value="DIRECT_DEPOSIT">Direct deposit</option>
-            <option value="OTHER">Other</option>
+            {methodOptions.map((m) => (
+              <option key={m.value} value={m.value} disabled={m.disabled}>
+                {m.label}
+              </option>
+            ))}
           </select>
         </Field>
 

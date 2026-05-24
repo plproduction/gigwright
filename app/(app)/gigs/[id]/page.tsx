@@ -52,7 +52,7 @@ export default async function GigDetailPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const [gig, roster, qboConn] = await Promise.all([
+  const [gig, roster, qboConn, owner] = await Promise.all([
     db.gig.findFirst({
       where: { id, ownerId: user.id },
       include: {
@@ -79,6 +79,10 @@ export default async function GigDetailPage({
     db.qboConnection.findUnique({
       where: { userId: user.id },
       select: { id: true, defaultExpenseAccountId: true },
+    }),
+    db.user.findUnique({
+      where: { id: user.id },
+      select: { enabledPaymentMethods: true },
     }),
   ]);
 
@@ -599,6 +603,12 @@ export default async function GigDetailPage({
             payoutAddress: p.musician.payoutAddress ?? null,
             payCents: p.payCents,
             paidAt: p.paidAt,
+            // Passed through so the worksheet can show inline Send-invite
+            // links on musicians who have an email but haven't been
+            // invited yet — surfaces the "pay this person but they
+            // haven't set a method" workflow at the moment of action.
+            email: p.musician.email ?? null,
+            invitedAt: p.musician.invitedAt ?? null,
           }))}
           expenses={gig.expenses.map((e) => ({
             id: e.id,
@@ -617,6 +627,7 @@ export default async function GigDetailPage({
             payoutAddress: m.payoutAddress ?? null,
             isLeader: m.isLeader,
           }))}
+          enabledPaymentMethods={owner?.enabledPaymentMethods ?? []}
         />
       </div>
 

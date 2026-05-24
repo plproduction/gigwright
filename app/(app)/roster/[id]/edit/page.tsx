@@ -11,10 +11,19 @@ export default async function EditMusicianPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const musician = await db.musician.findFirst({
-    where: { id, ownerId: user.id },
-  });
+  const [musician, owner] = await Promise.all([
+    db.musician.findFirst({ where: { id, ownerId: user.id } }),
+    db.user.findUnique({
+      where: { id: user.id },
+      select: { enabledPaymentMethods: true },
+    }),
+  ]);
   if (!musician) notFound();
 
-  return <MusicianForm musician={musician} />;
+  return (
+    <MusicianForm
+      musician={musician}
+      enabledPaymentMethods={owner?.enabledPaymentMethods ?? []}
+    />
+  );
 }
