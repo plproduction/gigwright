@@ -2,6 +2,7 @@ import Link from "next/link";
 import { upsertGig, deleteGig, addPersonnel, removePersonnel, updatePersonnelPay } from "@/lib/actions/gigs";
 import { PersonnelPayEdit } from "@/components/PersonnelPayEdit";
 import { DeleteGigButton } from "@/components/DeleteGigButton";
+import { OptionalTimeInput } from "@/components/OptionalTimeInput";
 
 type GigFormData = {
   id: string;
@@ -130,7 +131,7 @@ export function GigForm({
           <input type="time" name="startTime" required defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
         </Field>
         <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
-          <input type="time" name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} className="input" />
+          <OptionalTimeInput name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} />
         </Field>
 
         {/* Optional second show — hidden behind a "+ Add second show"
@@ -157,19 +158,15 @@ export function GigForm({
               Leave blank to remove
             </div>
             <Field label="Downbeat 2">
-              <input
-                type="time"
+              <OptionalTimeInput
                 name="secondStartTime"
                 defaultValue={gig ? toTimeInputOpt(gig.secondStartAt) : ""}
-                className="input"
               />
             </Field>
             <Field label="Finish 2">
-              <input
-                type="time"
+              <OptionalTimeInput
                 name="secondEndTime"
                 defaultValue={gig ? toTimeInputOpt(gig.secondEndAt) : ""}
-                className="input"
               />
             </Field>
           </div>
@@ -186,13 +183,13 @@ export function GigForm({
           </select>
         </Field>
         <Field label="Load in">
-          <input type="time" name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} className="input" />
+          <OptionalTimeInput name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} />
         </Field>
         <Field
           label="Sound check"
           help="all lines run, instruments set up, ready to play at this time"
         >
-          <input type="time" name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} className="input" />
+          <OptionalTimeInput name="soundcheckTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckAt) : ""} />
         </Field>
 
         {/* Schedule row 3: Sound check complete, Call time, then on to money */}
@@ -200,10 +197,10 @@ export function GigForm({
           label="Sound check complete"
           help="when the band is freed up between check and call"
         >
-          <input type="time" name="soundcheckEndTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckEndAt) : ""} className="input" />
+          <OptionalTimeInput name="soundcheckEndTime" defaultValue={gig ? toTimeInputOpt(gig.soundcheckEndAt) : ""} />
         </Field>
         <Field label="Call time">
-          <input type="time" name="callTime" defaultValue={gig ? toTimeInputOpt(gig.callTimeAt) : ""} className="input" />
+          <OptionalTimeInput name="callTime" defaultValue={gig ? toTimeInputOpt(gig.callTimeAt) : ""} />
         </Field>
 
         <Field label="Client pays">
