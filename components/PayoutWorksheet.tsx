@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { savePayout } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
 import { MarkAllPaidButton } from "@/components/MarkAllPaidButton";
+import { MarkPaidChip } from "@/components/MarkPaidChip";
 import { InlineField } from "@/components/InlineField";
 import {
   IRS_MILEAGE_RATE_USD,
@@ -373,6 +374,23 @@ export function PayoutWorksheet({
                     >
                       Send invite
                     </a>
+                  )}
+                  {/* One-click "Mark paid today" — only for existing
+                      personnel rows (need an id), not unsaved expense
+                      rows that someone just typed in. Updates the
+                      worksheet's local paidDate state via callback so
+                      a later worksheet Save doesn't roll back the
+                      chip's change. */}
+                  {row.id && !row.isLeader && (
+                    <MarkPaidChip
+                      personnelId={row.id}
+                      paidAt={row.paidDate ? new Date(row.paidDate) : null}
+                      onPaidChange={(newPaidAt) =>
+                        updateRow(idx, {
+                          paidDate: newPaidAt ? dateToField(newPaidAt) : "",
+                        })
+                      }
+                    />
                   )}
                 </div>
               ) : (

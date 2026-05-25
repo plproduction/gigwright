@@ -865,6 +865,60 @@ export async function markPaid(personnelId: string, method: string) {
   revalidatePath(`/finance`);
 }
 
+// One-click "mark paid today" — no method picker. Inherits the
+// musician's preferred paymentMethod from their roster row, falling
+// back to OTHER when nothing's been set. The companion to markAllPaid:
+// that one bulk-pays everyone via a chosen method, this one bumps a
+// single person along while you're paying them. Used by the inline
+// "Mark paid" chip on the PayoutWorksheet so the bandleader can pay
+// people as they Venmo them, no extra clicks.
+export async function markPaidQuick(personnelId: string) {
+  const user = await requireUser();
+  const p = await db.gigPersonnel.findFirst({
+    where: { id: personnelId, gig: { ownerId: user.id } },
+    include: { musician: { select: { paymentMethod: true } } },
+  });
+  if (!p) throw new Error("Not found");
+
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: {
+      paidAt: new Date(),
+      paidMethod: (p.musician.paymentMethod ?? "OTHER") as
+        | "VENMO"
+        | "PAYPAL"
+        | "ZELLE"
+        | "CASHAPP"
+        | "CASH"
+        | "CHECK"
+        | "DIRECT_DEPOSIT"
+        | "OTHER",
+    },
+  });
+  revalidatePath(`/gigs/${p.gigId}`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+}
+
+// Inverse of markPaid — clears the paid timestamp + method. Lets the
+// bandleader fix an accidental "Mark paid" click without re-editing
+// the row.
+export async function unmarkPaid(personnelId: string) {
+  const user = await requireUser();
+  const p = await db.gigPersonnel.findFirst({
+    where: { id: personnelId, gig: { ownerId: user.id } },
+  });
+  if (!p) throw new Error("Not found");
+
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: { paidAt: null, paidMethod: null },
+  });
+  revalidatePath(`/gigs/${p.gigId}`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+}
+
 // ── helpers ──────────────────────────────────────────
 
 function combineDateTime(date: string, time: string): Date {
