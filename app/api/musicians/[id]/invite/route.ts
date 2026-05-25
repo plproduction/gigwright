@@ -34,7 +34,29 @@ export async function POST(
   )}`;
 
   const apiKey = process.env.AUTH_RESEND_KEY;
-  const from = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const fallbackFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+
+  // Match the deliverability pattern used by the gig-fanout sender so
+  // invites land in inbox, not spam. Two specific moves:
+  //
+  //  1) From header is "Patrick Lamb via GigWright" <gigs@gigwright.com>
+  //     instead of bare gigs@gigwright.com. Mailbox providers (Gmail in
+  //     particular) treat brand-only senders more harshly than person-
+  //     attributed ones, and our magic-link mail uses the same domain
+  //     but lands in inbox — the personable display name is the diff.
+  //
+  //  2) Reply-To is the bandleader's actual email so musicians can hit
+  //     reply and reach a human directly. Reply-To matching a real
+  //     person also nudges Gmail toward "transactional / personal"
+  //     rather than "bulk marketing" classification.
+  //
+  // Subject also drops the "just added you" preamble — it scanned as
+  // promotional. The new subject is closer to a personal note from the
+  // bandleader, which is how this email actually reads.
+  const baseName = (user.name ?? user.email).replace(/"/g, '\\"');
+  const fromName = `${baseName} via GigWright`;
+  const from = `"${fromName}" <${fallbackFrom}>`;
+  const replyTo = user.email ?? undefined;
 
   const html = inviteHtml({
     musicianName: musician.name,
@@ -52,7 +74,7 @@ export async function POST(
   // the masked email + the bandleader's userId.
   const maskedEmail = maskEmail(musician.email);
   console.log(
-    `[invite] attempt musicianId=${id} to=${maskedEmail} from=${from} bandleader=${user.id}`,
+    `[invite] attempt musicianId=${id} to=${maskedEmail} from=${fallbackFrom} bandleader=${user.id}`,
   );
 
   const res = await fetch("https://api.resend.com/emails", {
@@ -64,7 +86,8 @@ export async function POST(
     body: JSON.stringify({
       from,
       to: musician.email,
-      subject: `${user.name ?? "Your bandleader"} just added you to GigWright`,
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      subject: `${baseName} added you to GigWright — log in to set your payout`,
       html,
       text,
     }),
