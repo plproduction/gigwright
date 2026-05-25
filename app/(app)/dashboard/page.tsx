@@ -377,12 +377,17 @@ function GigList({
     );
   }
 
-  // 8-column layout for desktop (lg+). Pay is intentionally absent —
+  // 9-column layout for desktop (lg+). Pay is intentionally absent —
   // per-gig pay belongs on the Payout Worksheet (private financials),
   // not in a public-facing list on the front-page dashboard.
-  //   Date · Venue · Personnel · Load In · Sound Check · Downbeat · Status · Open
+  //   Date · Venue · Event · Personnel · Load In · Sound Check · Downbeat · Status · Open
+  //
+  // Event lives in its own column (right of venue, before personnel) so
+  // a lineup of "Funky Biscuit · Funky Biscuit · Funky Biscuit" stops
+  // reading like a stuck record — the event/leader name distinguishes
+  // multiple gigs at the same room. Stays empty when not set.
   const cols =
-    "grid-cols-[70px_1.3fr_1.5fr_94px_140px_94px_86px_64px]";
+    "grid-cols-[70px_1.1fr_1.0fr_1.3fr_94px_140px_94px_86px_64px]";
 
   return (
     <div className="text-[13px]">
@@ -449,6 +454,7 @@ function GigList({
         >
           <div>Date</div>
           <div>Venue</div>
+          <div>Event</div>
           <div>Personnel</div>
           <div>Load in</div>
           <div>
@@ -481,15 +487,18 @@ function GigList({
               </div>
               <div className="font-serif text-[16px] leading-tight">
                 {venue.name}
-                {g.eventName && (
-                  <div className="mt-0.5 font-serif text-[12.5px] italic text-accent">
-                    {g.eventName}
-                  </div>
-                )}
                 {venue.sub && (
                   <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
                     {venue.sub}
                   </div>
+                )}
+              </div>
+              {/* Event column — italic burgundy when set, em-dash when
+                  empty so the column reads cleanly even without an
+                  event name. */}
+              <div className="font-serif text-[13.5px] italic leading-tight text-accent">
+                {g.eventName || (
+                  <span className="not-italic text-ink-mute/60">—</span>
                 )}
               </div>
               <div className="text-[12px] leading-snug text-ink-soft">
