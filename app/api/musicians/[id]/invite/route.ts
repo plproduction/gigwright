@@ -47,6 +47,14 @@ export async function POST(
     signInUrl,
   });
 
+  // Log every invite attempt to Netlify Function logs so we can debug
+  // delivery problems later. Keep PII to a minimum — log the musician id +
+  // the masked email + the bandleader's userId.
+  const maskedEmail = maskEmail(musician.email);
+  console.log(
+    `[invite] attempt musicianId=${id} to=${maskedEmail} from=${from} bandleader=${user.id}`,
+  );
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -62,18 +70,43 @@ export async function POST(
     }),
   });
   if (!res.ok) {
+    const errText = await res.text();
+    console.error(
+      `[invite] FAILED status=${res.status} to=${maskedEmail} body=${errText}`,
+    );
     return NextResponse.json(
-      { error: `Resend: ${res.status} ${await res.text()}` },
+      { error: `Resend ${res.status}: ${errText}` },
       { status: 502 },
     );
   }
+
+  // Resend returns { id: "abc-123" } on success — capture it so we can
+  // cross-reference in their dashboard if delivery problems pop up.
+  const okJson = (await res.json().catch(() => ({}))) as { id?: string };
+  console.log(
+    `[invite] sent musicianId=${id} to=${maskedEmail} resendId=${okJson.id ?? "unknown"}`,
+  );
 
   await db.musician.update({
     where: { id },
     data: { invitedAt: new Date() },
   });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    sentTo: musician.email,
+    resendId: okJson.id ?? null,
+  });
+}
+
+// Mask the local-part of an email so logs don't dump full inboxes.
+// "alice.smith@example.com" → "al***@example.com"
+function maskEmail(email: string): string {
+  const at = email.indexOf("@");
+  if (at < 0) return "***";
+  const local = email.slice(0, at);
+  const domain = email.slice(at);
+  return local.slice(0, 2) + "***" + domain;
 }
 
 function inviteText(opts: {
