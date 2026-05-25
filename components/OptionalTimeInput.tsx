@@ -49,10 +49,11 @@ export function OptionalTimeInput({
         type="button"
         onClick={clear}
         disabled={!hasValue}
-        className="shrink-0 rounded border border-line bg-paper px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute transition-colors hover:border-accent hover:text-accent disabled:opacity-40 disabled:hover:border-line disabled:hover:text-ink-mute"
-        title="Clear this time — none required for this gig"
+        aria-label="Clear this time"
+        className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-[14px] leading-none text-ink-mute transition-colors hover:border-accent hover:bg-accent hover:text-paper disabled:opacity-30 disabled:hover:border-line disabled:hover:bg-paper disabled:hover:text-ink-mute"
+        title="Clear this time — none for this gig"
       >
-        None
+        ✕
       </button>
     </div>
   );
