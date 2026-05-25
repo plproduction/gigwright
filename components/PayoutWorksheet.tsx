@@ -172,9 +172,19 @@ export function PayoutWorksheet({
   const netCents = (clientPayCents ?? 0) - vendorTotalCents;
 
   function addRow() {
+    // Default Date Paid to today on every new expense row — when a
+    // bandleader adds a mileage / meal / lodging / generic line, they
+    // almost always mean "paid today out of my pocket." Avoids the
+    // friction of typing today over and over while doing receipts.
+    // Worksheet save still respects whatever the user changes it to.
     setRows((r) => [
       ...r,
-      { kind: "expense", label: "", amountField: "", paidDate: "" },
+      {
+        kind: "expense",
+        label: "",
+        amountField: "",
+        paidDate: dateToField(new Date()),
+      },
     ]);
   }
 
@@ -500,7 +510,7 @@ export function PayoutWorksheet({
                   kind: "expense",
                   label: `Mileage — ${miles} mi @ $${IRS_MILEAGE_RATE_USD.toFixed(2)}/mi`,
                   amountField: centsToField(cents),
-                  paidDate: "",
+                  paidDate: dateToField(new Date()),
                   taxKind: "MILEAGE",
                   taxMiles: miles,
                   taxDays: null,
@@ -521,7 +531,7 @@ export function PayoutWorksheet({
                   kind: "expense",
                   label: `Per-diem — ${days} day${days === 1 ? "" : "s"} @ $${GSA_PER_DIEM_USD}/day M&IE`,
                   amountField: centsToField(cents),
-                  paidDate: "",
+                  paidDate: dateToField(new Date()),
                   taxKind: "PER_DIEM",
                   taxMiles: null,
                   taxDays: days,
@@ -538,7 +548,7 @@ export function PayoutWorksheet({
                   kind: "expense",
                   label: "Meals & entertainment",
                   amountField: "",
-                  paidDate: "",
+                  paidDate: dateToField(new Date()),
                   taxKind: "MEAL",
                   taxMiles: null,
                   taxDays: null,
@@ -555,7 +565,7 @@ export function PayoutWorksheet({
                   kind: "expense",
                   label: "Lodging",
                   amountField: "",
-                  paidDate: "",
+                  paidDate: dateToField(new Date()),
                   taxKind: "LODGING",
                   taxMiles: null,
                   taxDays: null,
@@ -572,7 +582,7 @@ export function PayoutWorksheet({
                   kind: "expense",
                   label: "Travel",
                   amountField: "",
-                  paidDate: "",
+                  paidDate: dateToField(new Date()),
                   taxKind: "TRAVEL",
                   taxMiles: null,
                   taxDays: null,
