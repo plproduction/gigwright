@@ -112,6 +112,25 @@ export function InlineField({
   const display = saved ?? "";
   const enterEdit = () => setEditing(true);
 
+  // One-click remove for link fields — clears the saved value and
+  // fires the same updateGigField server action with null. Stops
+  // propagation so it doesn't also trigger the click-to-edit handler
+  // on the parent. Confirmation prompt so an accidental click next
+  // to the link doesn't silently wipe the URL.
+  const handleRemove = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const ok = window.confirm(
+      "Remove this link from the gig? You can paste a new one anytime.",
+    );
+    if (!ok) return;
+    startTransition(async () => {
+      await updateGigField(gigId, field, null);
+      setSaved(null);
+      setValue("");
+      router.refresh();
+    });
+  };
+
   return (
     <div
       role="button"
@@ -129,15 +148,26 @@ export function InlineField({
     >
       {display ? (
         displayAs === "link" ? (
-          <a
-            href={display}
-            target="_blank"
-            rel="noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="block truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
-          >
-            {linkLabel ?? displayUrl(display)}
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={display}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="block min-w-0 flex-1 truncate font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+            >
+              {linkLabel ?? displayUrl(display)}
+            </a>
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={pending}
+              className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
+              title="Remove this link from the gig"
+            >
+              {pending ? "Removing…" : "Remove"}
+            </button>
+          </div>
         ) : (
           <>
             <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">

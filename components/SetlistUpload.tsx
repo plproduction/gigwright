@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
-import { saveSetlistUploaded } from "@/lib/actions/gigs";
+import { saveSetlistUploaded, clearSetlist } from "@/lib/actions/gigs";
 
 // Drag-drop / click-to-pick PDF uploader for a gig's set list. Streams the
 // file straight from the browser to Vercel Blob, then commits the resulting
@@ -35,6 +35,28 @@ export function SetlistUpload({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [removing, startRemove] = useTransition();
+
+  function handleRemove() {
+    if (!url) return;
+    // Confirm before clearing — accidental click on Remove right next
+    // to Replace would otherwise wipe the upload silently.
+    const ok = window.confirm(
+      "Remove this set list from the gig? The file stays in storage; the gig will go back to the empty upload state.",
+    );
+    if (!ok) return;
+    startRemove(async () => {
+      try {
+        await clearSetlist(gigId);
+        setUrl(null);
+        setFileName(null);
+        setError(null);
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Remove failed");
+      }
+    });
+  }
 
   async function handleFile(file: File) {
     setError(null);
@@ -121,9 +143,19 @@ export function SetlistUpload({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent"
+            disabled={removing}
+            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
           >
             Replace
+          </button>
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={removing}
+            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
+            title="Detach this set list from the gig"
+          >
+            {removing ? "Removing…" : "Remove"}
           </button>
         </div>
         <input

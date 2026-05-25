@@ -194,11 +194,21 @@ export async function cloneGig(sourceId: string, newStartDateISO: string) {
       lights: src.lights,
       attire: src.attire,
       meal: src.meal,
-      materialsUrl: src.materialsUrl,
-      setlistUrl: src.setlistUrl,
-      setlistFileName: src.setlistFileName,
+      // Don't carry materials/setlist/stage-plot/loading-map files
+      // forward on a clone. These are nearly always specific to the
+      // source date (last week's set list, a venue's loading map that
+      // got revised, an event-specific charts folder). If we copied
+      // them, the new gig would silently inherit stale documents that
+      // the bandleader has to remember to delete — easy miss.
+      // loadingInfo (the free-text instructions) DOES come over since
+      // it tends to be venue-stable. Same with loadingMapLink (an
+      // external Google Maps pin URL — also venue-stable). The
+      // uploaded files (Vercel Blob URLs) are what get reset.
+      materialsUrl: null,
+      setlistUrl: null,
+      setlistFileName: null,
       loadingInfo: src.loadingInfo,
-      loadingMapUrl: src.loadingMapUrl,
+      loadingMapUrl: null,
       loadingMapLink: src.loadingMapLink,
       notes: src.notes,
       personnel: {
@@ -287,6 +297,42 @@ export async function saveSetlistUploaded(
     );
     throw err;
   }
+}
+
+// Detach the current set list from a gig. We null out the URL +
+// filename + updated-at fields so the gig goes back to the empty
+// upload state. The Blob storage object itself is left in place —
+// Vercel Blob has its own retention rules and we don't want a
+// double-fire (delete fails + DB write succeeds = orphan UI). Most
+// common reason this gets called: the gig was cloned and the inherited
+// set list from the source date no longer applies.
+export async function clearSetlist(gigId: string) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+  });
+  if (!gig) throw new Error("Gig not found");
+  await db.gig.update({
+    where: { id: gigId },
+    data: {
+      setlistUrl: null,
+      setlistFileName: null,
+      // Leave setlistUpdatedAt as-is so the activity log timestamp
+      // remains meaningful for the most recent change.
+    },
+  });
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "field_updated:setlistUrl",
+      summary: "Set list removed",
+    },
+  });
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/my-gigs/${gigId}`);
+  return { ok: true } as const;
 }
 
 // Persist a freshly-uploaded loading map (image OR PDF) onto the gig.
