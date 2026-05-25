@@ -865,6 +865,49 @@ export async function markPaid(personnelId: string, method: string) {
   revalidatePath(`/finance`);
 }
 
+// Auto-save just the client-pay total on a gig. Used by the
+// PayoutWorksheet's MoneyInput onBlur so a value change doesn't get
+// lost if the bandleader walks away without clicking the worksheet's
+// Save button. Idempotent: writing the same value twice is fine.
+export async function updateGigClientPay(
+  gigId: string,
+  clientPayCents: number | null,
+) {
+  console.log(
+    `[updateGigClientPay] gigId=${gigId} cents=${clientPayCents}`,
+  );
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  if (gig.clientPayCents === clientPayCents) {
+    // No-op — value unchanged. Avoids a spurious activity entry on
+    // every blur of an unchanged input.
+    return { ok: true } as const;
+  }
+
+  await db.gig.update({
+    where: { id: gigId },
+    data: { clientPayCents },
+  });
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "field_updated:clientPayCents",
+      summary:
+        clientPayCents == null
+          ? "Client pay cleared"
+          : `Client pay updated to $${(clientPayCents / 100).toFixed(2)}`,
+    },
+  });
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/finance`);
+  return { ok: true } as const;
+}
+
 // One-click "mark paid today" — no method picker. Inherits the
 // musician's preferred paymentMethod from their roster row, falling
 // back to OTHER when nothing's been set. The companion to markAllPaid:

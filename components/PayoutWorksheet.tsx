@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { savePayout } from "@/lib/actions/gigs";
+import { savePayout, updateGigClientPay } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
 import { MarkAllPaidButton } from "@/components/MarkAllPaidButton";
 import { MarkPaidChip } from "@/components/MarkPaidChip";
@@ -146,9 +146,32 @@ export function PayoutWorksheet({
       : [{ kind: "expense", label: "", amountField: "", paidDate: "" }],
   );
   const [clientPay, setClientPay] = useState(centsToField(initialClientPayCents));
+  // What the server last persisted for client pay — drives the onBlur
+  // auto-save so a tab-away or page-change doesn't lose the value. The
+  // worksheet's full Save still includes clientPayCents, but the
+  // moment-of-truth is now this onBlur.
+  const [savedClientPay, setSavedClientPay] = useState(centsToField(initialClientPayCents));
+  const [clientPaySaving, setClientPaySaving] = useState(false);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const router = useRouter();
+
+  // Persist the client-pay change immediately when the user leaves the
+  // field, so they can keep typing elsewhere or navigate away without
+  // losing the number.
+  async function autoSaveClientPay() {
+    if (clientPay === savedClientPay) return;
+    setClientPaySaving(true);
+    try {
+      const cents = fieldToCents(clientPay);
+      await updateGigClientPay(gigId, cents === 0 ? null : cents);
+      setSavedClientPay(clientPay);
+    } catch (err) {
+      console.error("[clientPay autosave] failed", err);
+    } finally {
+      setClientPaySaving(false);
+    }
+  }
   // Index of a row whose label input should receive focus on next render
   // (used after the typeahead converts a row to personnel and auto-appends
   // a fresh empty row for the next contractor).
@@ -606,10 +629,35 @@ export function PayoutWorksheet({
             <div />
           </div>
 
-          {/* Payment from client */}
+          {/* Payment from client — auto-saves on blur so a typed change
+              doesn't get lost if the bandleader walks away without
+              clicking the worksheet-level Save button. */}
           <div className="grid grid-cols-[1fr_140px_140px_36px] items-center gap-3 border-b border-line py-2.5">
-            <div className="text-[13px] text-ink">Payment from client</div>
-            <MoneyInput value={clientPay} onChange={setClientPay} />
+            <div className="text-[13px] text-ink">
+              Payment from client
+              {clientPaySaving && (
+                <span className="ml-2 text-[11px] italic text-ink-mute">
+                  saving…
+                </span>
+              )}
+              {!clientPaySaving && clientPay !== savedClientPay && (
+                <span className="ml-2 text-[11px] italic text-accent">
+                  unsaved
+                </span>
+              )}
+              {!clientPaySaving &&
+                clientPay === savedClientPay &&
+                clientPay !== centsToField(initialClientPayCents) && (
+                  <span className="ml-2 text-[11px] italic text-success">
+                    ✓ saved
+                  </span>
+                )}
+            </div>
+            <MoneyInput
+              value={clientPay}
+              onChange={setClientPay}
+              onBlur={autoSaveClientPay}
+            />
             <div />
             <div />
           </div>
@@ -686,9 +734,11 @@ function QuickAddButton({
 function MoneyInput({
   value,
   onChange,
+  onBlur,
 }: {
   value: string;
   onChange: (v: string) => void;
+  onBlur?: () => void;
 }) {
   return (
     <div className="relative">
@@ -700,6 +750,7 @@ function MoneyInput({
         inputMode="decimal"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
         placeholder="0"
         className="w-full rounded-md border border-line bg-paper py-1.5 pl-5 pr-2 text-right font-serif text-[14px] tabular-nums text-ink outline-none focus:border-accent"
       />
