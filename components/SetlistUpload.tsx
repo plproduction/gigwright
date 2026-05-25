@@ -127,16 +127,20 @@ export function SetlistUpload({
     if (f) handleFile(f);
   }
 
-  // Uploaded state: clickable link + replace button
+  // Uploaded state: clickable link + small icon buttons for replace + remove.
+  // Icons (not words) keep the row from getting cramped in a narrow
+  // column, and they match the circular ✕ used on optional time inputs
+  // so the whole "clear/replace something" affordance reads consistently
+  // across the gig form.
   if (url && progress === null) {
     return (
       <div>
-        <div className="flex items-center justify-between gap-3 rounded-md border border-line bg-paper p-3">
+        <div className="flex items-center gap-3 rounded-md border border-line bg-paper p-3">
           <a
             href={url}
             target="_blank"
             rel="noreferrer"
-            className="flex-1 truncate text-[13px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+            className="min-w-0 flex-1 truncate text-[13px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
           >
             📄 {fileName ?? "Set list"}
           </a>
@@ -144,18 +148,21 @@ export function SetlistUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={removing}
-            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
+            aria-label="Replace this set list with a different PDF"
+            title="Replace with a different PDF"
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-[13px] leading-none text-ink-mute transition-colors hover:border-accent hover:bg-accent hover:text-paper disabled:opacity-30"
           >
-            Replace
+            ↻
           </button>
           <button
             type="button"
             onClick={handleRemove}
             disabled={removing}
-            className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
-            title="Detach this set list from the gig"
+            aria-label="Remove this set list from the gig"
+            title="Remove from this gig"
+            className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-[14px] leading-none text-ink-mute transition-colors hover:border-accent hover:bg-accent hover:text-paper disabled:opacity-30"
           >
-            {removing ? "Removing…" : "Remove"}
+            {removing ? "…" : "✕"}
           </button>
         </div>
         <input

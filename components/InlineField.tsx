@@ -158,12 +158,12 @@ export function InlineField({
             >
               {linkLabel ?? displayUrl(display)}
             </a>
-            {/* Replace + Remove sit next to the link so the affordance
-                is obvious. The container's click-to-edit ALSO works,
-                but a visible "Replace" makes it discoverable —
-                especially after cloning a gig where the materials URL
-                often needs swapping. Both buttons stop propagation
-                so a click here doesn't double-fire enterEdit. */}
+            {/* Replace + Remove as small circular icon buttons. Matches
+                the ✕ style used on optional time inputs and the set
+                list uploader — one consistent visual vocabulary for
+                "clear or swap this value" across the gig form. Both
+                stop propagation so the parent's click-to-edit doesn't
+                double-fire. */}
             <button
               type="button"
               onClick={(e) => {
@@ -171,19 +171,21 @@ export function InlineField({
                 setEditing(true);
               }}
               disabled={pending}
-              className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
-              title="Paste a different link in place of this one"
+              aria-label="Replace this link"
+              title="Paste a different link"
+              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-[13px] leading-none text-ink-mute transition-colors hover:border-accent hover:bg-accent hover:text-paper disabled:opacity-30"
             >
-              Replace
+              ↻
             </button>
             <button
               type="button"
               onClick={handleRemove}
               disabled={pending}
-              className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
-              title="Remove this link from the gig"
+              aria-label="Remove this link"
+              title="Remove from this gig"
+              className="shrink-0 inline-flex h-7 w-7 items-center justify-center rounded-full border border-line bg-paper text-[14px] leading-none text-ink-mute transition-colors hover:border-accent hover:bg-accent hover:text-paper disabled:opacity-30"
             >
-              {pending ? "Removing…" : "Remove"}
+              {pending ? "…" : "✕"}
             </button>
           </div>
         ) : (
