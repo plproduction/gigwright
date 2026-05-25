@@ -158,6 +158,24 @@ export function InlineField({
             >
               {linkLabel ?? displayUrl(display)}
             </a>
+            {/* Replace + Remove sit next to the link so the affordance
+                is obvious. The container's click-to-edit ALSO works,
+                but a visible "Replace" makes it discoverable —
+                especially after cloning a gig where the materials URL
+                often needs swapping. Both buttons stop propagation
+                so a click here doesn't double-fire enterEdit. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditing(true);
+              }}
+              disabled={pending}
+              className="shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-mute hover:text-accent disabled:opacity-50"
+              title="Paste a different link in place of this one"
+            >
+              Replace
+            </button>
             <button
               type="button"
               onClick={handleRemove}
