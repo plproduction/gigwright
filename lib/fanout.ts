@@ -38,7 +38,7 @@ export async function fanOutGigUpdate(
     where: { id: opts.gigId },
     include: {
       venue: true,
-      owner: { select: { name: true, email: true, senderEmail: true, plan: true } },
+      owner: { select: { name: true, email: true, senderEmail: true, plan: true, role: true } },
       personnel: {
         include: { musician: true },
         orderBy: { position: "asc" },
@@ -137,17 +137,27 @@ export async function fanOutGigUpdate(
     errors: [],
   };
 
-  // SMS gating: requires Twilio credentials AND a paid plan (PRO or
-  // ADMIN). Email fanout stays free on the FREE tier; only SMS is
-  // reserved for paid plans. FREE owners with notifyBySms musicians
-  // get the email and skip the SMS silently (counts as smsSkipped).
+  // SMS gating: requires Twilio credentials AND (a paid plan OR an
+  // ADMIN-role user). Email fanout stays free on the FREE tier; only
+  // SMS is reserved for paid plans. FREE owners with notifyBySms
+  // musicians get the email and skip the SMS silently (counts as
+  // smsSkipped).
+  //
+  // The ADMIN-role bypass is for Patrick + any future founder/staff
+  // accounts — they shouldn't have to upgrade their own billing plan
+  // to use SMS on their personal band. role=ADMIN already grants
+  // cross-tenant access elsewhere; granting SMS as part of that bundle
+  // keeps the founder using their own product without billing friction.
   const twilioSid = process.env.TWILIO_ACCOUNT_SID;
   const twilioToken = process.env.TWILIO_AUTH_TOKEN;
   const twilioMessagingServiceSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
   const twilioFromNumber = process.env.TWILIO_PHONE_NUMBER;
-  const ownerIsPaid = gig.owner?.plan === "PRO" || gig.owner?.plan === "ADMIN";
+  const ownerCanSendSms =
+    gig.owner?.plan === "PRO" ||
+    gig.owner?.plan === "ADMIN" ||
+    gig.owner?.role === "ADMIN";
   const smsEnabled = !!(
-    ownerIsPaid &&
+    ownerCanSendSms &&
     twilioSid &&
     twilioToken &&
     (twilioMessagingServiceSid || twilioFromNumber)
