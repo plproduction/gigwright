@@ -147,13 +147,24 @@ export default async function MyProfilePage({
         </Field>
 
         <div className="col-span-2 flex flex-wrap gap-5 border-t border-line pt-4 text-[13px]">
-          <label className="flex items-center gap-2">
+          {/* This is the cleanest, TCR-compliant opt-in moment — the
+              musician themselves toggling whether they want SMS, on a
+              page they personally logged into. The label is plain
+              English consent language so checking it is a real
+              affirmative act, not a buried setting. */}
+          <label className="flex items-start gap-2">
             <input
               type="checkbox"
               name="notifyBySms"
               defaultChecked={primary.notifyBySms}
+              className="mt-[3px]"
             />
-            <span>Text me about changes</span>
+            <span className="leading-snug">
+              Yes, text me gig reminders and last-minute updates
+              <span className="ml-1 block text-[11px] font-normal text-ink-mute">
+                Msg &amp; data rates may apply. Reply STOP anytime.
+              </span>
+            </span>
           </label>
           <label className="flex items-center gap-2">
             <input

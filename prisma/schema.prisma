@@ -227,7 +227,13 @@ model Musician {
   // paymentMethod.
   payoutAddress    String?
 
-  notifyBySms   Boolean @default(true)
+  // SMS notification opt-in. Defaults to FALSE per TCR/CTIA rule:
+  // consent to receive SMS may not be a required condition of service.
+  // Bandleader-added musicians must explicitly opt themselves in (via
+  // /my-profile or the bandleader's invite flow) before any SMS fans
+  // out to them. Email defaults to true — operational gig-coordination
+  // email is the baseline transport and does not require SMS consent.
+  notifyBySms   Boolean @default(false)
   notifyByEmail Boolean @default(true)
 
   // W-9 tracking — every outbound message auto-includes either a request

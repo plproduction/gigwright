@@ -1,0 +1,13 @@
+-- TCR compliance: flip the default for notifyBySms from true to false.
+-- Per the verified A2P 10DLC campaign description, "SMS opt-in is OPTIONAL
+-- and is not a required condition of using GigWright." Auto-defaulting
+-- roster-added musicians to notifyBySms = true is the exact "consent as
+-- required condition" pattern TCR rejected our first submission for, even
+-- though they later approved the revised description.
+--
+-- Existing rows are intentionally NOT migrated. Bandleaders who already
+-- verbally got consent from their roster should not be silently muted.
+-- The roster UI now surfaces "SMS opt-in: yes / no" so the bandleader can
+-- audit and clear up any pre-feature musicians who never actually
+-- consented, on their own schedule.
+ALTER TABLE "Musician" ALTER COLUMN "notifyBySms" SET DEFAULT false;
