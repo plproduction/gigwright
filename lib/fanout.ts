@@ -325,6 +325,52 @@ export async function fanOutGigUpdate(
     }
   }
 
+  // Leader confirmation SMS — single text to the bandleader telling them
+  // exactly how many people just got the alert. Mirrors the "[your copy]"
+  // email above: a receipt for the sender, not a regular recipient copy.
+  // Skipped silently if SMS isn't enabled, the leader doesn't have a
+  // Musician row with a phone, or zero SMS actually went out (no point
+  // confirming a non-event).
+  //
+  // Phone lookup: the leader is on the gig as personnel where isLeader=true.
+  // We pull that record's phone since the User model doesn't store one.
+  if (smsEnabled && result.smsSent > 0) {
+    const leaderPersonnel = gig.personnel.find(
+      (p) => p.musician.isLeader && p.musician.phone,
+    );
+    if (leaderPersonnel?.musician.phone) {
+      try {
+        const subjectHead = gig.eventName || gig.venue?.name || "gig";
+        const confirmBody = `GigWright: ✓ Alert sent to ${result.smsSent} musician${result.smsSent === 1 ? "" : "s"} for ${subjectHead} ${formatDayShort(gig.startAt)}. Reply STOP to opt out.`;
+        const form = new URLSearchParams();
+        form.set("To", normalizePhone(leaderPersonnel.musician.phone));
+        form.set("Body", confirmBody);
+        if (twilioMessagingServiceSid) {
+          form.set("MessagingServiceSid", twilioMessagingServiceSid);
+        } else if (twilioFromNumber) {
+          form.set("From", twilioFromNumber);
+        }
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+              Authorization:
+                "Basic " +
+                Buffer.from(`${twilioSid}:${twilioToken}`).toString("base64"),
+            },
+            body: form.toString(),
+          },
+        );
+      } catch {
+        // Silent — confirmation is a convenience, not critical. The main
+        // band fanout already succeeded; we don't want a confirmation
+        // failure to make the activity log look broken.
+      }
+    }
+  }
+
   await db.activity.create({
     data: {
       gigId: opts.gigId,
