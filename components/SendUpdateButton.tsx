@@ -18,6 +18,11 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
   const [confirming, setConfirming] = useState(false);
   const [label, setLabel] = useState("");
   const [message, setMessage] = useState("");
+  // When true, the bandleader is included in the band fanout (regular
+  // recipient, not just a [your copy] / receipt SMS). Useful to verify
+  // exactly what the band actually receives. Default off so the leader
+  // doesn't normally double-text themselves.
+  const [includeLeader, setIncludeLeader] = useState(false);
 
   function send() {
     startTransition(async () => {
@@ -27,6 +32,7 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
         body: JSON.stringify({
           triggerLabel: label.trim() || undefined,
           message: message.trim() || undefined,
+          includeLeader,
         }),
       });
       if (!res.ok) {
@@ -86,6 +92,18 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
         rows={4}
         className="w-full resize-y rounded-md border border-line bg-paper-warm px-3 py-2 text-[13px] leading-snug text-ink outline-none focus:border-accent"
       />
+      <label
+        className="flex cursor-pointer items-center gap-2 text-[11.5px] text-ink-soft"
+        title="When checked, you'll receive the same email and SMS the band gets — useful to verify exactly what landed"
+      >
+        <input
+          type="checkbox"
+          checked={includeLeader}
+          onChange={(e) => setIncludeLeader(e.target.checked)}
+          className="h-3.5 w-3.5"
+        />
+        Send me a copy too (full band email + SMS)
+      </label>
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -101,6 +119,7 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
             setConfirming(false);
             setLabel("");
             setMessage("");
+            setIncludeLeader(false);
           }}
           className="text-[11px] text-ink-mute hover:text-ink"
         >

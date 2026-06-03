@@ -286,8 +286,10 @@ export async function fanOutGigUpdate(
   // Self-copy to the bandleader so they can see exactly what their musicians
   // are getting — same template, with a `[your copy]` subject prefix and a
   // "Sent to: …" footer listing recipients. Skipped if the owner has no
-  // email on file or AUTH_RESEND_KEY is missing.
-  if (gig.owner?.email && apiKey) {
+  // email on file or AUTH_RESEND_KEY is missing. Also skipped when
+  // includeLeader is true — in that mode the leader is already a regular
+  // band recipient and a second "[your copy]" would just be a duplicate.
+  if (gig.owner?.email && apiKey && !opts.includeLeader) {
     try {
       const subjectHead = gig.eventName || gig.venue?.name || "Gig";
       const subject = opts.triggerLabel
@@ -329,12 +331,13 @@ export async function fanOutGigUpdate(
   // exactly how many people just got the alert. Mirrors the "[your copy]"
   // email above: a receipt for the sender, not a regular recipient copy.
   // Skipped silently if SMS isn't enabled, the leader doesn't have a
-  // Musician row with a phone, or zero SMS actually went out (no point
-  // confirming a non-event).
+  // Musician row with a phone, zero SMS actually went out, or
+  // includeLeader is true (the leader is already a regular recipient and
+  // a second receipt SMS would just be a duplicate).
   //
   // Phone lookup: the leader is on the gig as personnel where isLeader=true.
   // We pull that record's phone since the User model doesn't store one.
-  if (smsEnabled && result.smsSent > 0) {
+  if (smsEnabled && result.smsSent > 0 && !opts.includeLeader) {
     const leaderPersonnel = gig.personnel.find(
       (p) => p.musician.isLeader && p.musician.phone,
     );
