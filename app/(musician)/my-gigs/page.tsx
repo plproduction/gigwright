@@ -9,6 +9,7 @@ import {
   gigVenueLabel,
   isToday,
 } from "@/lib/format";
+import { MyMileageInput } from "@/components/MyMileageInput";
 
 export default async function MyGigsPage() {
   const user = await requireMusician();
@@ -42,7 +43,9 @@ export default async function MyGigsPage() {
     myMusicians[0]?.owner?.name || myMusicians[0]?.owner?.email || "your bandleader";
 
   // Gigs the user is booked on. Include the bandleader's owner info so we
-  // can show "Patrick Lamb Productions" for cross-bandleader context.
+  // can show "Patrick Lamb Productions" for cross-bandleader context, plus
+  // the user's existing mileage record per gig so the per-row mileage
+  // input renders with the right initial value.
   const gigs = await db.gig.findMany({
     where: { personnel: { some: { musicianId: { in: myIds } } } },
     include: {
@@ -52,6 +55,7 @@ export default async function MyGigsPage() {
         orderBy: { position: "asc" },
       },
       owner: { select: { name: true, email: true } },
+      musicianMileage: { where: { musicianId: { in: myIds } } },
     },
     orderBy: { startAt: "asc" },
   });
@@ -153,6 +157,7 @@ type GigRowData = Awaited<
         venue: true;
         personnel: { include: { musician: true } };
         owner: { select: { name: true; email: true } };
+        musicianMileage: true;
       };
     }>
   >
@@ -173,51 +178,75 @@ function GigRow({
   const me = gig.personnel.find((p) => myIds.includes(p.musicianId));
   const bandleader =
     gig.owner?.name ?? gig.owner?.email?.split("@")[0] ?? "Bandleader";
+  // The user could be linked to more than one Musician row across
+  // bandleaders, but for any given gig only ONE of those rows is on it
+  // — that's the row we log mileage against.
+  const myMusicianId = me?.musicianId ?? null;
+  const myMileage = myMusicianId
+    ? gig.musicianMileage.find((m) => m.musicianId === myMusicianId)?.miles ??
+      null
+    : null;
 
   return (
-    <Link
-      href={`/my-gigs/${gig.id}`}
-      className={`grid grid-cols-[70px_1.6fr_1fr_90px_100px_auto] items-center gap-4 rounded-md border border-line bg-surface px-4 py-3 transition-colors hover:bg-paper-warm ${
+    <div
+      className={`rounded-md border border-line bg-surface transition-colors hover:bg-paper-warm ${
         today ? "border-accent bg-paper-deep" : ""
       } ${past ? "opacity-80" : ""}`}
     >
-      <div className="font-serif leading-none">
-        <div className="text-[20px]">{formatDayNum(gig.startAt)}</div>
-        <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-          {formatMonthAbbr(gig.startAt)}
+      <Link
+        href={`/my-gigs/${gig.id}`}
+        className="grid grid-cols-[70px_1.6fr_1fr_90px_100px_auto] items-center gap-4 px-4 py-3"
+      >
+        <div className="font-serif leading-none">
+          <div className="text-[20px]">{formatDayNum(gig.startAt)}</div>
+          <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
+            {formatMonthAbbr(gig.startAt)}
+          </div>
         </div>
-      </div>
-      <div className="font-serif text-[16px] leading-tight">
-        {venue.name}
-        {gig.eventName && (
-          <div className="mt-0.5 font-serif text-[12.5px] italic text-accent">
-            {gig.eventName}
-          </div>
-        )}
-        {venue.sub && (
-          <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
-            {venue.sub}
-          </div>
-        )}
-      </div>
-      <div className="text-[12px] text-ink-soft">
-        for <span className="text-ink">{bandleader}</span>
-      </div>
-      <div className="font-serif text-[13px] tabular-nums text-ink-soft">
-        {formatTime(gig.callTimeAt ?? gig.startAt)}
-      </div>
-      <div className="font-serif text-[14px] tabular-nums">
-        {me?.payCents ? formatMoneyCents(me.payCents) : "—"}
-        {me?.paidAt && (
-          <div className="mt-0.5 font-sans text-[9px] font-semibold uppercase tracking-[0.12em] text-success">
-            Paid
-          </div>
-        )}
-      </div>
-      <div className="text-right text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
-        Open →
-      </div>
-    </Link>
+        <div className="font-serif text-[16px] leading-tight">
+          {venue.name}
+          {gig.eventName && (
+            <div className="mt-0.5 font-serif text-[12.5px] italic text-accent">
+              {gig.eventName}
+            </div>
+          )}
+          {venue.sub && (
+            <div className="mt-0.5 font-sans text-[11px] text-ink-mute">
+              {venue.sub}
+            </div>
+          )}
+        </div>
+        <div className="text-[12px] text-ink-soft">
+          for <span className="text-ink">{bandleader}</span>
+        </div>
+        <div className="font-serif text-[13px] tabular-nums text-ink-soft">
+          {formatTime(gig.callTimeAt ?? gig.startAt)}
+        </div>
+        <div className="font-serif text-[14px] tabular-nums">
+          {me?.payCents ? formatMoneyCents(me.payCents) : "—"}
+          {me?.paidAt && (
+            <div className="mt-0.5 font-sans text-[9px] font-semibold uppercase tracking-[0.12em] text-success">
+              Paid
+            </div>
+          )}
+        </div>
+        <div className="text-right text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-mute">
+          Open →
+        </div>
+      </Link>
+      {/* Mileage strip — lives OUTSIDE the Link so the number input
+          doesn't navigate when the musician clicks to edit. Only
+          rendered if the user has a musicianId on the gig. */}
+      {myMusicianId && (
+        <div className="border-t border-line/60 px-4 py-2">
+          <MyMileageInput
+            gigId={gig.id}
+            musicianId={myMusicianId}
+            initialMiles={myMileage}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 

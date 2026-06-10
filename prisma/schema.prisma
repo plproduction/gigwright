@@ -248,11 +248,40 @@ model Musician {
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   gigPersonnel GigPersonnel[]
+  // Per-gig mileage records the musician logs for their own 1099 / Schedule C
+  // tracking. Separate from GigExpense (which is the bandleader's expense
+  // bucket) so a musician's personal mileage never pollutes their leader's
+  // gig P&L. One row per (musicianId, gigId) — see MusicianGigMileage.
+  mileage   MusicianGigMileage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+// Per-musician, per-gig mileage. Lives separate from GigExpense (which is
+// bandleader-scoped) so a sideman's commute to the venue is their own tax
+// record, not their leader's gig P&L. Round-trip miles only — most working
+// musicians drive home after the gig so the round-trip number is what
+// matches their odometer logbook and what flows straight into the IRS
+// standard mileage deduction at year end.
+model MusicianGigMileage {
+  id         String   @id @default(cuid())
+  musicianId String
+  musician   Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  gigId      String
+  gig        Gig      @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  miles Int     // round-trip miles for this gig
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([musicianId, gigId])
+  @@index([musicianId])
+  @@index([gigId])
 }
 
 model Gig {
@@ -338,9 +367,12 @@ model Gig {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  personnel GigPersonnel[]
-  expenses  GigExpense[]
-  activity  Activity[]
+  personnel        GigPersonnel[]
+  expenses         GigExpense[]
+  activity         Activity[]
+  // Per-musician mileage records for sidemen who track their own 1099
+  // mileage on this gig (see MusicianGigMileage).
+  musicianMileage  MusicianGigMileage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

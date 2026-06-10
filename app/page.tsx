@@ -389,7 +389,7 @@ function Features() {
     { icon: IconPeople, title: "Roster and venues", body: "Musician directory with contact info, pay defaults, calendar preference, and notification settings — they manage their own. Plus a venue database with maps, contacts, and timezone.", tag: "Self-serve preferences" },
     { icon: IconLock, title: "The permission wall", body: "Optional musician login shows their own gigs, their own pay, their own calendar prefs. Never the roster, never the reconciliation, never another musician's amount. Hard wall, no leaks.", tag: "Admin · Member roles" },
     { icon: IconMusic, title: "Set lists & charts", body: "Build a song library once, drop songs into per-gig set lists, attach PDF charts. Musicians get the full kit — set list, charts, gig sheet — in one tap on their phone.", tag: "Per-gig · PDF charts" },
-    { icon: IconTruck, title: "GSA mileage & tax-ready", body: "Mileage tracked per gig at the federal GSA rate, mapped automatically to the venue. Year-end CSV ready for your accountant or your 1099 filings. No receipt-shoebox at tax time.", tag: "GSA rate · CSV export" },
+    { icon: IconTruck, title: "GSA mileage & tax-ready", body: "Your mileage and every sideman's, tracked per gig at the federal GSA rate. Year-end CSV ready for your accountant or your 1099 filings. No receipt-shoebox at tax time, for you or the band.", tag: "GSA rate · CSV export · Per-musician" },
   ];
   return (
     <SectionBay id="features" num="02" label="What's inside"
