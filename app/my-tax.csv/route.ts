@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
-import { STANDARD_MILEAGE_RATE_USD } from "@/lib/actions/my-mileage";
+import { STANDARD_MILEAGE_RATE_USD } from "@/lib/mileage-rate";
 
 // GET /my-tax.csv?year=2026
 // Year-end mileage CSV for the signed-in musician. One row per gig with

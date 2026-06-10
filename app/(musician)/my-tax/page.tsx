@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { formatLongDate, gigVenueLabel } from "@/lib/format";
-import { STANDARD_MILEAGE_RATE_USD } from "@/lib/actions/my-mileage";
+import { STANDARD_MILEAGE_RATE_USD } from "@/lib/mileage-rate";
 
 // Year-end tax summary for the working musician — every gig they've
 // logged miles for in the current calendar year, with the IRS standard

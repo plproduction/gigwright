@@ -4,15 +4,6 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 
-// IRS standard mileage deduction for 1099 contractors (musicians). We use
-// the term "GSA rate" in marketing copy for memorability but it's
-// technically the IRS standard mileage rate. Year-end CSV multiplies miles
-// by this number to give the musician their deductible vehicle expense.
-//
-// Source of truth: update once per IRS announcement (typically December).
-// Bandleaders and sidemen alike use this same rate.
-export const STANDARD_MILEAGE_RATE_USD = 0.67;
-
 // Upsert a musician's mileage for a single gig. Miles is round-trip — most
 // working musicians drive home after the gig and that's what their logbook
 // records. The action validates the caller is actually on this gig (via

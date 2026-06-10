@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setMyMileage, STANDARD_MILEAGE_RATE_USD } from "@/lib/actions/my-mileage";
+import { setMyMileage } from "@/lib/actions/my-mileage";
+import { STANDARD_MILEAGE_RATE_USD } from "@/lib/mileage-rate";
 
 // Tiny "Miles: ___" input that lives on each musician-facing gig row.
 // Persists on blur. Shows the IRS deductible value as a quiet hint so
