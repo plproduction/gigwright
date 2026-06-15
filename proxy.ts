@@ -28,6 +28,12 @@ export default auth(function proxy(req) {
     pathname.startsWith("/sms-opt-in") ||
     // Public read-only gig pages for SMS/email click-throughs
     pathname.startsWith("/g/") ||
+    // Calendar subscription feeds. The token in the URL IS the
+    // authorization — calendar apps (Apple Calendar, Google Calendar,
+    // Outlook) can't perform an OAuth sign-in, so we authenticate via
+    // the unguessable 128-bit token instead. Must be public so the
+    // calendar app's polling requests land without a /signin bounce.
+    pathname.startsWith("/cal/") ||
     pathname.startsWith("/api/") || // API routes handle their own auth
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
