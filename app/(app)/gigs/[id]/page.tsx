@@ -94,6 +94,54 @@ export default async function GigDetailPage({
 
   if (!gig) notFound();
 
+  // ── Conflict detection ───────────────────────────────────────────
+  // For every musician on this gig, find any OTHER gig they're booked
+  // on whose start time falls within ±6 hours of this gig's downbeat —
+  // wide enough to catch "load-in for one gig at 4 PM, soundcheck for
+  // another at 5 PM" but narrow enough to avoid false positives across
+  // a same-day morning rehearsal. Returns a map of musicianId →
+  // conflicting gigs[] so the UI can render a yellow warning under
+  // each conflicted personnel row. Skips CANCELLED on either side.
+  const conflictWindowMs = 6 * 60 * 60 * 1000;
+  const conflictStart = new Date(gig.startAt.getTime() - conflictWindowMs);
+  const conflictEnd = new Date(gig.startAt.getTime() + conflictWindowMs);
+  const musicianIdsOnGig = gig.personnel.map((p) => p.musicianId);
+  const conflictRows =
+    musicianIdsOnGig.length === 0
+      ? []
+      : await db.gigPersonnel.findMany({
+          where: {
+            musicianId: { in: musicianIdsOnGig },
+            gigId: { not: gig.id },
+            gig: {
+              startAt: { gte: conflictStart, lt: conflictEnd },
+              status: { not: "CANCELLED" },
+            },
+          },
+          include: {
+            gig: { include: { venue: true } },
+          },
+        });
+  const conflictsByMusicianId = new Map<
+    string,
+    Array<{
+      gigId: string;
+      startAt: Date;
+      venueName: string;
+      eventName: string | null;
+    }>
+  >();
+  for (const c of conflictRows) {
+    const list = conflictsByMusicianId.get(c.musicianId) ?? [];
+    list.push({
+      gigId: c.gigId,
+      startAt: c.gig.startAt,
+      venueName: c.gig.venue?.name ?? "Venue TBD",
+      eventName: c.gig.eventName,
+    });
+    conflictsByMusicianId.set(c.musicianId, list);
+  }
+
   // ── QBO push state machine ───────────────────────────────────
   const sidePersonnel = gig.personnel.filter((p) => !p.musician.isLeader);
   const paidSidePersonnel = sidePersonnel.filter((p) => p.paidAt);
@@ -282,11 +330,14 @@ export default async function GigDetailPage({
               </h5>
             </div>
             <div className="flex flex-col gap-2.5">
-              {gig.personnel.map((p) => (
+              {gig.personnel.map((p) => {
+                const conflicts = conflictsByMusicianId.get(p.musicianId);
+                return (
                 <div
                   key={p.id}
-                  className="grid grid-cols-[24px_1fr_auto_auto_18px] items-center gap-2.5"
+                  className="flex flex-col gap-1"
                 >
+                <div className="grid grid-cols-[24px_1fr_auto_auto_18px] items-center gap-2.5">
                   {/* Avatar + name + meta are a Link to the musician's
                       edit page so the bandleader can jump to their
                       profile (send invite, change contact info, etc.)
@@ -339,7 +390,46 @@ export default async function GigDetailPage({
                     musicianName={p.musician.name}
                   />
                 </div>
-              ))}
+                {/* Conflict warning — soft yellow, ml-[34px] to align under
+                    the name (not the avatar). Doesn't block, just informs.
+                    Lists each conflicting gig with venue + downbeat time,
+                    each one a click-through to the conflicting gig page so
+                    the bandleader can resolve the double-book in one hop. */}
+                {conflicts && conflicts.length > 0 && (
+                  <div
+                    className="ml-[34px] rounded border border-warn/30 bg-warn/5 px-2 py-1 text-[10.5px] leading-snug text-warn"
+                    role="alert"
+                  >
+                    <span className="font-semibold uppercase tracking-[0.08em]">
+                      ⚠ Conflict ·
+                    </span>{" "}
+                    {p.musician.name.split(" ")[0]} is also on{" "}
+                    {conflicts.map((c, idx) => (
+                      <span key={c.gigId}>
+                        {idx > 0 && " · "}
+                        <Link
+                          href={`/gigs/${c.gigId}`}
+                          className="font-medium underline decoration-warn/40 underline-offset-2 hover:decoration-warn"
+                        >
+                          {c.eventName || c.venueName}
+                        </Link>{" "}
+                        <span className="text-warn/80">
+                          (
+                          {c.startAt.toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                          )
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                </div>
+                );
+              })}
             </div>
           </div>
 

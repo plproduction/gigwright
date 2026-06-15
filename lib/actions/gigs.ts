@@ -110,6 +110,20 @@ export async function upsertGig(id: string | null, formData: FormData) {
     const leader = await db.musician.findFirst({
       where: { ownerId: user.id, isLeader: true },
     });
+
+    // Recurrence inputs from the form. Empty / "NONE" / count<=1 means a
+    // one-off gig — same single-create behavior as before. Any other
+    // combination creates additional independent gigs at the offset
+    // interval, all with identical fields. Each new gig is its own
+    // editable record (no recurrence parent) so changing one doesn't
+    // touch the others. Capped at 52 occurrences to prevent runaway
+    // form submissions from creating a year-plus of phantom gigs.
+    const recurInterval = String(formData.get("recurInterval") ?? "NONE");
+    const recurOccurrences = Math.min(
+      52,
+      Math.max(1, Number(formData.get("recurOccurrences") ?? 1) || 1),
+    );
+
     const created = await db.gig.create({
       data: {
         ...data,
@@ -128,6 +142,76 @@ export async function upsertGig(id: string | null, formData: FormData) {
         summary: "Gig created",
       },
     });
+
+    // Bulk-create the rest of the series. Each one is a clone of `data`
+    // with every time field shifted by N intervals — same shape as the
+    // anchor gig but on its own date. Skip if the FREE-plan cap would
+    // be exceeded after the series; we only check the user's headroom
+    // and silently truncate instead of failing the whole form (better
+    // UX than "you almost booked 8 gigs but we created 0 of them").
+    if (
+      recurInterval !== "NONE" &&
+      recurOccurrences > 1 &&
+      (recurInterval === "WEEKLY" ||
+        recurInterval === "BIWEEKLY" ||
+        recurInterval === "MONTHLY")
+    ) {
+      const intervalMs =
+        recurInterval === "WEEKLY"
+          ? 7 * 24 * 60 * 60 * 1000
+          : recurInterval === "BIWEEKLY"
+            ? 14 * 24 * 60 * 60 * 1000
+            : null; // MONTHLY handled separately to honor day-of-month
+
+      const shift = (d: Date, n: number): Date => {
+        if (intervalMs) return new Date(d.getTime() + intervalMs * n);
+        // MONTHLY: bump month by N. JavaScript Date handles end-of-month
+        // gracefully (e.g. Jan 31 + 1 month → Mar 3, not Feb 31).
+        const copy = new Date(d);
+        copy.setMonth(copy.getMonth() + n);
+        return copy;
+      };
+      const shiftOpt = (d: Date | null, n: number): Date | null =>
+        d ? shift(d, n) : null;
+
+      for (let i = 1; i < recurOccurrences; i++) {
+        try {
+          await assertCanAdd(user, "activeGigs");
+        } catch {
+          // Out of headroom — stop creating the rest of the series
+          // silently. The anchor gig and any successfully created
+          // siblings stick around; the user can upgrade and try again.
+          break;
+        }
+        const next = await db.gig.create({
+          data: {
+            ...data,
+            startAt: shift(startAt, i),
+            loadInAt: shiftOpt(loadInAt, i),
+            soundcheckAt: shiftOpt(soundcheckAt, i),
+            soundcheckEndAt: shiftOpt(soundcheckEndAt, i),
+            callTimeAt: shiftOpt(callTimeAt, i),
+            endAt: shiftOpt(endAt, i),
+            secondStartAt: shiftOpt(secondStartAt, i),
+            secondEndAt: shiftOpt(secondEndAt, i),
+            ownerId: user.id,
+            personnel: leader
+              ? {
+                  create: [{ musicianId: leader.id, payCents: 0, position: 0 }],
+                }
+              : undefined,
+          },
+        });
+        await db.activity.create({
+          data: {
+            gigId: next.id,
+            action: "gig_created",
+            summary: `Gig created (recurring from ${created.id})`,
+          },
+        });
+      }
+    }
+
     revalidatePath("/dashboard");
     redirect(`/gigs/${created.id}`);
   }

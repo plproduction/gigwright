@@ -172,6 +172,51 @@ export function GigForm({
           </div>
         </details>
 
+        {/* Recurring gigs — only available when creating a new gig, since
+            an existing edit can't multiply itself retroactively. Same
+            disclosure pattern as "Add second show" above. Sets two
+            hidden-by-default fields that the server reads. Cap of 52
+            is enforced server-side too. */}
+        {!gig && (
+          <details className="col-span-3 group rounded-md border border-dashed border-line-strong bg-paper-warm/40 px-4 py-3 [&[open]]:bg-paper-warm/70">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-ink-soft hover:text-accent [&::-webkit-details-marker]:hidden">
+              <span className="font-serif text-[16px] font-light leading-none text-accent transition-transform group-open:rotate-45">
+                +
+              </span>
+              <span>Make this recurring</span>
+              <span className="font-sans text-[10px] font-medium normal-case tracking-normal text-ink-mute">
+                · for residencies and weekly nights
+              </span>
+            </summary>
+            <div className="mt-4 grid grid-cols-3 gap-x-5 gap-y-4">
+              <div className="flex flex-col justify-end pb-2.5 text-[11px] leading-[1.35] text-ink-mute">
+                Creates additional gigs at this same time, each independently editable.
+              </div>
+              <Field label="Repeat">
+                <select name="recurInterval" defaultValue="NONE" className="input">
+                  <option value="NONE">— Once only —</option>
+                  <option value="WEEKLY">Every week</option>
+                  <option value="BIWEEKLY">Every 2 weeks</option>
+                  <option value="MONTHLY">Every month</option>
+                </select>
+              </Field>
+              <Field
+                label="How many"
+                help="Total in the series, including this first one (1–52)."
+              >
+                <input
+                  type="number"
+                  name="recurOccurrences"
+                  defaultValue={1}
+                  min={1}
+                  max={52}
+                  className="input"
+                />
+              </Field>
+            </div>
+          </details>
+        )}
+
         {/* Schedule row 2: Status, Load in, Sound check */}
         <Field label="Status">
           <select name="status" defaultValue={gig?.status ?? "CONFIRMED"} className="input">

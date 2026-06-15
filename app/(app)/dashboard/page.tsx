@@ -3,6 +3,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { FREE_LIMITS, isPaid } from "@/lib/plan";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
+import { CalendarSubscribeCard } from "@/components/CalendarSubscribeCard";
+import { ensureMyIcalUrl } from "@/lib/actions/ical";
 import {
   formatDayNum,
   formatLongDate,
@@ -135,7 +137,8 @@ export default async function DashboardPage({
             : `${upcoming.length} upcoming`}
           {!paid && ` · ${activeGigCount} / ${FREE_LIMITS.activeGigs} active`}
         </span>
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-2">
+          <CalendarSubscribeCard url={await ensureMyIcalUrl()} />
           {/* Upcoming ↔ Past toggle. Two pills, the active one filled,
               the inactive one outlined. URL-driven (?view=past) so the
               choice is bookmarkable and survives refresh. */}

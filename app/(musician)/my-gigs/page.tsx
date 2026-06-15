@@ -10,6 +10,8 @@ import {
   isToday,
 } from "@/lib/format";
 import { MyMileageInput } from "@/components/MyMileageInput";
+import { CalendarSubscribeCard } from "@/components/CalendarSubscribeCard";
+import { ensureMyIcalUrl } from "@/lib/actions/ical";
 
 export default async function MyGigsPage() {
   const user = await requireMusician();
@@ -68,12 +70,15 @@ export default async function MyGigsPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-baseline justify-between border-b border-line pb-3">
+      <div className="mb-6 flex items-baseline justify-between gap-3 border-b border-line pb-3">
         <h4 className="font-serif text-[22px] font-normal tracking-tight">
           My gigs
         </h4>
-        <div className="text-[11px] text-ink-mute">
-          {upcoming.length} upcoming · {past.length > 0 ? `${past.length} recent` : ""}
+        <div className="flex items-center gap-3">
+          <CalendarSubscribeCard url={await ensureMyIcalUrl()} />
+          <div className="text-[11px] text-ink-mute">
+            {upcoming.length} upcoming · {past.length > 0 ? `${past.length} recent` : ""}
+          </div>
         </div>
       </div>
 

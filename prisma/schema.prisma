@@ -76,6 +76,14 @@ model User {
   // method their leader doesn't pay with.
   enabledPaymentMethods String[] @default([])
 
+  // Calendar subscription token. Random unguessable string the user
+  // pastes into Apple/Google/Outlook to subscribe to their gigs as a
+  // live .ics feed. Generated on first request and cached; null until
+  // then. Tokenized (not email-keyed) so anyone with the URL gets the
+  // feed without an additional sign-in step — the calendar app itself
+  // has no way to authenticate.
+  icalToken String? @unique
+
   accounts  Account[]
   sessions  Session[]
   venues    Venue[]
