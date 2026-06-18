@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
+import { Linkify } from "@/components/Linkify";
 import {
   formatDayNum,
   formatLongDate,
@@ -362,7 +363,7 @@ export default async function PublicGigPage({
         {gig.notes && (
           <Section title="Notes">
             <div className="whitespace-pre-wrap text-[13.5px] leading-[1.6] text-ink-soft">
-              {gig.notes}
+              <Linkify text={gig.notes} />
             </div>
           </Section>
         )}

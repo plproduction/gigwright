@@ -1,4 +1,5 @@
 import { formatLongDate, formatTime } from "@/lib/format";
+import { Linkify } from "@/components/Linkify";
 
 // The most-recent "Send update" the bandleader fired for this gig,
 // rendered at the top of every sheet surface (public /g/[id], musician
@@ -42,7 +43,7 @@ export function LatestUpdateBanner({
       )}
       {message && (
         <div className="mt-1.5 whitespace-pre-wrap text-[13.5px] leading-[1.55] text-ink-soft">
-          {message}
+          <Linkify text={message} />
         </div>
       )}
     </div>

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
+import { Linkify } from "@/components/Linkify";
 import {
   formatDayNum,
   formatLongDate,
@@ -321,7 +322,7 @@ export default async function MyGigDetailPage({
           {gig.notes && (
             <Section title="Notes from the bandleader">
               <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">
-                {gig.notes}
+                <Linkify text={gig.notes} />
               </div>
             </Section>
           )}

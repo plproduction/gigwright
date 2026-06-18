@@ -277,7 +277,7 @@ export function renderHtml(c: Ctx): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
           <tr><td style="padding:26px 28px;border-left:2px solid ${ACCENT};border-radius:8px 0 0 8px">
             <p style="margin:0 0 16px;font-family:${BODY_FONT};font-size:16px;color:${INK};line-height:1.4;letter-spacing:0.005em">Hi ${escapeHtml(capitalize(c.firstName))},</p>
-            <div style="font-family:${BODY_FONT};font-size:15px;line-height:1.75;color:${INK};letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.message.trim())}</div>
+            <div style="font-family:${BODY_FONT};font-size:15px;line-height:1.75;color:${INK};letter-spacing:0.005em;white-space:pre-wrap">${escapeHtmlWithLinks(c.message.trim())}</div>
           </td></tr>
         </table>
       </td></tr>`
@@ -407,7 +407,7 @@ export function renderHtml(c: Ctx): string {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
           <tr><td style="padding:24px 26px">
             ${eyebrowPlain("Other notes")}
-            <p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.7;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.notes)}</p>
+            <p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.7;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtmlWithLinks(c.notes)}</p>
           </td></tr>
         </table>
       </td></tr>`
@@ -601,4 +601,37 @@ export function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+// HTML-escape + auto-linkify in one pass. Use anywhere user-typed free-form
+// text gets rendered inside an email body — notes, bandleader message,
+// etc. URLs become <a target="_blank"> with subtle accent styling that
+// matches the rest of the email; non-URL text is escaped as usual so a <
+// in the body can't break out of the message.
+//
+// Same URL regex as components/Linkify.tsx so a Drive folder pasted into
+// notes renders consistently in the email and on the web sheet. Strips
+// trailing punctuation (. , ; : ! ? )) from the URL so "see the doc at
+// https://example.com/foo." doesn't link to a URL with a period at the
+// end.
+export function escapeHtmlWithLinks(s: string): string {
+  const URL_RE = /(https?:\/\/[^\s<>"]+[^\s<>".,;:!?)\]])/g;
+  const parts: string[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  while ((match = URL_RE.exec(s)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push(escapeHtml(s.slice(lastIdx, match.index)));
+    }
+    const url = match[0];
+    const safeUrl = url.replace(/"/g, "&quot;");
+    parts.push(
+      `<a href="${safeUrl}" target="_blank" rel="noreferrer noopener" style="color:#7E2418;text-decoration:underline;word-break:break-all">${escapeHtml(url)}</a>`,
+    );
+    lastIdx = match.index + url.length;
+  }
+  if (lastIdx < s.length) {
+    parts.push(escapeHtml(s.slice(lastIdx)));
+  }
+  return parts.join("");
 }

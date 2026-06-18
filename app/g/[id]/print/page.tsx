@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { Linkify } from "@/components/Linkify";
 import {
   formatLongDate,
   formatTime,
@@ -317,7 +318,7 @@ export default async function PrintableGigSheet({
                   whiteSpace: "pre-wrap",
                 }}
               >
-                {gig.lastUpdateMessage}
+                <Linkify text={gig.lastUpdateMessage} />
               </div>
             )}
           </div>
@@ -475,7 +476,7 @@ export default async function PrintableGigSheet({
             <div className="ps-h2">Notes</div>
             <div className="ps-row">
               <div className="ps-value" style={{ whiteSpace: "pre-wrap" }}>
-                {gig.notes}
+                <Linkify text={gig.notes} />
               </div>
             </div>
           </div>
