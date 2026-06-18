@@ -385,6 +385,23 @@ export async function fanOutGigUpdate(
     },
   });
 
+  // Persist the latest update headline + body on the gig so the public
+  // sheet, musician portal, and print sheet can all render it at the
+  // top. Without this, a musician taps the SMS link, lands on the
+  // sheet, and sees only the static gig info — none of the actual
+  // change-note the bandleader just sent. Overwritten on every fanout;
+  // only the most recent matters at gig time.
+  if (opts.triggerLabel || opts.message) {
+    await db.gig.update({
+      where: { id: opts.gigId },
+      data: {
+        lastUpdateLabel: opts.triggerLabel ?? null,
+        lastUpdateMessage: opts.message ?? null,
+        lastUpdateAt: new Date(),
+      },
+    });
+  }
+
   return result;
 }
 

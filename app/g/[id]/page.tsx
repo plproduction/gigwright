@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
+import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import {
   formatDayNum,
   formatLongDate,
@@ -72,6 +73,9 @@ export default async function PublicGigPage({
       attire: true,
       meal: true,
       notes: true,
+      lastUpdateLabel: true,
+      lastUpdateMessage: true,
+      lastUpdateAt: true,
       materialsUrl: true,
       setlistUrl: true,
       setlistFileName: true,
@@ -121,6 +125,11 @@ export default async function PublicGigPage({
       </header>
 
       <main className="mx-auto max-w-[760px] px-6 py-10">
+        <LatestUpdateBanner
+          label={gig.lastUpdateLabel}
+          message={gig.lastUpdateMessage}
+          at={gig.lastUpdateAt}
+        />
         {/* Hero block */}
         <section className="mb-10">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">

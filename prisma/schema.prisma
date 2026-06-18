@@ -363,6 +363,17 @@ model Gig {
   // band shouldn't see.
   privateFinanceNotes String?
 
+  // Last "Send update" the bandleader fired for this gig — captures the
+  // headline (lastUpdateLabel) and free-form message (lastUpdateMessage)
+  // that were sent in the email/SMS fanout, plus when. Rendered at the
+  // TOP of every sheet surface (public /g/[id], musician portal, print
+  // sheet) so a musician who clicks the SMS link sees the actual
+  // change-note, not just the static gig info. Cleared on next update
+  // and overwritten — only the most recent matters at gig time.
+  lastUpdateLabel   String?
+  lastUpdateMessage String?
+  lastUpdateAt      DateTime?
+
   // QuickBooks sync state. qboSyncedAt is set every time we push this gig's
   // bills to QBO; if updatedAt > qboSyncedAt, the UI shows "Changes unsynced
   // — Re-push" state. qboSyncError caches the last push error for display.

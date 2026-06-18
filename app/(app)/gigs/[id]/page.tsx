@@ -13,6 +13,7 @@ import { CloneGigButton } from "@/components/CloneGigButton";
 import { ActivityList } from "@/components/ActivityList";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
+import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { LineupToggle } from "@/components/LineupToggle";
 import { isPaid } from "@/lib/plan";
 import {
@@ -253,6 +254,18 @@ export default async function GigDetailPage({
           <SendUpdateButton gigId={gig.id} />
         </div>
       </div>
+
+      {/* Latest update banner — what was just sent in the most recent
+          "Send update" fanout. Lives above the three columns so the
+          bandleader sees their own change-note exactly the way the band
+          (and any musician opening the public sheet) will see it. */}
+      {(gig.lastUpdateLabel || gig.lastUpdateMessage) && gig.lastUpdateAt && (
+        <LatestUpdateBanner
+          label={gig.lastUpdateLabel}
+          message={gig.lastUpdateMessage}
+          at={gig.lastUpdateAt}
+        />
+      )}
 
       {/* Three columns — stack vertically on mobile, 3-up on lg+
           Reading flow follows the bandleader's mental model:

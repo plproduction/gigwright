@@ -48,6 +48,9 @@ export default async function PrintableGigSheet({
     select: {
       id: true,
       eventName: true,
+      lastUpdateLabel: true,
+      lastUpdateMessage: true,
+      lastUpdateAt: true,
       startAt: true,
       loadInAt: true,
       soundcheckAt: true,
@@ -263,6 +266,63 @@ export default async function PrintableGigSheet({
       </div>
 
       <div className="print-sheet">
+        {/* Latest update banner — what the bandleader said in the most
+            recent "Send update" fanout. Shown at the very top so a
+            musician printing the sheet right after a change sees the
+            change-note first. Inline styles because this page uses
+            a stand-alone CSS scope, not the Tailwind tokens. */}
+        {gig.lastUpdateAt && (gig.lastUpdateLabel || gig.lastUpdateMessage) && (
+          <div
+            style={{
+              border: "1px solid rgba(126, 36, 24, 0.3)",
+              background: "rgba(126, 36, 24, 0.05)",
+              borderRadius: 6,
+              padding: "10px 14px",
+              marginBottom: 20,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "-apple-system,BlinkMacSystemFont,sans-serif",
+                fontSize: 9.5,
+                fontWeight: 600,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#7E2418",
+              }}
+            >
+              Latest update · {formatLongDate(gig.lastUpdateAt)}
+            </div>
+            {gig.lastUpdateLabel && (
+              <div
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: 17,
+                  lineHeight: 1.25,
+                  color: "#1a1a1a",
+                  marginTop: 4,
+                }}
+              >
+                {gig.lastUpdateLabel}
+              </div>
+            )}
+            {gig.lastUpdateMessage && (
+              <div
+                style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: 12.5,
+                  lineHeight: 1.5,
+                  color: "#494336",
+                  marginTop: 4,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {gig.lastUpdateMessage}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Header */}
         <div>
           <div className="ps-eyebrow">Gig sheet · {dow}</div>

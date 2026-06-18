@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
+import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import {
   formatDayNum,
   formatLongDate,
@@ -93,6 +94,20 @@ export default async function MyGigDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Latest update banner — what the bandleader said in the most
+          recent "Send update" fanout. Lives above the body grid so a
+          musician landing on this page from an SMS click sees the
+          change-note before the static gig info. */}
+      {(gig.lastUpdateLabel || gig.lastUpdateMessage) && gig.lastUpdateAt && (
+        <div className="px-7 pt-5">
+          <LatestUpdateBanner
+            label={gig.lastUpdateLabel}
+            message={gig.lastUpdateMessage}
+            at={gig.lastUpdateAt}
+          />
+        </div>
+      )}
 
       {/* Body — three columns, read-only */}
       <div className="grid grid-cols-3">
