@@ -671,6 +671,72 @@ export default async function GigDetailPage({
             />
           </Section>
 
+          {/* Consolidated guest list — every musician's contribution from
+              their /my-gigs/[id] page rolled into one block. Shows
+              per-musician sections with a name count + a grand total at
+              the top, so the bandleader has a single thing to hand the
+              venue. Renders nothing when no one has submitted yet, so a
+              fresh gig page doesn't have a sad empty section. */}
+          {(() => {
+            const contributors = gig.personnel.filter(
+              (p) =>
+                p.guestList &&
+                p.guestList.trim() !== "" &&
+                !p.musician.isLeader,
+            );
+            if (contributors.length === 0) {
+              return (
+                <Section title="Guest list">
+                  <p className="text-[12px] italic text-ink-mute">
+                    No guests submitted yet. Musicians can add theirs from
+                    their My gigs page.
+                  </p>
+                </Section>
+              );
+            }
+            const totalGuests = contributors.reduce(
+              (sum, p) =>
+                sum +
+                (p.guestList ?? "")
+                  .split("\n")
+                  .filter((l) => l.trim() !== "").length,
+              0,
+            );
+            return (
+              <Section title="Guest list">
+                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                  {totalGuests} {totalGuests === 1 ? "guest" : "guests"} · {contributors.length}{" "}
+                  {contributors.length === 1 ? "musician" : "musicians"} submitted
+                </div>
+                <div className="flex flex-col gap-3">
+                  {contributors.map((p) => {
+                    const count = (p.guestList ?? "")
+                      .split("\n")
+                      .filter((l) => l.trim() !== "").length;
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-md border border-line bg-paper-warm/50 px-3 py-2.5"
+                      >
+                        <div className="flex items-baseline justify-between text-[11.5px] text-ink-soft">
+                          <span className="font-semibold text-ink">
+                            {p.musician.name}
+                          </span>
+                          <span className="tabular-nums text-ink-mute">
+                            {count} {count === 1 ? "guest" : "guests"}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 whitespace-pre-wrap text-[13px] leading-[1.5] text-ink">
+                          {p.guestList}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Section>
+            );
+          })()}
+
           <Section title="Share gig sheet">
             <ShareGigButton gigId={gig.id} />
           </Section>

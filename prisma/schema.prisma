@@ -471,6 +471,14 @@ model GigPersonnel {
   qboVendorId String?
   qboBillId   String?
 
+  // Guest list this musician is requesting for this gig — freeform
+  // multi-line text, one name per line ("Sarah Smith +1", "Tom Jones").
+  // Filled in by the musician from their /my-gigs/[id] page; aggregated
+  // and shown to the bandleader on the gig detail page so they can
+  // hand a single consolidated list to the venue.
+  guestList          String?
+  guestListUpdatedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

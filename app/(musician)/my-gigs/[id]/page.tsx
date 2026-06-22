@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { Linkify } from "@/components/Linkify";
+import { MyGuestListInput } from "@/components/MyGuestListInput";
 import {
   formatDayNum,
   formatLongDate,
@@ -324,6 +325,20 @@ export default async function MyGigDetailPage({
               <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink-soft">
                 <Linkify text={gig.notes} />
               </div>
+            </Section>
+          )}
+
+          {/* Per-musician guest list. Only rendered when we found a
+              GigPersonnel row for this user (so we have a musicianId
+              to write to). The textarea auto-saves on blur and the
+              consolidated list lands on the bandleader's gig page. */}
+          {me && (
+            <Section title="Guest list">
+              <MyGuestListInput
+                gigId={gig.id}
+                musicianId={me.musicianId}
+                initialValue={me.guestList}
+              />
             </Section>
           )}
         </div>
