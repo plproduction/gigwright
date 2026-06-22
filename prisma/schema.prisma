@@ -479,6 +479,16 @@ model GigPersonnel {
   guestList          String?
   guestListUpdatedAt DateTime?
 
+  // Bandleader-approved subset of the names above. Each entry is the
+  // exact line string the musician typed (e.g. "Sarah Smith +1"), so
+  // approvals survive when the musician edits unrelated lines but are
+  // intentionally dropped when they re-type or rearrange a specific
+  // name. Empty array = nothing approved yet (default state for any
+  // new guest). The bandleader toggles approvals one at a time from
+  // the gig detail page; the venue copy of the list is what's
+  // approved, not what's submitted.
+  approvedGuests     String[] @default([])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

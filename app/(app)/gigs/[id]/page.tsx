@@ -14,6 +14,7 @@ import { ActivityList } from "@/components/ActivityList";
 import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
+import { GuestApprovalCheckbox } from "@/components/GuestApprovalCheckbox";
 import { LineupToggle } from "@/components/LineupToggle";
 import { isPaid } from "@/lib/plan";
 import {
@@ -672,11 +673,12 @@ export default async function GigDetailPage({
           </Section>
 
           {/* Consolidated guest list — every musician's contribution from
-              their /my-gigs/[id] page rolled into one block. Shows
-              per-musician sections with a name count + a grand total at
-              the top, so the bandleader has a single thing to hand the
-              venue. Renders nothing when no one has submitted yet, so a
-              fresh gig page doesn't have a sad empty section. */}
+              their /my-gigs/[id] page rolled into one block, each name a
+              checkbox. Ticking confirms the guest is on the venue list;
+              unticking takes them off. The top-of-section eyebrow shows
+              "approved / submitted" so the bandleader can scan the
+              approval state at a glance. Empty state when nothing has
+              been submitted yet doesn't show a sad empty box. */}
           {(() => {
             const contributors = gig.personnel.filter(
               (p) =>
@@ -694,25 +696,37 @@ export default async function GigDetailPage({
                 </Section>
               );
             }
-            const totalGuests = contributors.reduce(
-              (sum, p) =>
-                sum +
-                (p.guestList ?? "")
-                  .split("\n")
-                  .filter((l) => l.trim() !== "").length,
-              0,
-            );
+            // Pre-compute counts so the eyebrow can show both submitted
+            // and approved totals at once.
+            let totalSubmitted = 0;
+            let totalApproved = 0;
+            for (const p of contributors) {
+              const lines = (p.guestList ?? "")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l !== "");
+              totalSubmitted += lines.length;
+              const approvedSet = new Set(p.approvedGuests);
+              for (const line of lines) {
+                if (approvedSet.has(line)) totalApproved++;
+              }
+            }
             return (
               <Section title="Guest list">
                 <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                  {totalGuests} {totalGuests === 1 ? "guest" : "guests"} · {contributors.length}{" "}
+                  {totalApproved} / {totalSubmitted} approved · {contributors.length}{" "}
                   {contributors.length === 1 ? "musician" : "musicians"} submitted
                 </div>
                 <div className="flex flex-col gap-3">
                   {contributors.map((p) => {
-                    const count = (p.guestList ?? "")
+                    const lines = (p.guestList ?? "")
                       .split("\n")
-                      .filter((l) => l.trim() !== "").length;
+                      .map((l) => l.trim())
+                      .filter((l) => l !== "");
+                    const approvedSet = new Set(p.approvedGuests);
+                    const approvedCount = lines.filter((l) =>
+                      approvedSet.has(l),
+                    ).length;
                     return (
                       <div
                         key={p.id}
@@ -723,11 +737,18 @@ export default async function GigDetailPage({
                             {p.musician.name}
                           </span>
                           <span className="tabular-nums text-ink-mute">
-                            {count} {count === 1 ? "guest" : "guests"}
+                            {approvedCount} / {lines.length} approved
                           </span>
                         </div>
-                        <div className="mt-1.5 whitespace-pre-wrap text-[13px] leading-[1.5] text-ink">
-                          {p.guestList}
+                        <div className="mt-1.5 flex flex-col gap-1">
+                          {lines.map((line, i) => (
+                            <GuestApprovalCheckbox
+                              key={`${p.id}-${i}-${line}`}
+                              personnelId={p.id}
+                              name={line}
+                              initialApproved={approvedSet.has(line)}
+                            />
+                          ))}
                         </div>
                       </div>
                     );
