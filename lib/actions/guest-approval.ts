@@ -4,17 +4,19 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
-// 2-minute debounce window. Bandleader has this long to undo or change
-// their mind before the email/SMS goes out. Captured here so the
-// processor and the action share the same value.
-const NOTIFY_DELAY_MS = 2 * 60 * 1000;
+// 1-minute debounce window. Bandleader has this long to undo or change
+// their mind before the email/SMS goes out. Long enough to catch the
+// "I clicked the wrong row" mistake (which is usually noticed within
+// seconds), short enough that musicians get prompt feedback when
+// their guests are confirmed near gig time.
+const NOTIFY_DELAY_MS = 60 * 1000;
 
 // Toggle a single guest's approval on a GigPersonnel row. Called from
 // the bandleader's gig detail page when they tick/untick the checkbox
 // next to a guest name.
 //
 // Side effect: instead of firing the notification right away, enqueues
-// it in PendingGuestNotification with a 2-minute delay. Rapid toggling
+// it in PendingGuestNotification with a 1-minute delay. Rapid toggling
 // within the window updates the pendingState on the existing row but
 // preserves the original initialState — so if the bandleader ticks,
 // then unticks 30 seconds later, the row resolves to "no net change"
@@ -71,10 +73,10 @@ export async function toggleGuestApproval(
   if (personnel.musician.isLeader) return;
 
   // Upsert the pending row. If one already exists (i.e. the same guest
-  // was toggled in the last 2 minutes), keep the original initialState
+  // was toggled in the last minute), keep the original initialState
   // but update pendingState to the new value. The scheduledFor stays
   // pinned to the FIRST toggle's window, so the notification still
-  // fires 2 minutes after the first interaction — not perpetually
+  // fires 1 minute after the first interaction — not perpetually
   // delayed by rapid clicking.
   const existing = await db.pendingGuestNotification.findUnique({
     where: { personnelId_guestName: { personnelId, guestName: trimmed } },
