@@ -149,11 +149,14 @@ export default async function PublicGigPage({
           </div>
         </section>
 
-        {/* Time grid */}
+        {/* Time grid — Load In → Sound Check → Call → Downbeat → Finish,
+            matching the order Patrick wants on every band-facing sheet.
+            Earlier this rendered Call first, which made the schedule
+            unreadable as a chronological flow. */}
         <section className="mb-10 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-6 sm:grid-cols-4">
-          <TimeTile label="Call" time={gig.callTimeAt} />
           <TimeTile label="Load in" time={gig.loadInAt} />
           <TimeTile label="Sound check" time={gig.soundcheckAt} />
+          <TimeTile label="Call" time={gig.callTimeAt} />
           <TimeTile
             label={gig.secondStartAt ? "1st downbeat" : "Downbeat"}
             time={gig.startAt}
