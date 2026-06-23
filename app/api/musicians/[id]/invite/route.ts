@@ -147,10 +147,11 @@ function inviteText(opts: {
   const bl = opts.bandleaderName;
   return `Hi ${firstName},
 
-${bl} uses GigWright to organize gigs and send the band call sheets. You're now on their roster, which means two things:
+${bl} uses GigWright to organize gigs and send the band call sheets. You're now on their roster, which means three things:
 
-  • You'll start getting gig updates by email (and text, once that goes live) — venue, times, attire, set list, the works.
+  • You'll start getting gig updates by email (and text, once you opt in) — venue, times, attire, set list, the works.
   • Please log in and tell ${bl} how you want to be paid — Cash App, Venmo, Zelle, PayPal, Check, or however else — plus the handle / address that goes with it. Once it's on your profile, payments don't get stuck waiting on you to text back a handle on gig night.
+  • Designate your guest list per gig — names go on the same profile page, one card per upcoming gig. ${bl} sees everyone's guests in one place and approves them for the venue.
 
 Log in here (no password — just a one-time sign-in link emailed to this address):
 ${opts.signInUrl}
@@ -182,19 +183,22 @@ function inviteHtml(opts: {
         ${escapeHtml(bl)} just added you to GigWright.
       </h1>
       <p style="color:#494336;font-size:14.5px;line-height:1.6;margin:0 0 14px;">
-        ${escapeHtml(bl)} uses GigWright to organize gigs and send the band call sheets. You&rsquo;re now on their roster, which means two things:
+        ${escapeHtml(bl)} uses GigWright to organize gigs and send the band call sheets. You&rsquo;re now on their roster, which means three things:
       </p>
       <ul style="color:#494336;font-size:14px;line-height:1.65;margin:0 0 22px;padding-left:20px;">
         <li style="margin-bottom:10px;">
-          <strong style="color:#111;">You&rsquo;ll start getting gig updates by email</strong> (and text, once that goes live) &mdash; venue, times, attire, set list, the works.
+          <strong style="color:#111;">You&rsquo;ll start getting gig updates by email</strong> (and text, once you opt in) &mdash; venue, times, attire, set list, the works.
+        </li>
+        <li style="margin-bottom:10px;">
+          <strong style="color:#111;">Please log in and tell ${escapeHtml(bl)} how you want to be paid</strong> &mdash; Cash App, Venmo, Zelle, PayPal, Check, or however else &mdash; plus the handle or address that goes with it. Once it&rsquo;s on your profile, payments don&rsquo;t get stuck waiting on you to text back a handle on gig night.
         </li>
         <li>
-          <strong style="color:#111;">Please log in and tell ${escapeHtml(bl)} how you want to be paid</strong> &mdash; Cash App, Venmo, Zelle, PayPal, Check, or however else &mdash; plus the handle or address that goes with it. Once it&rsquo;s on your profile, payments don&rsquo;t get stuck waiting on you to text back a handle on gig night.
+          <strong style="color:#111;">Designate your guest list per gig</strong> &mdash; names go on the same profile page, one card per upcoming gig. ${escapeHtml(bl)} sees everyone&rsquo;s guests in one place and approves them for the venue.
         </li>
       </ul>
 
       <a href="${opts.signInUrl}" style="display:inline-block;padding:13px 22px;background:#7E2418;color:#FBFAF6;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;letter-spacing:0.01em;">
-        Log in to set your payment method →
+        Log in to set your preferences &rarr;
       </a>
 
       <p style="color:#857F72;font-size:12px;line-height:1.55;margin:22px 0 0;">
