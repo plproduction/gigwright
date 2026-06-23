@@ -4,8 +4,12 @@ import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { pickerOptions } from "@/lib/payment-methods";
 import { saveMyProfile } from "@/lib/actions/my-profile";
-import { MyGuestListInput } from "@/components/MyGuestListInput";
-import { formatLongDate, gigVenueLabel } from "@/lib/format";
+import {
+  formatDayNum,
+  formatLongDate,
+  formatMonthAbbr,
+  gigVenueLabel,
+} from "@/lib/format";
 
 // Musician's self-serve profile page. Because a single musician email can
 // be in multiple bandleaders' rosters (same person, different leaders), we
@@ -116,9 +120,9 @@ export default async function MyProfilePage({
       </div>
 
       {justSaved && (
-        <div className="mb-5 max-w-[680px] rounded-md border border-success/40 bg-success/10 px-4 py-2.5 text-[13px] text-success">
-          ✓ Saved — your bandleader(s) will see your updated info next time
-          they open a gig sheet.
+        <div className="mb-5 max-w-[680px] rounded-md border border-success/50 bg-success/15 px-4 py-3.5 text-[14px] font-medium text-success shadow-sm">
+          ✓ Saved successfully — your bandleader(s) will see the new info on
+          the next gig sheet they open.
         </div>
       )}
 
@@ -226,69 +230,96 @@ export default async function MyProfilePage({
         </div>
       </form>
 
-      {/* Per-gig guest list — lives on /my-profile (not just inside each
-          gig's page) because the bandleader's invite email lands the
-          musician here. Asking them to log in, then navigate to a
-          specific gig, then scroll, is too many steps for the most
-          common ask ("who's on your list for this gig?"). One textarea
-          per upcoming gig; reuses the same MyGuestListInput component
-          that lives on /my-gigs/[id], so the data is consistent
-          wherever the musician chooses to edit. */}
-      {upcomingPersonnel.length > 0 && (
-        <div className="mt-10 border-t border-line pt-7">
-          <div className="mb-3 flex items-baseline justify-between">
-            <h5 className="font-serif text-[18px] font-normal tracking-tight">
-              Your guest list — by gig
-            </h5>
-            <div className="text-[11px] text-ink-mute">
-              {upcomingPersonnel.length === 1
+      {/* Upcoming gigs — clickable list. Each card links to /my-gigs/[id]
+          where the musician sees the full sheet and the per-gig Guest
+          list textarea lives. Patrick's framing: "they click into their
+          profile, then be able to click on a gig, then submit the guest
+          for the specific gig." So /my-profile shows the GATEWAY (which
+          gigs need attention) and /my-gigs/[id] is where the actual
+          typing happens. A small green dot next to the count tells the
+          musician "you've added some" vs "nothing in here yet" without
+          showing the names on this page. */}
+      <div className="mt-10 border-t border-line pt-7">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h5 className="font-serif text-[18px] font-normal tracking-tight">
+            Your upcoming gigs
+          </h5>
+          <div className="text-[11px] text-ink-mute">
+            {upcomingPersonnel.length === 0
+              ? "Nothing on the books"
+              : upcomingPersonnel.length === 1
                 ? "1 upcoming gig"
                 : `${upcomingPersonnel.length} upcoming gigs`}
-            </div>
           </div>
-          <p className="mb-4 text-[12.5px] leading-snug text-ink-soft">
-            One list per gig. The bandleader sees a consolidated list of
-            everyone&rsquo;s guests on their gig page and approves them
-            one by one for the venue.
-          </p>
-          <div className="flex flex-col gap-4">
+        </div>
+        <p className="mb-4 text-[12.5px] leading-snug text-ink-soft">
+          Click a gig to open its sheet — venue, times, lineup, and the
+          textarea where you put your guest list for that night. Your
+          bandleader sees a consolidated guest list and approves names
+          for the venue.
+        </p>
+
+        {upcomingPersonnel.length === 0 ? (
+          <div className="rounded-md border border-dashed border-line-strong bg-paper-warm/40 p-5 text-center text-[12.5px] italic text-ink-mute">
+            You&rsquo;re not on any upcoming gigs yet. Once your bandleader
+            adds you, gigs show up here.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
             {upcomingPersonnel.map((p) => {
               const venue = gigVenueLabel(p.gig.venue);
               const leader =
                 p.gig.owner?.name ??
                 p.gig.owner?.email?.split("@")[0] ??
                 "Bandleader";
+              const guestCount = (p.guestList ?? "")
+                .split("\n")
+                .filter((l) => l.trim() !== "").length;
               return (
-                <div key={p.id}>
-                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                    <div>
-                      <Link
-                        href={`/my-gigs/${p.gig.id}`}
-                        className="font-serif text-[14px] font-medium leading-tight hover:text-accent"
-                      >
-                        {venue.name}
-                      </Link>
+                <Link
+                  key={p.id}
+                  href={`/my-gigs/${p.gig.id}`}
+                  className="grid grid-cols-[56px_1fr_auto_18px] items-center gap-4 rounded-md border border-line bg-surface px-4 py-3 transition-colors hover:border-accent/40 hover:bg-paper-warm"
+                >
+                  <div className="text-center font-serif leading-none">
+                    <div className="text-[22px]">
+                      {formatDayNum(p.gig.startAt)}
+                    </div>
+                    <div className="mt-1 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
+                      {formatMonthAbbr(p.gig.startAt)}
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate font-serif text-[15px] leading-tight">
+                      {venue.name}
                       {p.gig.eventName && (
                         <span className="ml-2 font-serif text-[12px] italic text-accent">
                           {p.gig.eventName}
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-ink-mute">
+                    <div className="mt-0.5 text-[11px] text-ink-mute">
                       {formatLongDate(p.gig.startAt)} · for {leader}
                     </div>
                   </div>
-                  <MyGuestListInput
-                    gigId={p.gig.id}
-                    musicianId={p.musicianId}
-                    initialValue={p.guestList}
-                  />
-                </div>
+                  <div className="text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-mute">
+                    {guestCount === 0 ? (
+                      <span>+ Add guest list</span>
+                    ) : (
+                      <span className="text-success">
+                        ● {guestCount} {guestCount === 1 ? "guest" : "guests"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right text-[14px] text-ink-mute">
+                    →
+                  </div>
+                </Link>
               );
             })}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Show who has me in their roster */}
       {mine.length > 1 && (
