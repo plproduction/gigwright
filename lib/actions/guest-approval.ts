@@ -46,5 +46,11 @@ export async function toggleGuestApproval(
     data: { approvedGuests: Array.from(current) },
   });
 
+  // Invalidate both the bandleader's gig page AND the musicians' own
+  // per-gig page so anyone who refreshes either side sees the latest
+  // approval state. Without the /my-gigs/[id] revalidate, the
+  // musician's cached render could keep showing "Pending" for a
+  // name the bandleader just confirmed.
   revalidatePath(`/gigs/${personnel.gigId}`);
+  revalidatePath(`/my-gigs/${personnel.gigId}`);
 }
