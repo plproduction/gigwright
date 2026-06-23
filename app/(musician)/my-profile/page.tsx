@@ -3,7 +3,11 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { pickerOptions } from "@/lib/payment-methods";
-import { saveMyProfile } from "@/lib/actions/my-profile";
+import {
+  AutoSavingTextInput,
+  AutoSavingSelect,
+  AutoSavingCheckbox,
+} from "@/components/AutoSavingProfileField";
 import {
   formatDayNum,
   formatLongDate,
@@ -15,14 +19,8 @@ import {
 // be in multiple bandleaders' rosters (same person, different leaders), we
 // aggregate linked Musician rows — edits apply to ALL of them so the
 // musician has one source of truth regardless of who booked them.
-export default async function MyProfilePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ saved?: string }>;
-}) {
+export default async function MyProfilePage() {
   const user = await requireMusician();
-  const sp = await searchParams;
-  const justSaved = sp.saved === "1";
 
   const mine = await db.musician.findMany({
     where: { userId: user.id },
@@ -136,116 +134,93 @@ export default async function MyProfilePage({
         />
       </div>
 
-      {justSaved && (
-        <div className="mb-5 max-w-[680px] rounded-md border border-success/50 bg-success/15 px-4 py-3.5 text-[14px] font-medium text-success shadow-sm">
-          ✓ Saved successfully — your bandleader(s) will see the new info on
-          the next gig sheet they open.
-        </div>
-      )}
+      {/* Help line at the top of the form so musicians know they don't
+          have to hunt for a Save button — every field saves itself the
+          moment they tab/click away. Subtle, in muted ink. */}
+      <p className="mb-4 max-w-[680px] text-[11.5px] italic text-ink-mute">
+        Tip: changes save automatically as you tab out of each field — no
+        Save button to hunt for.
+      </p>
 
-      <form action={saveMyProfile} className="grid max-w-[680px] grid-cols-2 gap-x-5 gap-y-4">
+      <div className="grid max-w-[680px] grid-cols-2 gap-x-5 gap-y-4">
         <Field label="Name">
           <input disabled value={primary.name} className="input opacity-70" />
         </Field>
 
         <Field label="Email">
-          <input
-            name="email"
+          <AutoSavingTextInput
+            field="email"
             type="email"
-            defaultValue={primary.email ?? user.email}
-            className="input"
+            defaultValue={primary.email ?? user.email ?? ""}
           />
         </Field>
 
         <Field label="Phone">
-          <input name="phone" type="tel" defaultValue={primary.phone ?? ""} className="input" />
+          <AutoSavingTextInput
+            field="phone"
+            type="tel"
+            defaultValue={primary.phone ?? ""}
+          />
         </Field>
 
         <Field label="Calendar provider" help="Where your gigs should appear automatically.">
-          <select
-            name="calendarProvider"
+          <AutoSavingSelect
+            field="calendarProvider"
             defaultValue={primary.calendarProvider}
-            className="input"
-          >
-            <option value="NONE">None — SMS/email only</option>
-            <option value="ICLOUD">iCloud (iPhone / Mac)</option>
-            <option value="GOOGLE">Google Calendar</option>
-            <option value="OUTLOOK">Outlook / Microsoft 365</option>
-          </select>
+            options={[
+              { value: "NONE", label: "None — SMS/email only" },
+              { value: "ICLOUD", label: "iCloud (iPhone / Mac)" },
+              { value: "GOOGLE", label: "Google Calendar" },
+              { value: "OUTLOOK", label: "Outlook / Microsoft 365" },
+            ]}
+          />
         </Field>
 
         <div id="payment" className="col-span-2 scroll-mt-20" />
         <Field label="Payment method">
-          <select
-            name="paymentMethod"
+          <AutoSavingSelect
+            field="paymentMethod"
             defaultValue={primary.paymentMethod ?? ""}
-            className="input"
-          >
-            <option value="">—</option>
-            {methodOptions.map((m) => (
-              <option key={m.value} value={m.value} disabled={m.disabled}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+            options={[
+              { value: "", label: "—" },
+              ...methodOptions.map((m) => ({
+                value: m.value,
+                label: m.label,
+                disabled: m.disabled,
+              })),
+            ]}
+          />
         </Field>
 
         <Field span label="Payment address / handle" help="Venmo @handle · PayPal.me link · Cash App $cashtag">
-          <input
-            name="payoutAddress"
+          <AutoSavingTextInput
+            field="payoutAddress"
             defaultValue={primary.payoutAddress ?? ""}
             placeholder="patrick@example.com / @patricklamb / $patrick"
-            className="input"
           />
         </Field>
 
         <div className="col-span-2 flex flex-wrap gap-5 border-t border-line pt-4 text-[13px]">
-          {/* This is the cleanest, TCR-compliant opt-in moment — the
-              musician themselves toggling whether they want SMS, on a
-              page they personally logged into. The label is plain
-              English consent language so checking it is a real
-              affirmative act, not a buried setting. */}
-          <label className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              name="notifyBySms"
-              defaultChecked={primary.notifyBySms}
-              className="mt-[3px]"
-            />
-            <span className="leading-snug">
-              Yes, text me gig reminders and last-minute updates
-              <span className="ml-1 block text-[11px] font-normal text-ink-mute">
-                Msg &amp; data rates may apply. Reply STOP anytime.
-              </span>
-            </span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="notifyByEmail"
-              defaultChecked={primary.notifyByEmail}
-            />
-            <span>Email me about changes</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="w9Received"
-              defaultChecked={primary.w9Received}
-            />
-            <span>My W-9 is on file with my bandleader(s)</span>
-          </label>
+          {/* SMS opt-in — TCR-compliant consent moment, auto-saves the
+              moment the box flips. */}
+          <AutoSavingCheckbox
+            field="notifyBySms"
+            defaultChecked={primary.notifyBySms}
+            label="Yes, text me gig reminders and last-minute updates"
+            sub="Msg & data rates may apply. Reply STOP anytime."
+          />
+          <AutoSavingCheckbox
+            field="notifyByEmail"
+            defaultChecked={primary.notifyByEmail}
+            label="Email me about changes"
+          />
+          <AutoSavingCheckbox
+            field="w9Received"
+            defaultChecked={primary.w9Received}
+            label="My W-9 is on file with my bandleader(s)"
+          />
         </div>
-
-        <div className="col-span-2 pt-5">
-          <button
-            type="submit"
-            className="rounded-md bg-accent px-4 py-2 text-[13px] font-semibold text-paper hover:bg-[#611B11]"
-          >
-            Save
-          </button>
-        </div>
-      </form>
+      </div>
 
       {/* ── Your upcoming gigs ─────────────────────────────────────────
           Refined card list. The first 3 gigs render in full; anything
