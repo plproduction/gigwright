@@ -18,8 +18,16 @@ export async function POST(req: Request): Promise<NextResponse> {
         const payload = clientPayload ? JSON.parse(clientPayload) : {};
         const musicianId = payload.musicianId as string | undefined;
         if (!musicianId) throw new Error("Missing musicianId");
+        // Allow either the bandleader who owns this roster row OR the
+        // musician themselves (linked via userId) to upload an avatar.
+        // The old check was ownerId-only, which broke avatar uploads
+        // from /my-profile — the signed-in user there is the musician,
+        // not the bandleader, so ownerId == user.id never held.
         const musician = await db.musician.findFirst({
-          where: { id: musicianId, ownerId: user.id },
+          where: {
+            id: musicianId,
+            OR: [{ ownerId: user.id }, { userId: user.id }],
+          },
         });
         if (!musician) throw new Error("Musician not found");
         return {
