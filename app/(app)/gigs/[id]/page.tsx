@@ -15,6 +15,7 @@ import { PushToQboButton } from "@/components/PushToQboButton";
 import { SendUpdateButton } from "@/components/SendUpdateButton";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { GuestApprovalCheckbox } from "@/components/GuestApprovalCheckbox";
+import { LeaderGuestListInput } from "@/components/LeaderGuestListInput";
 import { LineupToggle } from "@/components/LineupToggle";
 import { isPaid } from "@/lib/plan";
 import {
@@ -672,32 +673,49 @@ export default async function GigDetailPage({
             />
           </Section>
 
-          {/* Consolidated guest list — every musician's contribution from
-              their /my-gigs/[id] page rolled into one block, each name a
-              checkbox. Ticking confirms the guest is on the venue list;
-              unticking takes them off. The top-of-section eyebrow shows
-              "approved / submitted" so the bandleader can scan the
-              approval state at a glance. Empty state when nothing has
-              been submitted yet doesn't show a sad empty box. */}
+          {/* ── Guest list section ─────────────────────────────────────
+              Three blocks stacked:
+              (1) Leader's own guests (always rendered when the
+                  bandleader is on the gig as personnel) — separate
+                  editor that auto-confirms every name. Sits at top
+                  because it's the leader's own working area.
+              (2) Consolidated band-submitted list with approval
+                  checkboxes per name. Eyebrow shows totals.
+              (3) "Print door list →" link at the bottom — opens a
+                  separate page formatted for a venue handoff.
+              Cross-musician duplicates surface inline as a quiet
+              "also on Tony's list" note under the dupe row so the
+              bandleader knows to approve only one. */}
           {(() => {
+            const leaderRow = gig.personnel.find((p) => p.musician.isLeader);
             const contributors = gig.personnel.filter(
               (p) =>
                 p.guestList &&
                 p.guestList.trim() !== "" &&
                 !p.musician.isLeader,
             );
-            if (contributors.length === 0) {
-              return (
-                <Section title="Guest list">
-                  <p className="text-[12px] italic text-ink-mute">
-                    No guests submitted yet. Musicians can add theirs from
-                    their My gigs page.
-                  </p>
-                </Section>
-              );
+
+            // Build a name → musician-names[] index so each row can show
+            // a quiet "also on X's list" note. Case-insensitive match —
+            // venues look up names by spelling more than by case.
+            const dupeIndex = new Map<string, string[]>();
+            for (const p of contributors) {
+              const lines = (p.guestList ?? "")
+                .split("\n")
+                .map((l) => l.trim())
+                .filter((l) => l !== "");
+              for (const line of lines) {
+                const key = line.toLowerCase();
+                const prev = dupeIndex.get(key) ?? [];
+                prev.push(p.musician.name);
+                dupeIndex.set(key, prev);
+              }
             }
-            // Pre-compute counts so the eyebrow can show both submitted
-            // and approved totals at once.
+            // Also count the leader's own approved guests so the
+            // door-list link can show a meaningful total.
+            const leaderApprovedCount = leaderRow
+              ? leaderRow.approvedGuests.length
+              : 0;
             let totalSubmitted = 0;
             let totalApproved = 0;
             for (const p of contributors) {
@@ -711,49 +729,114 @@ export default async function GigDetailPage({
                 if (approvedSet.has(line)) totalApproved++;
               }
             }
+            const totalOnDoor = totalApproved + leaderApprovedCount;
+
             return (
               <Section title="Guest list">
-                <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
-                  {totalApproved} / {totalSubmitted} approved · {contributors.length}{" "}
-                  {contributors.length === 1 ? "musician" : "musicians"} submitted
-                </div>
-                <div className="flex flex-col gap-3">
-                  {contributors.map((p) => {
-                    const lines = (p.guestList ?? "")
-                      .split("\n")
-                      .map((l) => l.trim())
-                      .filter((l) => l !== "");
-                    const approvedSet = new Set(p.approvedGuests);
-                    const approvedCount = lines.filter((l) =>
-                      approvedSet.has(l),
-                    ).length;
-                    return (
-                      <div
-                        key={p.id}
-                        className="rounded-md border border-line bg-paper-warm/50 px-3 py-2.5"
-                      >
-                        <div className="flex items-baseline justify-between text-[11.5px] text-ink-soft">
-                          <span className="font-semibold text-ink">
-                            {p.musician.name}
-                          </span>
-                          <span className="tabular-nums text-ink-mute">
-                            {approvedCount} / {lines.length} approved
-                          </span>
-                        </div>
-                        <div className="mt-1.5 flex flex-col gap-1">
-                          {lines.map((line, i) => (
-                            <GuestApprovalCheckbox
-                              key={`${p.id}-${i}-${line}`}
-                              personnelId={p.id}
-                              name={line}
-                              initialApproved={approvedSet.has(line)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* (1) Leader's own guests — always shown when leader is
+                    on the gig's personnel (which they usually are). */}
+                {leaderRow && (
+                  <div className="mb-4">
+                    <LeaderGuestListInput
+                      gigId={gig.id}
+                      initialValue={leaderRow.guestList}
+                    />
+                  </div>
+                )}
+
+                {/* (2) Consolidated submissions from the band. */}
+                {contributors.length === 0 ? (
+                  <p className="text-[12px] italic text-ink-mute">
+                    No band guests submitted yet. Musicians add theirs from
+                    their My gigs page.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                      {totalApproved} / {totalSubmitted} approved ·{" "}
+                      {contributors.length}{" "}
+                      {contributors.length === 1 ? "musician" : "musicians"}{" "}
+                      submitted
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {contributors.map((p) => {
+                        const lines = (p.guestList ?? "")
+                          .split("\n")
+                          .map((l) => l.trim())
+                          .filter((l) => l !== "");
+                        const approvedSet = new Set(p.approvedGuests);
+                        const approvedCount = lines.filter((l) =>
+                          approvedSet.has(l),
+                        ).length;
+                        return (
+                          <div
+                            key={p.id}
+                            className="rounded-md border border-line bg-paper-warm/50 px-3 py-2.5"
+                          >
+                            <div className="flex items-baseline justify-between text-[11.5px] text-ink-soft">
+                              <span className="font-semibold text-ink">
+                                {p.musician.name}
+                              </span>
+                              <span className="tabular-nums text-ink-mute">
+                                {approvedCount} / {lines.length} approved
+                              </span>
+                            </div>
+                            <div className="mt-1.5 flex flex-col gap-1">
+                              {lines.map((line, i) => {
+                                // Other musicians who also submitted
+                                // this name — same case-insensitive
+                                // match used to build the index.
+                                const others = (
+                                  dupeIndex.get(line.toLowerCase()) ?? []
+                                ).filter((n) => n !== p.musician.name);
+                                return (
+                                  <div
+                                    key={`${p.id}-${i}-${line}`}
+                                    className="flex flex-col"
+                                  >
+                                    <GuestApprovalCheckbox
+                                      personnelId={p.id}
+                                      name={line}
+                                      initialApproved={approvedSet.has(line)}
+                                    />
+                                    {others.length > 0 && (
+                                      <div className="mt-0.5 ml-5 text-[10.5px] italic text-warn">
+                                        also on{" "}
+                                        {others.join(", ")}
+                                        &rsquo;s list — approve only one
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {/* (3) Print door list link. Always shown if anything is
+                    approved; gives the bandleader a clean alphabetized
+                    venue-facing copy with one tap. */}
+                {totalOnDoor > 0 && (
+                  <div className="mt-4 flex items-center justify-between border-t border-line pt-3">
+                    <div className="text-[11px] text-ink-mute">
+                      <span className="font-semibold text-success">
+                        {totalOnDoor}
+                      </span>{" "}
+                      {totalOnDoor === 1 ? "name" : "names"} on the door list
+                    </div>
+                    <Link
+                      href={`/gigs/${gig.id}/guests/print`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-line-strong bg-paper px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft hover:border-accent hover:text-accent"
+                    >
+                      Print door list →
+                    </Link>
+                  </div>
+                )}
               </Section>
             );
           })()}

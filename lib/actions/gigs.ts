@@ -68,6 +68,13 @@ export async function upsertGig(id: string | null, formData: FormData) {
     attire: nullIfEmpty(formData.get("attire")),
     meal: nullIfEmpty(formData.get("meal")),
     notes: nullIfEmpty(formData.get("notes")),
+    guestListCap: (() => {
+      const raw = formData.get("guestListCap");
+      if (raw == null) return null;
+      const n = Number(String(raw).trim());
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return Math.min(Math.max(Math.floor(n), 1), 50);
+    })(),
   };
 
   if (id) {

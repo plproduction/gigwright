@@ -24,6 +24,7 @@ type GigFormData = {
   attire: string | null;
   meal: string | null;
   notes: string | null;
+  guestListCap: number | null;
   personnel: Array<{
     id: string;
     musicianId: string;
@@ -266,6 +267,21 @@ export function GigForm({
         </Field>
         <Field span3 label="Meal">
           <input name="meal" placeholder="After check · green room" defaultValue={gig?.meal ?? ""} className="input" />
+        </Field>
+
+        <Field
+          label="Guest list cap"
+          help="Per musician. Leave blank for no cap."
+        >
+          <input
+            name="guestListCap"
+            type="number"
+            min={0}
+            max={50}
+            placeholder="—"
+            defaultValue={gig?.guestListCap ?? ""}
+            className="input"
+          />
         </Field>
 
         <Field span3 label="Notes">

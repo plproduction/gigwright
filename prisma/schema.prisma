@@ -374,6 +374,14 @@ model Gig {
   lastUpdateMessage String?
   lastUpdateAt      DateTime?
 
+  // Per-musician guest-list cap for this gig. Null = no cap (musicians
+  // can add as many names as they want). Set when the venue restricts
+  // ("two per band member"). The musician's row shows "N / cap used"
+  // and the "+ Add another" link disables at the cap. The bandleader
+  // sees the cap on their gig page; it's purely advisory on the
+  // bandleader's own list since they're the one approving.
+  guestListCap Int?
+
   // QuickBooks sync state. qboSyncedAt is set every time we push this gig's
   // bills to QBO; if updatedAt > qboSyncedAt, the UI shows "Changes unsynced
   // — Re-push" state. qboSyncError caches the last push error for display.

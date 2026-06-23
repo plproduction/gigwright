@@ -67,6 +67,7 @@ export default async function MyProfilePage() {
           id: true,
           startAt: true,
           eventName: true,
+          guestListCap: true,
           venue: { select: { name: true, city: true, state: true } },
           owner: { select: { name: true, email: true } },
         },

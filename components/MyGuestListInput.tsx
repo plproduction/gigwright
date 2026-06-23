@@ -18,11 +18,17 @@ export function MyGuestListInput({
   musicianId,
   initialValue,
   approvedGuests,
+  cap,
 }: {
   gigId: string;
   musicianId: string;
   initialValue: string | null;
   approvedGuests: string[];
+  // Per-musician cap for this gig. Null = unlimited. When set, the
+  // header shows "N / cap" and the "+ Add another" link disables
+  // once the cap is reached. Server still accepts over-cap saves;
+  // this is advisory UI.
+  cap?: number | null;
 }) {
   const parseLines = (raw: string | null): string[] =>
     (raw ?? "")
@@ -107,14 +113,19 @@ export function MyGuestListInput({
           ) : justSaved ? (
             <span className="text-success">✓ Saved</span>
           ) : lineCount === 0 ? (
-            <span className="italic text-ink-mute">Auto-saved</span>
+            <span className="italic text-ink-mute">
+              {cap ? `0 / ${cap}` : "Auto-saved"}
+            </span>
           ) : (
             <span className="text-ink-soft">
               <span className="font-semibold text-success">
                 {approvedCount}
               </span>
               <span className="text-ink-mute/70"> / </span>
-              <span>{lineCount}</span>
+              <span>{cap ?? lineCount}</span>
+              {cap && lineCount > cap && (
+                <span className="ml-1 text-accent">over cap</span>
+              )}
             </span>
           )}
         </div>
@@ -211,14 +222,22 @@ export function MyGuestListInput({
           })}
         </ul>
 
-        {/* Add row — small accent link, never a heavy button. */}
-        <button
-          type="button"
-          onClick={addRow}
-          className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent underline-offset-4 hover:underline decoration-accent/40"
-        >
-          + Add another
-        </button>
+        {/* Add row — small accent link, never a heavy button. Disabled
+            once the cap is reached so the musician sees the limit
+            without having to guess. */}
+        {cap && lineCount >= cap ? (
+          <div className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+            {cap} of {cap} used — cap reached
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={addRow}
+            className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent underline-offset-4 hover:underline decoration-accent/40"
+          >
+            + Add another
+          </button>
+        )}
       </div>
     </div>
   );
