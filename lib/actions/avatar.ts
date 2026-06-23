@@ -18,15 +18,21 @@ import { requireUser } from "@/lib/session";
 // by the avatar route's token check.
 export async function setMyAvatarUrl(musicianId: string, url: string) {
   const user = await requireUser();
+  console.log(
+    `[setMyAvatarUrl] userId=${user.id} musicianId=${musicianId} urlLen=${url.length}`,
+  );
 
   const musician = await db.musician.findFirst({
     where: {
       id: musicianId,
       OR: [{ ownerId: user.id }, { userId: user.id }],
     },
-    select: { id: true, ownerId: true },
+    select: { id: true, ownerId: true, userId: true },
   });
   if (!musician) {
+    console.error(
+      `[setMyAvatarUrl] FAILED — no musician match. userId=${user.id} requestedMusicianId=${musicianId}`,
+    );
     throw new Error("Not your musician profile");
   }
 
@@ -34,6 +40,9 @@ export async function setMyAvatarUrl(musicianId: string, url: string) {
     where: { id: musician.id },
     data: { avatarUrl: url },
   });
+  console.log(
+    `[setMyAvatarUrl] ok musicianId=${musician.id} ownerId=${musician.ownerId} linkedUserId=${musician.userId}`,
+  );
 
   revalidatePath("/my-profile");
   revalidatePath(`/roster/${musicianId}/edit`);

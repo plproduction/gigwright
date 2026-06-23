@@ -45,12 +45,21 @@ export function AvatarUpload({
         clientPayload: JSON.stringify({ musicianId }),
         onUploadProgress: (e) => setProgress(Math.round(e.percentage)),
       });
-      // Persist the URL via a server action immediately instead of
-      // waiting on Vercel Blob's onUploadCompleted webhook (which was
-      // flaking on our Netlify deploy and silently leaving avatarUrl
-      // null). This makes the upload feel atomic: by the time we update
-      // the local UI state, the DB column is already set.
-      await setMyAvatarUrl(musicianId, blob.url);
+      // Persist the URL via a server action immediately. Wrap in its
+      // own try so a permission/DB failure surfaces a specific message
+      // ("could not save photo to your profile") instead of being
+      // mis-attributed to the upload itself. The blob is already in
+      // storage at this point; only the DB pointer is missing.
+      try {
+        await setMyAvatarUrl(musicianId, blob.url);
+      } catch (saveErr) {
+        const msg =
+          saveErr instanceof Error ? saveErr.message : "unknown";
+        console.error("[AvatarUpload] setMyAvatarUrl failed", saveErr);
+        setError(`Saved to storage but couldn't save to your profile: ${msg}`);
+        setProgress(null);
+        return;
+      }
       setUrl(blob.url);
       setProgress(null);
       router.refresh();
