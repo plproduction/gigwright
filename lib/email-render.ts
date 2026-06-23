@@ -110,16 +110,19 @@ export function renderText(c: Ctx): string {
   if (c.mapLink) lines.push(`   Map: ${c.mapLink}`);
   lines.push("");
 
-  // Times. The soundcheck line ALWAYS includes the explainer so musicians
-  // know what "soundcheck" means in this band's vocabulary.
+  // Times — Load In → Sound Check → Call → Downbeat → Finish. The
+  // soundcheck line always includes the explainer so musicians know
+  // what "soundcheck" means in this band's vocabulary. When soundcheck-
+  // -complete time is set, it appears as a "done by" sub-line under
+  // the same Sound check entry rather than its own row, so Call lands
+  // immediately after Sound check.
   if (c.loadIn) lines.push(`Load in:     ${c.loadIn}`);
   if (c.soundcheck) {
     lines.push(`Sound check: ${c.soundcheck}`);
     lines.push(`             (${SOUNDCHECK_EXPLAINER})`);
-  }
-  if (c.soundcheckEnd) {
-    lines.push(`Sound check complete: ${c.soundcheckEnd}`);
-    lines.push(`             (band is freed up after this time)`);
+    if (c.soundcheckEnd) {
+      lines.push(`             done by ${c.soundcheckEnd}, band is freed up`);
+    }
   }
   if (c.call) lines.push(`Call:        ${c.call}`);
   // Conditional labelling: when there's a second show, the first one
@@ -326,17 +329,21 @@ export function renderHtml(c: Ctx): string {
   };
 
   const scheduleRows: string[] = [];
+  // Order matches Patrick's preferred mental flow: Load In → Sound Check
+  // → Call → Downbeat → Finish. "Sound check complete" (band freed up)
+  // used to be its own row between Sound check and Call, which broke
+  // that flow visually. Tucked into the Sound check sub-line instead so
+  // the data is preserved without inserting an extra row.
   let isFirst = true;
   if (c.loadIn) {
     scheduleRows.push(timeRow("Load in", c.loadIn, null, { first: isFirst }));
     isFirst = false;
   }
   if (c.soundcheck) {
-    scheduleRows.push(timeRow("Sound check", c.soundcheck, SOUNDCHECK_EXPLAINER, { first: isFirst }));
-    isFirst = false;
-  }
-  if (c.soundcheckEnd) {
-    scheduleRows.push(timeRow("Sound check complete", c.soundcheckEnd, "band is freed up after this time", { first: isFirst }));
+    const sub = c.soundcheckEnd
+      ? `${SOUNDCHECK_EXPLAINER} · done by ${c.soundcheckEnd}`
+      : SOUNDCHECK_EXPLAINER;
+    scheduleRows.push(timeRow("Sound check", c.soundcheck, sub, { first: isFirst }));
     isFirst = false;
   }
   if (c.call) {

@@ -352,10 +352,14 @@ export default async function PrintableGigSheet({
           <div className="ps-h2">Schedule</div>
           <div className="ps-grid-2">
             <ScheduleRow label="Load in" time={gig.loadInAt} />
-            <ScheduleRow label="Sound check" time={gig.soundcheckAt} />
             <ScheduleRow
-              label="Check complete"
-              time={gig.soundcheckEndAt}
+              label="Sound check"
+              time={gig.soundcheckAt}
+              sub={
+                gig.soundcheckEndAt
+                  ? `done by ${formatTime(gig.soundcheckEndAt)}`
+                  : null
+              }
             />
             <ScheduleRow label="Call" time={gig.callTimeAt} />
             <ScheduleRow
@@ -516,15 +520,38 @@ function ScheduleRow({
   label,
   time,
   emphasize,
+  sub,
 }: {
   label: string;
   time: Date | null;
   emphasize?: boolean;
+  // Optional small italic sub-line under the label — used by Sound check
+  // to surface "done by HH:MM" without adding a separate row to the
+  // schedule grid.
+  sub?: string | null;
 }) {
   if (!time) return null;
   return (
     <div className="ps-row">
-      <div className="ps-label">{label}</div>
+      <div className="ps-label">
+        {label}
+        {sub && (
+          <div
+            style={{
+              fontFamily: "Georgia, serif",
+              fontSize: 10,
+              fontStyle: "italic",
+              color: "#8A8576",
+              marginTop: 2,
+              letterSpacing: 0,
+              textTransform: "none",
+              fontWeight: 400,
+            }}
+          >
+            {sub}
+          </div>
+        )}
+      </div>
       <div
         className={emphasize ? "ps-value ps-value-strong" : "ps-value"}
         style={
