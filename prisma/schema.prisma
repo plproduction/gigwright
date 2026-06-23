@@ -268,6 +268,33 @@ model Musician {
   @@index([ownerId])
 }
 
+// Queued guest-approval notification. When the bandleader toggles a
+// guest's approval state, instead of firing the email/SMS immediately
+// we upsert a row here with scheduledFor = now + 2 min. The cron-style
+// processor picks up due rows, compares pendingState to initialState,
+// fires the notification only if the net state actually changed, and
+// deletes the row. Rapid tick/untick within the 2-minute window
+// collapses to a single notification reflecting the FINAL state — no
+// barrage of texts if the bandleader corrects an error.
+model PendingGuestNotification {
+  id           String   @id @default(cuid())
+  personnelId  String
+  personnel    GigPersonnel @relation(fields: [personnelId], references: [id], onDelete: Cascade)
+  guestName    String
+  // The approval state BEFORE the first toggle in this batch. Used at
+  // send time to short-circuit "tick then untick back to the original
+  // state" — if pending matches initial, no notification fires.
+  initialState Boolean
+  // The approval state after the most recent toggle in this batch.
+  pendingState Boolean
+  scheduledFor DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([personnelId, guestName])
+  @@index([scheduledFor])
+}
+
 // Per-musician, per-gig mileage. Lives separate from GigExpense (which is
 // bandleader-scoped) so a sideman's commute to the venue is their own tax
 // record, not their leader's gig P&L. Round-trip miles only — most working
@@ -486,6 +513,7 @@ model GigPersonnel {
   // hand a single consolidated list to the venue.
   guestList          String?
   guestListUpdatedAt DateTime?
+  pendingGuestNotifications PendingGuestNotification[]
 
   // Bandleader-approved subset of the names above. Each entry is the
   // exact line string the musician typed (e.g. "Sarah Smith +1"), so

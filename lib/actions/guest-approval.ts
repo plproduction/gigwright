@@ -4,22 +4,23 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 
+// 2-minute debounce window. Bandleader has this long to undo or change
+// their mind before the email/SMS goes out. Captured here so the
+// processor and the action share the same value.
+const NOTIFY_DELAY_MS = 2 * 60 * 1000;
+
 // Toggle a single guest's approval on a GigPersonnel row. Called from
 // the bandleader's gig detail page when they tick/untick the checkbox
-// next to a guest name. Authorization: must be the gig's owner (the
-// bandleader). Musicians never call this — their input writes to
-// guestList instead, which the bandleader sees and selectively
-// approves from.
+// next to a guest name.
 //
-// The `name` is the exact line string the musician typed
-// ("Sarah Smith +1"). Storing the literal string (rather than an
-// index into guestList) keeps approvals attached to actual names
-// even when the musician edits unrelated lines.
-//
-// Side effect: when the approval state actually flips, fires a tiny
-// notification to the affected musician — email if notifyByEmail is
-// on, SMS if notifyBySms is on AND the messaging service is configured.
-// Done in the background; failure here doesn't block the DB write.
+// Side effect: instead of firing the notification right away, enqueues
+// it in PendingGuestNotification with a 2-minute delay. Rapid toggling
+// within the window updates the pendingState on the existing row but
+// preserves the original initialState — so if the bandleader ticks,
+// then unticks 30 seconds later, the row resolves to "no net change"
+// at fire time and no message is sent. Whenever an action runs, we
+// also process any due notifications inline, so consecutive toggles
+// across multiple guests drain naturally even without a cron.
 export async function toggleGuestApproval(
   personnelId: string,
   name: string,
@@ -27,34 +28,13 @@ export async function toggleGuestApproval(
 ) {
   const user = await requireUser();
 
-  // Confirm the bandleader owns the gig this personnel row belongs to.
-  // Pull enough musician + gig info to send the notification without a
-  // second round-trip.
   const personnel = await db.gigPersonnel.findFirst({
     where: { id: personnelId, gig: { ownerId: user.id } },
     select: {
       id: true,
       gigId: true,
       approvedGuests: true,
-      musician: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          notifyByEmail: true,
-          notifyBySms: true,
-          isLeader: true,
-        },
-      },
-      gig: {
-        select: {
-          startAt: true,
-          eventName: true,
-          venue: { select: { name: true } },
-          owner: { select: { name: true, email: true } },
-        },
-      },
+      musician: { select: { isLeader: true } },
     },
   });
   if (!personnel) {
@@ -64,6 +44,7 @@ export async function toggleGuestApproval(
   const trimmed = name.trim();
   if (trimmed === "") return;
 
+  const wasPreviouslyApproved = personnel.approvedGuests.includes(trimmed);
   const current = new Set(personnel.approvedGuests);
   if (approved) {
     current.add(trimmed);
@@ -76,30 +57,105 @@ export async function toggleGuestApproval(
     data: { approvedGuests: Array.from(current) },
   });
 
-  // Invalidate both the bandleader's gig page AND the musicians' own
-  // per-gig page so anyone who refreshes either side sees the latest
-  // approval state. Without the /my-gigs/[id] revalidate, the
-  // musician's cached render could keep showing "Pending" for a
-  // name the bandleader just confirmed.
   revalidatePath(`/gigs/${personnel.gigId}`);
   revalidatePath(`/my-gigs/${personnel.gigId}`);
 
-  // ── Notify the affected musician ────────────────────────────────
-  // Only when the state actually flipped (would the action have
-  // changed approvedGuests?), and only when the musician opted into
-  // notifications. Skip for leader's own rows (they're the approver,
-  // notifying themselves is noise). Failure is swallowed: never block
-  // the DB write on a flaky outbound email/SMS.
-  const wasPreviouslyApproved = personnel.approvedGuests.includes(trimmed);
-  const didFlip = wasPreviouslyApproved !== approved;
-  if (didFlip && !personnel.musician.isLeader) {
-    void notifyMusicianOfApprovalChange({
-      personnel,
-      guestName: trimmed,
-      approved,
-    }).catch((err) => {
-      console.error("[guest-approval] notification failed", err);
+  // Process any pending notifications that have come due before we
+  // enqueue this one. Cheap, and keeps a steady drumbeat of toggling
+  // resolving the queue without needing a separate cron at all.
+  void processDuePendingNotifications().catch((err) => {
+    console.error("[guest-approval] processDue failed", err);
+  });
+
+  // Skip the leader's own approvals — notifying themselves is noise.
+  if (personnel.musician.isLeader) return;
+
+  // Upsert the pending row. If one already exists (i.e. the same guest
+  // was toggled in the last 2 minutes), keep the original initialState
+  // but update pendingState to the new value. The scheduledFor stays
+  // pinned to the FIRST toggle's window, so the notification still
+  // fires 2 minutes after the first interaction — not perpetually
+  // delayed by rapid clicking.
+  const existing = await db.pendingGuestNotification.findUnique({
+    where: { personnelId_guestName: { personnelId, guestName: trimmed } },
+    select: { id: true, initialState: true, scheduledFor: true },
+  });
+  if (existing) {
+    await db.pendingGuestNotification.update({
+      where: { id: existing.id },
+      data: { pendingState: approved },
     });
+  } else {
+    await db.pendingGuestNotification.create({
+      data: {
+        personnelId,
+        guestName: trimmed,
+        initialState: wasPreviouslyApproved,
+        pendingState: approved,
+        scheduledFor: new Date(Date.now() + NOTIFY_DELAY_MS),
+      },
+    });
+  }
+}
+
+// Find and fire any pending notifications whose scheduledFor is now or
+// in the past. Skips rows where the net state didn't change (tick
+// then untick back to the original) — those rows are deleted without
+// a notification fired. Exported so the cron route and inline calls
+// can both reach it.
+export async function processDuePendingNotifications(): Promise<void> {
+  const due = await db.pendingGuestNotification.findMany({
+    where: { scheduledFor: { lte: new Date() } },
+    include: {
+      personnel: {
+        select: {
+          id: true,
+          musician: {
+            select: {
+              name: true,
+              email: true,
+              phone: true,
+              notifyByEmail: true,
+              notifyBySms: true,
+              isLeader: true,
+            },
+          },
+          gig: {
+            select: {
+              startAt: true,
+              eventName: true,
+              venue: { select: { name: true } },
+              owner: { select: { name: true, email: true } },
+            },
+          },
+        },
+      },
+    },
+    take: 50, // bounded so a backlog can't blow up one call
+  });
+
+  for (const row of due) {
+    try {
+      // Net state changed? If not, no notification.
+      const changed = row.initialState !== row.pendingState;
+      if (changed && !row.personnel.musician.isLeader) {
+        await notifyMusicianOfApprovalChange({
+          personnel: row.personnel,
+          guestName: row.guestName,
+          approved: row.pendingState,
+        });
+      }
+    } catch (err) {
+      console.error("[guest-approval] notify failed", err);
+    } finally {
+      // Always delete — leaving the row would cause repeat sends on
+      // every cron tick.
+      try {
+        await db.pendingGuestNotification.delete({ where: { id: row.id } });
+      } catch (err) {
+        console.error("[guest-approval] delete pending failed", err);
+      }
+    }
   }
 }
 
