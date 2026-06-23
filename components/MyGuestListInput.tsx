@@ -95,13 +95,13 @@ export function MyGuestListInput({
   }
 
   return (
-    <div className="overflow-hidden rounded-[12px] border border-line bg-paper shadow-[0_1px_2px_rgba(14,12,9,0.04)]">
-      {/* ── Header — eyebrow + save-state indicator ─────────────────── */}
-      <div className="flex items-center justify-between gap-3 border-b border-line bg-paper-warm/40 px-5 py-3.5">
-        <h6 className="font-serif text-[15px] font-normal tracking-tight text-ink">
+    <div className="overflow-hidden rounded-[10px] border border-line bg-paper shadow-[0_1px_2px_rgba(14,12,9,0.04)]">
+      {/* ── Header — sleek single-line: eyebrow + save state ────────── */}
+      <div className="flex items-center justify-between gap-3 border-b border-line bg-paper-warm/40 px-3.5 py-2.5">
+        <h6 className="font-serif text-[13.5px] font-normal tracking-tight text-ink">
           Your guest list
         </h6>
-        <div className="text-[11px] font-medium tabular-nums">
+        <div className="text-[10.5px] font-medium tabular-nums">
           {pending ? (
             <span className="italic text-ink-mute">Saving…</span>
           ) : justSaved ? (
@@ -112,20 +112,20 @@ export function MyGuestListInput({
             <span className="text-ink-soft">
               <span className="font-semibold text-success">
                 {approvedCount}
-              </span>{" "}
-              of {lineCount} confirmed
+              </span>
+              <span className="text-ink-mute/70"> / </span>
+              <span>{lineCount}</span>
             </span>
           )}
         </div>
       </div>
 
-      <div className="px-5 py-4">
-        <p className="mb-4 text-[12.5px] leading-[1.55] text-ink-soft">
+      <div className="px-3.5 py-3">
+        <p className="mb-3 text-[11.5px] leading-[1.5] text-ink-soft">
           Kindly provide one guest name per line, using parentheses for any
-          accompaniments (+1) or special notes. Our team will review your
-          requests shortly, updating the status below from{" "}
-          <em className="not-italic font-medium text-ink-soft">Pending</em> to{" "}
-          <em className="not-italic font-medium text-success">Confirmed</em>{" "}
+          accompaniments (+1) or special notes. We&rsquo;ll update the status
+          below from <span className="font-medium text-ink-soft">&ldquo;Pending&rdquo;</span> to{" "}
+          <span className="font-medium text-success">&ldquo;Confirmed&rdquo;</span>{" "}
           upon approval.
         </p>
 
@@ -144,7 +144,7 @@ export function MyGuestListInput({
             return (
               <li key={i}>
                 <div
-                  className={`group flex items-center gap-3 rounded-md px-1.5 py-2 transition-colors ${
+                  className={`group flex items-center gap-2.5 rounded-md px-1.5 py-1.5 transition-colors ${
                     isApproved
                       ? "bg-gold/[0.05] hover:bg-gold/[0.10]"
                       : "hover:bg-paper-warm/50"
@@ -180,15 +180,15 @@ export function MyGuestListInput({
                       }
                     }}
                     placeholder="Type a guest name…"
-                    className="min-w-0 flex-1 bg-transparent font-serif text-[14.5px] leading-tight text-ink placeholder:italic placeholder:text-ink-mute focus:outline-none"
+                    className="min-w-0 flex-1 bg-transparent font-serif text-[13.5px] leading-tight text-ink placeholder:italic placeholder:text-ink-mute focus:outline-none"
                   />
                   {trimmed !== "" &&
                     (isApproved ? (
-                      <span className="shrink-0 font-serif text-[12.5px] italic tracking-tight text-success">
+                      <span className="shrink-0 font-serif text-[11px] italic tracking-tight text-success">
                         Confirmed
                       </span>
                     ) : (
-                      <span className="shrink-0 font-serif text-[12.5px] italic tracking-tight text-ink-mute">
+                      <span className="shrink-0 font-serif text-[11px] italic tracking-tight text-ink-mute">
                         Pending
                       </span>
                     ))}
@@ -215,9 +215,9 @@ export function MyGuestListInput({
         <button
           type="button"
           onClick={addRow}
-          className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-accent underline-offset-4 hover:underline decoration-accent/40"
+          className="mt-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-accent underline-offset-4 hover:underline decoration-accent/40"
         >
-          + Add another guest
+          + Add another
         </button>
       </div>
     </div>
