@@ -338,6 +338,7 @@ export default async function MyGigDetailPage({
                 gigId={gig.id}
                 musicianId={me.musicianId}
                 initialValue={me.guestList}
+                approvedGuests={me.approvedGuests}
               />
             </Section>
           )}
