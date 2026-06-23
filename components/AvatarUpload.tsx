@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
+import { setMyAvatarUrl } from "@/lib/actions/avatar";
 
 // Photo uploader for a musician's roster card. Click or drag-drop an image.
 // Streams from the browser straight to Vercel Blob, then the API route writes
@@ -44,6 +45,12 @@ export function AvatarUpload({
         clientPayload: JSON.stringify({ musicianId }),
         onUploadProgress: (e) => setProgress(Math.round(e.percentage)),
       });
+      // Persist the URL via a server action immediately instead of
+      // waiting on Vercel Blob's onUploadCompleted webhook (which was
+      // flaking on our Netlify deploy and silently leaving avatarUrl
+      // null). This makes the upload feel atomic: by the time we update
+      // the local UI state, the DB column is already set.
+      await setMyAvatarUrl(musicianId, blob.url);
       setUrl(blob.url);
       setProgress(null);
       router.refresh();
