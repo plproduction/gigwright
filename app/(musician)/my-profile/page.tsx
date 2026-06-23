@@ -47,12 +47,14 @@ export default async function MyProfilePage({
   }
   const myIds = mine.map((m) => m.id);
 
-  // Upcoming GigPersonnel rows the musician is on — used to render the
-  // per-gig guest list section on this same page, so they don't have
-  // to navigate to /my-gigs/[id] just to fill in names. Pulls the
-  // existing guestList value so the textarea renders pre-populated.
-  // Capped to next 10 upcoming gigs to keep the page reasonable; if
-  // a musician has more they can still use /my-gigs/[id] for the rest.
+  // Upcoming GigPersonnel rows the musician is on. We show only the
+  // soonest 3 inline on /my-profile and collapse the rest behind a
+  // "View all N gigs →" link to /my-gigs. Three was chosen as the
+  // visual sweet-spot: enough for the page to feel populated, few
+  // enough that scanning is instant. We query 4 (take: 4) so we can
+  // detect "is there a 4th gig that means we should show the link"
+  // without a second count() round-trip.
+  const VISIBLE_GIGS = 3;
   const upcomingPersonnel = await db.gigPersonnel.findMany({
     where: {
       musicianId: { in: myIds },
@@ -73,8 +75,23 @@ export default async function MyProfilePage({
       },
     },
     orderBy: { gig: { startAt: "asc" } },
-    take: 10,
+    take: VISIBLE_GIGS + 1,
   });
+  const visiblePersonnel = upcomingPersonnel.slice(0, VISIBLE_GIGS);
+  const hasMore = upcomingPersonnel.length > VISIBLE_GIGS;
+  // Total count (only fetched when overflow exists, to keep the page
+  // cheap in the common case of ≤3 gigs).
+  const totalUpcoming = hasMore
+    ? await db.gigPersonnel.count({
+        where: {
+          musicianId: { in: myIds },
+          gig: {
+            startAt: { gte: new Date() },
+            status: { not: "CANCELLED" },
+          },
+        },
+      })
+    : upcomingPersonnel.length;
 
   // Use the primary bandleader's enabled methods to drive the picker. If
   // a musician is on multiple leaders' rosters and they have different
@@ -230,94 +247,130 @@ export default async function MyProfilePage({
         </div>
       </form>
 
-      {/* Upcoming gigs — clickable list. Each card links to /my-gigs/[id]
-          where the musician sees the full sheet and the per-gig Guest
-          list textarea lives. Patrick's framing: "they click into their
-          profile, then be able to click on a gig, then submit the guest
-          for the specific gig." So /my-profile shows the GATEWAY (which
-          gigs need attention) and /my-gigs/[id] is where the actual
-          typing happens. A small green dot next to the count tells the
-          musician "you've added some" vs "nothing in here yet" without
-          showing the names on this page. */}
-      <div className="mt-10 border-t border-line pt-7">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h5 className="font-serif text-[18px] font-normal tracking-tight">
+      {/* ── Your upcoming gigs ─────────────────────────────────────────
+          Refined card list. The first 3 gigs render in full; anything
+          beyond that collapses to a single "View all N gigs →" link to
+          /my-gigs. Goal: a musician with two gigs sees a clean small
+          page; a musician with twenty doesn't get a scroll-monster.
+          Cards lean into the GigWright type system — Georgia serif
+          venue, small all-caps date, accent-burgundy "→" on hover,
+          tonight badge when the gig is today.
+          ────────────────────────────────────────────────────────────── */}
+      <div className="mt-10 border-t border-line pt-8">
+        <div className="mb-2 flex items-baseline justify-between">
+          <h5 className="font-serif text-[20px] font-normal tracking-tight">
             Your upcoming gigs
           </h5>
-          <div className="text-[11px] text-ink-mute">
-            {upcomingPersonnel.length === 0
+          <div className="text-[10px] font-medium uppercase tracking-[0.18em] text-ink-mute">
+            {totalUpcoming === 0
               ? "Nothing on the books"
-              : upcomingPersonnel.length === 1
-                ? "1 upcoming gig"
-                : `${upcomingPersonnel.length} upcoming gigs`}
+              : totalUpcoming === 1
+                ? "1 gig"
+                : `${totalUpcoming} gigs`}
           </div>
         </div>
-        <p className="mb-4 text-[12.5px] leading-snug text-ink-soft">
-          Click a gig to open its sheet — venue, times, lineup, and the
-          textarea where you put your guest list for that night. Your
-          bandleader sees a consolidated guest list and approves names
-          for the venue.
+        <p className="mb-5 text-[12.5px] leading-snug text-ink-soft">
+          Tap a gig to open its sheet — venue, times, lineup, and where
+          your guest list goes for that night.
         </p>
 
-        {upcomingPersonnel.length === 0 ? (
-          <div className="rounded-md border border-dashed border-line-strong bg-paper-warm/40 p-5 text-center text-[12.5px] italic text-ink-mute">
-            You&rsquo;re not on any upcoming gigs yet. Once your bandleader
-            adds you, gigs show up here.
+        {totalUpcoming === 0 ? (
+          <div className="rounded-[10px] border border-dashed border-line-strong bg-paper-warm/40 p-8 text-center">
+            <div className="font-serif text-[15px] italic text-ink-mute">
+              You&rsquo;re not on any upcoming gigs yet.
+            </div>
+            <div className="mt-1 text-[12px] text-ink-mute">
+              When your bandleader adds you, gigs land here automatically.
+            </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            {upcomingPersonnel.map((p) => {
-              const venue = gigVenueLabel(p.gig.venue);
-              const leader =
-                p.gig.owner?.name ??
-                p.gig.owner?.email?.split("@")[0] ??
-                "Bandleader";
-              const guestCount = (p.guestList ?? "")
-                .split("\n")
-                .filter((l) => l.trim() !== "").length;
-              return (
-                <Link
-                  key={p.id}
-                  href={`/my-gigs/${p.gig.id}`}
-                  className="grid grid-cols-[56px_1fr_auto_18px] items-center gap-4 rounded-md border border-line bg-surface px-4 py-3 transition-colors hover:border-accent/40 hover:bg-paper-warm"
-                >
-                  <div className="text-center font-serif leading-none">
-                    <div className="text-[22px]">
-                      {formatDayNum(p.gig.startAt)}
+          <>
+            <div className="flex flex-col gap-2.5">
+              {visiblePersonnel.map((p) => {
+                const venue = gigVenueLabel(p.gig.venue);
+                const leader =
+                  p.gig.owner?.name ??
+                  p.gig.owner?.email?.split("@")[0] ??
+                  "Bandleader";
+                const guestCount = (p.guestList ?? "")
+                  .split("\n")
+                  .filter((l) => l.trim() !== "").length;
+                const today =
+                  new Date(p.gig.startAt).toDateString() ===
+                  new Date().toDateString();
+                return (
+                  <Link
+                    key={p.id}
+                    href={`/my-gigs/${p.gig.id}`}
+                    className={`group grid grid-cols-[64px_1fr_auto] items-center gap-5 rounded-[10px] border bg-paper px-5 py-4 transition-all hover:border-accent/40 hover:shadow-sm ${
+                      today
+                        ? "border-accent bg-paper-deep/40"
+                        : "border-line"
+                    }`}
+                  >
+                    {/* Date strip — large serif day, all-caps month */}
+                    <div className="text-center font-serif leading-none">
+                      <div className="text-[26px] font-light tracking-tight text-ink">
+                        {formatDayNum(p.gig.startAt)}
+                      </div>
+                      <div className="mt-1 font-sans text-[9.5px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
+                        {formatMonthAbbr(p.gig.startAt)}
+                      </div>
                     </div>
-                    <div className="mt-1 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-                      {formatMonthAbbr(p.gig.startAt)}
-                    </div>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate font-serif text-[15px] leading-tight">
-                      {venue.name}
+
+                    {/* Venue + event + leader */}
+                    <div className="min-w-0">
+                      <div className="truncate font-serif text-[17px] font-normal leading-tight tracking-tight text-ink">
+                        {venue.name}
+                      </div>
                       {p.gig.eventName && (
-                        <span className="ml-2 font-serif text-[12px] italic text-accent">
+                        <div className="mt-0.5 truncate font-serif text-[12.5px] italic leading-tight text-accent">
                           {p.gig.eventName}
-                        </span>
+                        </div>
                       )}
+                      <div className="mt-1.5 text-[11px] leading-tight text-ink-mute">
+                        {formatLongDate(p.gig.startAt)}{" "}
+                        <span className="text-ink-mute/60">·</span> for{" "}
+                        <span className="text-ink-soft">{leader}</span>
+                      </div>
                     </div>
-                    <div className="mt-0.5 text-[11px] text-ink-mute">
-                      {formatLongDate(p.gig.startAt)} · for {leader}
+
+                    {/* Right-side state + chevron */}
+                    <div className="flex shrink-0 items-center gap-3">
+                      <div className="text-right text-[10px] font-semibold uppercase tracking-[0.14em]">
+                        {today && (
+                          <div className="mb-1 text-accent">Tonight</div>
+                        )}
+                        {guestCount === 0 ? (
+                          <span className="text-ink-mute">+ Guest list</span>
+                        ) : (
+                          <span className="text-success">
+                            ● {guestCount}{" "}
+                            {guestCount === 1 ? "guest" : "guests"}
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-serif text-[18px] text-ink-mute transition-colors group-hover:text-accent">
+                        →
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-mute">
-                    {guestCount === 0 ? (
-                      <span>+ Add guest list</span>
-                    ) : (
-                      <span className="text-success">
-                        ● {guestCount} {guestCount === 1 ? "guest" : "guests"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right text-[14px] text-ink-mute">
-                    →
-                  </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {hasMore && (
+              <div className="mt-4 text-center">
+                <Link
+                  href="/my-gigs"
+                  className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-accent hover:underline underline-offset-4 decoration-accent/40"
+                >
+                  View all {totalUpcoming} gigs
+                  <span className="font-serif text-[14px] font-light">→</span>
                 </Link>
-              );
-            })}
-          </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
