@@ -28,9 +28,15 @@ export async function POST(
     );
   }
 
+  // Land freshly-invited musicians on /my-profile, where they set payment
+  // method, payment address, SMS opt-in, AND now their per-gig guest
+  // lists. /my-gigs is one click away from the nav and is the right page
+  // for returning visits, but the invite email's whole pitch is "log in
+  // and tell us your preferences" — so the first page after sign-in
+  // should be the preferences page, not the gig list.
   const baseUrl = process.env.AUTH_URL ?? "https://gigwright.com";
   const signInUrl = `${baseUrl}/signin?callbackUrl=${encodeURIComponent(
-    "/my-gigs",
+    "/my-profile",
   )}`;
 
   const apiKey = process.env.AUTH_RESEND_KEY;

@@ -4,6 +4,8 @@ import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { pickerOptions } from "@/lib/payment-methods";
 import { saveMyProfile } from "@/lib/actions/my-profile";
+import { MyGuestListInput } from "@/components/MyGuestListInput";
+import { formatLongDate, gigVenueLabel } from "@/lib/format";
 
 // Musician's self-serve profile page. Because a single musician email can
 // be in multiple bandleaders' rosters (same person, different leaders), we
@@ -39,6 +41,36 @@ export default async function MyProfilePage({
       </div>
     );
   }
+  const myIds = mine.map((m) => m.id);
+
+  // Upcoming GigPersonnel rows the musician is on — used to render the
+  // per-gig guest list section on this same page, so they don't have
+  // to navigate to /my-gigs/[id] just to fill in names. Pulls the
+  // existing guestList value so the textarea renders pre-populated.
+  // Capped to next 10 upcoming gigs to keep the page reasonable; if
+  // a musician has more they can still use /my-gigs/[id] for the rest.
+  const upcomingPersonnel = await db.gigPersonnel.findMany({
+    where: {
+      musicianId: { in: myIds },
+      gig: {
+        startAt: { gte: new Date() },
+        status: { not: "CANCELLED" },
+      },
+    },
+    include: {
+      gig: {
+        select: {
+          id: true,
+          startAt: true,
+          eventName: true,
+          venue: { select: { name: true, city: true, state: true } },
+          owner: { select: { name: true, email: true } },
+        },
+      },
+    },
+    orderBy: { gig: { startAt: "asc" } },
+    take: 10,
+  });
 
   // Use the primary bandleader's enabled methods to drive the picker. If
   // a musician is on multiple leaders' rosters and they have different
@@ -193,6 +225,70 @@ export default async function MyProfilePage({
           </button>
         </div>
       </form>
+
+      {/* Per-gig guest list — lives on /my-profile (not just inside each
+          gig's page) because the bandleader's invite email lands the
+          musician here. Asking them to log in, then navigate to a
+          specific gig, then scroll, is too many steps for the most
+          common ask ("who's on your list for this gig?"). One textarea
+          per upcoming gig; reuses the same MyGuestListInput component
+          that lives on /my-gigs/[id], so the data is consistent
+          wherever the musician chooses to edit. */}
+      {upcomingPersonnel.length > 0 && (
+        <div className="mt-10 border-t border-line pt-7">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h5 className="font-serif text-[18px] font-normal tracking-tight">
+              Your guest list — by gig
+            </h5>
+            <div className="text-[11px] text-ink-mute">
+              {upcomingPersonnel.length === 1
+                ? "1 upcoming gig"
+                : `${upcomingPersonnel.length} upcoming gigs`}
+            </div>
+          </div>
+          <p className="mb-4 text-[12.5px] leading-snug text-ink-soft">
+            One list per gig. The bandleader sees a consolidated list of
+            everyone&rsquo;s guests on their gig page and approves them
+            one by one for the venue.
+          </p>
+          <div className="flex flex-col gap-4">
+            {upcomingPersonnel.map((p) => {
+              const venue = gigVenueLabel(p.gig.venue);
+              const leader =
+                p.gig.owner?.name ??
+                p.gig.owner?.email?.split("@")[0] ??
+                "Bandleader";
+              return (
+                <div key={p.id}>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                    <div>
+                      <Link
+                        href={`/my-gigs/${p.gig.id}`}
+                        className="font-serif text-[14px] font-medium leading-tight hover:text-accent"
+                      >
+                        {venue.name}
+                      </Link>
+                      {p.gig.eventName && (
+                        <span className="ml-2 font-serif text-[12px] italic text-accent">
+                          {p.gig.eventName}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-ink-mute">
+                      {formatLongDate(p.gig.startAt)} · for {leader}
+                    </div>
+                  </div>
+                  <MyGuestListInput
+                    gigId={p.gig.id}
+                    musicianId={p.musicianId}
+                    initialValue={p.guestList}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Show who has me in their roster */}
       {mine.length > 1 && (
