@@ -371,8 +371,24 @@ export default async function GigDetailPage({
                       name={p.musician.name}
                     />
                     <div className="-mx-1.5 rounded-md px-1.5 py-1 hover:bg-paper-warm/70">
-                      <div className="font-serif text-[14px] font-medium underline-offset-4 hover:text-accent hover:underline decoration-accent/40">
-                        {p.musician.name}
+                      <div className="flex flex-wrap items-baseline gap-1.5">
+                        <div className="font-serif text-[14px] font-medium underline-offset-4 hover:text-accent hover:underline decoration-accent/40">
+                          {p.musician.name}
+                        </div>
+                        {/* Signed-in badge — visible on every gig page so
+                            the bandleader can scan at a glance who's set
+                            up their profile. userId is null until the
+                            musician clicks their invite link and signs
+                            in; once it's set, they're on the system. */}
+                        {p.musician.userId && (
+                          <span
+                            title="This musician has signed in and set up their profile."
+                            className="inline-flex items-center gap-1 rounded-full border border-success/40 bg-success/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-success"
+                          >
+                            <span className="h-1 w-1 rounded-full bg-success" />
+                            Signed in
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-ink-mute">
                         {p.musician.isLeader ? "Leader · " : ""}
