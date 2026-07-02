@@ -271,7 +271,7 @@ export default async function MyGigDetailPage({
                         isMe ? "font-semibold text-ink" : "text-ink-soft"
                       }`}
                     >
-                      <span>{p.musician.name.split(" ")[0]}</span>
+                      <span>{p.musician.name}</span>
                       <span className="text-[11px] text-ink-mute">
                         {p.musician.isLeader
                           ? "Leader"
