@@ -352,7 +352,7 @@ export default async function GigDetailPage({
                   key={p.id}
                   className="flex flex-col gap-1"
                 >
-                <div className="grid grid-cols-[24px_1fr_auto_auto_18px] items-center gap-2.5">
+                <div className="grid grid-cols-[24px_1fr_auto_auto_auto_18px] items-center gap-2.5">
                   {/* Avatar + name + meta are a Link to the musician's
                       edit page so the bandleader can jump to their
                       profile (send invite, change contact info, etc.)
@@ -405,6 +405,23 @@ export default async function GigDetailPage({
                   <div className="font-serif text-[14px] tabular-nums">
                     {p.musician.isLeader ? "—" : formatMoneyCents(p.payCents)}
                   </div>
+                  {/* Signed-in button on the right — matches the roster
+                      page vocabulary but positioned where the bandleader
+                      scans for status. Small green chip with a check;
+                      only renders when the musician has actually logged
+                      in (Musician.userId is set). Nothing shows for
+                      un-signed-in musicians so the column stays clean. */}
+                  {p.musician.userId ? (
+                    <span
+                      title="Signed in — this musician has logged in and set up their profile."
+                      className="inline-flex h-5 items-center gap-1 rounded-full bg-success px-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-paper"
+                    >
+                      <span className="text-[10px] leading-none">✓</span>
+                      Joined
+                    </span>
+                  ) : (
+                    <div />
+                  )}
                   {!p.musician.isLeader && (
                     <div
                       className={`h-[7px] w-[7px] rounded-full ${
