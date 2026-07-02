@@ -10,6 +10,11 @@ export default async function RosterPage() {
     where: { ownerId: user.id },
     orderBy: [{ isLeader: "desc" }, { name: "asc" }],
   });
+  // Signed-in counter so the roster header can show how many
+  // musicians have actually responded to their invite. userId gets
+  // set on a Musician row the moment they sign in with their email,
+  // so it's the cleanest "they're on the system" signal.
+  const respondedCount = musicians.filter((m) => m.userId).length;
 
   const paid = isPaid(user.plan);
   const atCap = !paid && musicians.length >= FREE_LIMITS.musicians;
@@ -23,6 +28,12 @@ export default async function RosterPage() {
           · {musicians.length}
           {!paid && ` / ${FREE_LIMITS.musicians}`} members
         </span>
+        {respondedCount > 0 && (
+          <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-success">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" />
+            {respondedCount} signed in
+          </span>
+        )}
         <div className="ml-auto flex gap-2">
           <button
             disabled
@@ -96,8 +107,12 @@ function MusicianRow({
     isLeader: boolean;
     calendarProvider: string;
     paymentMethod: string | null;
+    invitedAt: Date | null;
+    userId: string | null;
   };
 }) {
+  const hasSignedIn = !!m.userId;
+  const isInvited = !!m.invitedAt && !hasSignedIn;
   const initials =
     m.initials ?? m.name.split(/\s+/).map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
@@ -111,25 +126,49 @@ function MusicianRow({
       href={`/roster/${m.id}/edit`}
       className="group flex items-center gap-3.5 bg-surface px-6 py-3.5 transition-colors hover:bg-paper-warm/60"
     >
-      <div
-        className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-[12px] font-semibold ${
-          m.isLeader ? "bg-accent text-paper" : "bg-paper-deep text-ink-soft"
-        }`}
-      >
-        {m.avatarUrl ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={m.avatarUrl}
-            alt={m.name}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          initials
+      {/* Avatar with a small green corner check when the musician has
+          signed in — instantly readable status without the name
+          having to compete with a badge. */}
+      <div className="relative shrink-0">
+        <div
+          className={`flex h-9 w-9 items-center justify-center overflow-hidden rounded-full text-[12px] font-semibold ${
+            m.isLeader ? "bg-accent text-paper" : "bg-paper-deep text-ink-soft"
+          }`}
+        >
+          {m.avatarUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={m.avatarUrl}
+              alt={m.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            initials
+          )}
+        </div>
+        {hasSignedIn && (
+          <span
+            title="Signed in — this musician has logged in and can set their own profile"
+            className="absolute -right-0.5 -bottom-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface bg-success text-[9px] font-bold leading-none text-paper"
+          >
+            ✓
+          </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-serif text-[17px] font-medium tracking-tight">
-          {m.name}
+        <div className="flex flex-wrap items-baseline gap-2">
+          <div className="truncate font-serif text-[17px] font-medium tracking-tight">
+            {m.name}
+          </div>
+          {hasSignedIn ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-success/40 bg-success/10 px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-success">
+              Signed in
+            </span>
+          ) : isInvited ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-paper-warm px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Invited
+            </span>
+          ) : null}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1.5 text-[11px] text-ink-mute">
           {m.roles.map((r) => (
