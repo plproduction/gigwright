@@ -279,7 +279,7 @@ export default async function GigDetailPage({
           a full-width band below) to keep the vertical rhythm tight. */}
       <div className="grid grid-cols-1 lg:grid-cols-3">
         {/* ── Column 1 — WHO / WHERE ───────────────────────────────── */}
-        <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
+        <div className="border-b border-line px-6 py-8 md:px-7 md:py-9 lg:border-b-0 lg:border-r">
           {gig.venue && (
             <Section title="Venue">
               <div className="font-serif text-[17px]">{gig.venue.name}</div>
@@ -512,7 +512,7 @@ export default async function GigDetailPage({
         </div>
 
         {/* ── Column 2 — WHEN / WHAT ────────────────────────────────── */}
-        <div className="border-b border-line px-5 py-5 md:px-6 lg:border-b-0 lg:border-r">
+        <div className="border-b border-line px-6 py-8 md:px-7 md:py-9 lg:border-b-0 lg:border-r">
           <Section title="Times">
             <div className="grid grid-cols-2 gap-3">
               <TimeTile label="Load in" value={formatTime(gig.loadInAt)} />
@@ -656,7 +656,7 @@ export default async function GigDetailPage({
         </div>
 
         {/* ── Column 3 — PAPERWORK & META ───────────────────────────── */}
-        <div className="px-5 py-5 md:px-6">
+        <div className="px-6 py-8 md:px-7 md:py-9">
 
           <div className="hidden lg:block">
           <Section title="Special loading instructions">
@@ -880,59 +880,68 @@ export default async function GigDetailPage({
             );
           })()}
 
-          {/* Review past messages — accountability log. Every "Send
-              update" fanout writes an Activity row with the trigger
-              label, message body, per-channel counts, recipient list,
-              and delivery errors. This card is the entry point to
-              /gigs/[id]/messages which reads those rows back. So when
-              a musician says "I never got the message," the bandleader
-              has receipts. */}
+          {/* ── Concierge row ─────────────────────────────────────────
+              Message history + Share + Clone used to be three separate
+              Section blocks stacked in sequence, which made the column
+              feel like a widgets tray. Grouped here into one refined
+              "Gig utilities" section with a single header, so the
+              per-action treatment stays quiet but the entry points are
+              easy to find. */}
           {(() => {
             const fanoutCount = gig.activity.filter(
               (a) => a.action === "fanout_sent",
             ).length;
             return (
-              <Section title="Message history">
-                <Link
-                  href={`/gigs/${gig.id}/messages`}
-                  className="group flex items-center justify-between gap-3 rounded-[10px] border border-line bg-paper px-4 py-3 transition-colors hover:border-accent/40 hover:bg-paper-warm/70"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <div className="text-[12.5px] font-semibold text-ink">
-                      Review past messages
+              <Section title="Gig utilities">
+                <div className="flex flex-col divide-y divide-line/70 rounded-[10px] border border-line bg-paper">
+                  <Link
+                    href={`/gigs/${gig.id}/messages`}
+                    className="group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-paper-warm/60"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[12.5px] font-medium text-ink">
+                        Review past messages
+                      </div>
+                      <div className="text-[11px] leading-snug text-ink-mute">
+                        {fanoutCount === 0
+                          ? "Nothing sent yet — every update lands here."
+                          : `${fanoutCount} ${fanoutCount === 1 ? "message" : "messages"} sent · full audit trail`}
+                      </div>
                     </div>
-                    <div className="text-[11px] leading-snug text-ink-mute">
-                      {fanoutCount === 0
-                        ? "Nothing sent yet — every update will land here."
-                        : `${fanoutCount} ${fanoutCount === 1 ? "message" : "messages"} sent · full audit trail`}
+                    <span className="shrink-0 font-serif text-[15px] text-ink-mute transition-colors group-hover:text-accent">
+                      →
+                    </span>
+                  </Link>
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[12.5px] font-medium text-ink">
+                        Share gig sheet
+                      </div>
+                      <div className="text-[11px] leading-snug text-ink-mute">
+                        Public sheet link — text or email to the band.
+                      </div>
                     </div>
+                    <ShareGigButton gigId={gig.id} />
                   </div>
-                  <span className="shrink-0 font-serif text-[15px] text-ink-mute transition-colors group-hover:text-accent">
-                    →
-                  </span>
-                </Link>
+                  <div className="hidden items-center justify-between gap-3 px-4 py-3 lg:flex">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-[12.5px] font-medium text-ink">
+                        Clone this gig
+                      </div>
+                      <div className="text-[11px] leading-snug text-ink-mute">
+                        Pick a date — keeps the same venue, band, and clock
+                        times.
+                      </div>
+                    </div>
+                    <CloneGigButton
+                      gigId={gig.id}
+                      sourceStartAt={gig.startAt.toISOString().slice(0, 10)}
+                    />
+                  </div>
+                </div>
               </Section>
             );
           })()}
-
-          <Section title="Share gig sheet">
-            <ShareGigButton gigId={gig.id} />
-          </Section>
-
-          <div className="hidden lg:block">
-          <Section title="Clone this gig">
-            <div className="flex items-start gap-3">
-              <CloneGigButton
-                gigId={gig.id}
-                sourceStartAt={gig.startAt.toISOString().slice(0, 10)}
-              />
-              <span className="flex-1 text-[11px] leading-[1.45] text-ink-mute">
-                Repeat this gig? Pick a date — clone keeps the same venue,
-                band, and clock times.
-              </span>
-            </div>
-          </Section>
-          </div>
 
           <div className="hidden lg:block">
           <Section title="Activity">
@@ -1022,13 +1031,19 @@ function Section({
   title: string;
   children: React.ReactNode;
 }) {
+  // Ritz-Carlton section rhythm: generous vertical breathing room, no
+  // hard rule between sections (whitespace is the separator, not a
+  // line), and a serif title with wide tracking that reads like a
+  // menu heading rather than an admin form label. Sections in the
+  // same column now feel like chapters in a booklet, not tiles on a
+  // dashboard.
   return (
-    <div className="mb-[18px] border-b border-line pb-[18px] last:mb-0 last:border-b-0 last:pb-0">
-      <h5 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+    <section className="mb-9 last:mb-0">
+      <h5 className="mb-3 font-serif text-[11.5px] font-semibold uppercase tracking-[0.22em] text-ink-mute">
         {title}
       </h5>
       {children}
-    </div>
+    </section>
   );
 }
 
