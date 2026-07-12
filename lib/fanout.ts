@@ -374,6 +374,11 @@ export async function fanOutGigUpdate(
     }
   }
 
+  // Payload captures enough for a proper accountability audit trail:
+  // trigger label, full message body, per-channel counts, per-recipient
+  // list, and any errors. The /gigs/[id]/messages page reads these
+  // rows directly so the bandleader can prove "yes I told you, on
+  // Tuesday at 4:32 PM." Retained forever with the gig.
   await db.activity.create({
     data: {
       gigId: opts.gigId,
@@ -381,7 +386,12 @@ export async function fanOutGigUpdate(
       summary: `Emailed ${result.emailsSent} · Texted ${result.smsSent} · ${
         opts.triggerLabel ?? "update"
       }`,
-      payload: { triggerLabel: opts.triggerLabel, ...result } as object,
+      payload: {
+        triggerLabel: opts.triggerLabel ?? null,
+        message: opts.message ?? null,
+        includeLeader: !!opts.includeLeader,
+        ...result,
+      } as object,
     },
   });
 

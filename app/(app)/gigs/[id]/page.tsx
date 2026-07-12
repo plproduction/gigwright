@@ -608,10 +608,12 @@ export default async function GigDetailPage({
               initialFileName={gig.stagePlotFileName}
             />
           </Section>
-        </div>
 
-        {/* ── Column 3 — PAPERWORK & META ───────────────────────────── */}
-        <div className="px-5 py-5 md:px-6">
+          {/* Set list + Gig materials moved here from Column 3 to balance
+              the layout. These are prep artifacts that pair naturally
+              with Times / Tech / Stage plot ("what you need to bring and
+              know") — Column 3 now carries only paperwork the bandleader
+              interacts with less frequently. */}
           <Section title="Set list">
             {isPaid(user.plan) ? (
               <>
@@ -651,6 +653,10 @@ export default async function GigDetailPage({
               displayAs="link"
             />
           </Section>
+        </div>
+
+        {/* ── Column 3 — PAPERWORK & META ───────────────────────────── */}
+        <div className="px-5 py-5 md:px-6">
 
           <div className="hidden lg:block">
           <Section title="Special loading instructions">
@@ -870,6 +876,41 @@ export default async function GigDetailPage({
                     </Link>
                   </div>
                 )}
+              </Section>
+            );
+          })()}
+
+          {/* Review past messages — accountability log. Every "Send
+              update" fanout writes an Activity row with the trigger
+              label, message body, per-channel counts, recipient list,
+              and delivery errors. This card is the entry point to
+              /gigs/[id]/messages which reads those rows back. So when
+              a musician says "I never got the message," the bandleader
+              has receipts. */}
+          {(() => {
+            const fanoutCount = gig.activity.filter(
+              (a) => a.action === "fanout_sent",
+            ).length;
+            return (
+              <Section title="Message history">
+                <Link
+                  href={`/gigs/${gig.id}/messages`}
+                  className="group flex items-center justify-between gap-3 rounded-[10px] border border-line bg-paper px-4 py-3 transition-colors hover:border-accent/40 hover:bg-paper-warm/70"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <div className="text-[12.5px] font-semibold text-ink">
+                      Review past messages
+                    </div>
+                    <div className="text-[11px] leading-snug text-ink-mute">
+                      {fanoutCount === 0
+                        ? "Nothing sent yet — every update will land here."
+                        : `${fanoutCount} ${fanoutCount === 1 ? "message" : "messages"} sent · full audit trail`}
+                    </div>
+                  </div>
+                  <span className="shrink-0 font-serif text-[15px] text-ink-mute transition-colors group-hover:text-accent">
+                    →
+                  </span>
+                </Link>
               </Section>
             );
           })()}
