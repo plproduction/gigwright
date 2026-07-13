@@ -250,6 +250,28 @@ export default async function MyGigDetailPage({
               </a>
             </Section>
           )}
+
+          {(gig.roomingInfo || gig.roomingUrl) && (
+            <Section title="Rooming">
+              {gig.roomingInfo && (
+                <div className="whitespace-pre-wrap text-[13px] leading-[1.5] text-ink">
+                  {gig.roomingInfo}
+                </div>
+              )}
+              {gig.roomingUrl && (
+                <a
+                  href={gig.roomingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`block truncate text-[13px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent ${
+                    gig.roomingInfo ? "mt-2" : ""
+                  }`}
+                >
+                  🛏️ {gig.roomingFileName ?? "Open rooming list"}
+                </a>
+              )}
+            </Section>
+          )}
         </div>
 
         {/* Column 3: Who's playing + Your pay + Notes */}

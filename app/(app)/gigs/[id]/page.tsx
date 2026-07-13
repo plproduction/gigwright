@@ -8,6 +8,7 @@ import { InlineField } from "@/components/InlineField";
 import { SetlistUpload } from "@/components/SetlistUpload";
 import { LoadingMapUpload } from "@/components/LoadingMapUpload";
 import { StagePlotUpload } from "@/components/StagePlotUpload";
+import { RoomingInfo } from "@/components/RoomingInfo";
 import { ShareGigButton } from "@/components/ShareGigButton";
 import { CloneGigButton } from "@/components/CloneGigButton";
 import { ActivityList } from "@/components/ActivityList";
@@ -606,6 +607,20 @@ export default async function GigDetailPage({
               gigId={gig.id}
               initialUrl={gig.stagePlotUrl}
               initialFileName={gig.stagePlotFileName}
+            />
+          </Section>
+
+          {/* Rooming — hotel / lodging info. Text-or-PDF toggle: the leader
+              either types room assignments or uploads the tour manager's
+              rooming-list PDF. Sits right after Stage plot so the two
+              file-capable sections live together. Surfaces on the portal,
+              public sheet, print sheet, and email like the stage plot. */}
+          <Section title="Rooming">
+            <RoomingInfo
+              gigId={gig.id}
+              initialInfo={gig.roomingInfo}
+              initialUrl={gig.roomingUrl}
+              initialFileName={gig.roomingFileName}
             />
           </Section>
 

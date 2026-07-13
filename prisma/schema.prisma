@@ -381,6 +381,18 @@ model Gig {
   stagePlotUrl      String?
   stagePlotFileName String?
 
+  // Rooming / lodging info — where the band is staying and who's rooming
+  // with whom. The bandleader picks ONE of two forms per gig: typed notes
+  // (roomingInfo — "Hampton Inn, 2 queens, Patrick+Joe / Tony solo") OR an
+  // uploaded rooming-list document (roomingUrl + roomingFileName — a PDF the
+  // tour manager sent, or a photo of a printed sheet). Both fields are
+  // optional and independent, but the UI toggles between the two so only one
+  // is typically set. Rendered on the musician portal, public sheet, print
+  // sheet, and email fanout the same way stage plot / loading info are.
+  roomingInfo     String?
+  roomingUrl      String? // Vercel Blob URL for the uploaded rooming list
+  roomingFileName String? // original filename of the uploaded rooming list
+
   notes String?
 
   // Private finance notes — bandleader-only scratchpad on the Payout

@@ -526,6 +526,58 @@ export async function saveStagePlotUploaded(
   }
 }
 
+// Rooming list uploaded (PDF or image) — same client-first commit pattern as
+// saveStagePlotUploaded. The uploaded document is one of the two forms
+// rooming info can take (the other is typed roomingInfo text). Clearing is
+// done via updateGigField("roomingUrl", null), which also clears the filename.
+export async function saveRoomingUploaded(
+  gigId: string,
+  blobUrl: string,
+  fileName: string,
+) {
+  console.log(
+    `[saveRoomingUploaded] gigId=${gigId} url=${blobUrl} file=${fileName}`,
+  );
+  try {
+    const user = await requireUser();
+    const gig = await db.gig.findFirst({
+      where: { id: gigId, ownerId: user.id },
+    });
+    if (!gig) {
+      console.error(
+        `[saveRoomingUploaded] gig not found or not owned by user ${user.id}`,
+      );
+      throw new Error("Gig not found");
+    }
+
+    await db.gig.update({
+      where: { id: gigId },
+      data: { roomingUrl: blobUrl, roomingFileName: fileName },
+    });
+    await db.activity.create({
+      data: {
+        gigId,
+        action: "field_updated:roomingUrl",
+        summary: "Rooming list uploaded",
+      },
+    });
+    revalidatePath(`/gigs/${gigId}`);
+    revalidatePath(`/gigs/${gigId}/edit`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/finance`);
+    revalidatePath(`/my-gigs`);
+    revalidatePath(`/my-gigs/${gigId}`);
+    console.log(`[saveRoomingUploaded] ok gigId=${gigId}`);
+    return { ok: true } as const;
+  } catch (err) {
+    console.error(
+      `[saveRoomingUploaded] FAILED gigId=${gigId}`,
+      err instanceof Error ? err.message : err,
+    );
+    throw err;
+  }
+}
+
 export async function deleteGig(id: string) {
   const user = await requireUser();
   await db.gig.delete({ where: { id, ownerId: user.id } });
@@ -876,6 +928,9 @@ export async function updateGigField(
     | "loadingMapLink"
     | "stagePlotUrl"
     | "stagePlotFileName"
+    | "roomingInfo"
+    | "roomingUrl"
+    | "roomingFileName"
     | "privateFinanceNotes",
   value: string | null,
 ) {
@@ -894,6 +949,10 @@ export async function updateGigField(
   if (field === "stagePlotUrl" && clean === null) {
     data.stagePlotFileName = null;
   }
+  // Same for the rooming list document: clearing the URL clears the filename.
+  if (field === "roomingUrl" && clean === null) {
+    data.roomingFileName = null;
+  }
 
   await db.gig.update({ where: { id: gigId }, data });
 
@@ -908,6 +967,9 @@ export async function updateGigField(
     loadingMapLink: "Alternate map link updated",
     stagePlotUrl: "Stage plot uploaded",
     stagePlotFileName: "Stage plot filename updated",
+    roomingInfo: "Rooming info updated",
+    roomingUrl: "Rooming list uploaded",
+    roomingFileName: "Rooming list filename updated",
     privateFinanceNotes: "Private finance notes updated",
   };
   await db.activity.create({

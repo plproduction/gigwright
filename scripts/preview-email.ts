@@ -43,6 +43,10 @@ const scenarios = {
     setlistFileName: "CoasterPlayhouse-2026-05-17.pdf",
     stagePlotUrl: "https://example.com/stage-plot.pdf",
     stagePlotFileName: "CoasterPlayhouse-stage-plot.pdf",
+    roomingInfo:
+      "Hampton Inn Downtown · 2 queens · Patrick + Joe / Tony solo · check-in 3 PM",
+    roomingUrl: "https://example.com/rooming-list.pdf",
+    roomingFileName: "TourRooming-Aug.pdf",
     materialsUrl: "https://drive.google.com/drive/folders/abc123",
     notes:
       "Rooms have been reserved for those of you who have confirmed. Please double-confirm via email with me.",
@@ -80,6 +84,9 @@ const scenarios = {
     setlistFileName: null,
     stagePlotUrl: null,
     stagePlotFileName: null,
+    roomingInfo: null,
+    roomingUrl: null,
+    roomingFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [
@@ -115,6 +122,9 @@ const scenarios = {
     setlistFileName: null,
     stagePlotUrl: null,
     stagePlotFileName: null,
+    roomingInfo: null,
+    roomingUrl: null,
+    roomingFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [
@@ -148,6 +158,9 @@ const scenarios = {
     setlistFileName: null,
     stagePlotUrl: null,
     stagePlotFileName: null,
+    roomingInfo: null,
+    roomingUrl: null,
+    roomingFileName: null,
     materialsUrl: null,
     notes: null,
     lineup: [{ name: "Sample Leader", role: null, isLeader: true, phone: "(555) 555-0140", email: "leader@example.com" }],

@@ -37,6 +37,9 @@ export type Ctx = {
   setlistFileName: string | null;
   stagePlotUrl: string | null;
   stagePlotFileName: string | null;
+  roomingInfo: string | null;
+  roomingUrl: string | null;
+  roomingFileName: string | null;
   materialsUrl: string | null;
   notes: string | null;
   lineup: Array<{
@@ -150,6 +153,19 @@ export function renderText(c: Ctx): string {
     if (c.loadingMapLink) {
       if (c.loadingInfo) lines.push("");
       lines.push(`  Load-in map: ${c.loadingMapLink}`);
+    }
+  }
+
+  // Rooming — hotel / lodging. Typed notes and/or the uploaded rooming-list
+  // document. Only shown when set (most local gigs have no lodging).
+  if (c.roomingInfo || c.roomingUrl) {
+    lines.push("");
+    lines.push(`Rooming:`);
+    if (c.roomingInfo) lines.push(`  ${c.roomingInfo.replace(/\n/g, "\n  ")}`);
+    if (c.roomingUrl) {
+      if (c.roomingInfo) lines.push("");
+      lines.push(`  Rooming list: ${c.roomingFileName ?? "Open rooming list"}`);
+      lines.push(`  ${c.roomingUrl}`);
     }
   }
 
@@ -405,6 +421,33 @@ export function renderHtml(c: Ctx): string {
         </td></tr>`
       : "";
 
+  // ── Rooming — hotel / lodging ──────────────────────────────────────
+  // Typed notes and/or a link to the uploaded rooming-list document. Same
+  // warm-panel treatment as loading info. Only rendered when set (most
+  // local gigs have no lodging at all).
+  const roomingBody = [
+    c.roomingInfo
+      ? `<p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${INK};line-height:1.65;letter-spacing:0.005em;white-space:pre-wrap">${escapeHtml(c.roomingInfo)}</p>`
+      : "",
+    c.roomingUrl
+      ? `<p style="margin:${c.roomingInfo ? "14px" : "0"} 0 0"><a href="${c.roomingUrl}" style="font-family:${BODY_FONT};color:${ACCENT};font-size:11.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;border-bottom:1px solid ${ACCENT_SOFT};padding-bottom:3px">Open rooming list</a></p>`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("");
+
+  const roomingBlock =
+    c.roomingInfo || c.roomingUrl
+      ? `<tr><td style="padding:24px 40px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${PAPER_WARM};border-radius:8px">
+            <tr><td style="padding:24px 26px">
+              ${eyebrowPlain("Rooming")}
+              ${roomingBody}
+            </td></tr>
+          </table>
+        </td></tr>`
+      : "";
+
   // Dedicated Notes section. Bandleader's freeform context — parking,
   // green room, dress code clarifications, audience vibe, anything they
   // want the band to know that doesn't fit anywhere else. Rendered as
@@ -588,6 +631,7 @@ export function renderHtml(c: Ctx): string {
           ${venueRow}
           ${scheduleBlock}
           ${loadingInfoBlock}
+          ${roomingBlock}
           ${notesBlock}
           ${linksBlock}
           ${lineupBlock}

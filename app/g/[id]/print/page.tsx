@@ -68,6 +68,9 @@ export default async function PrintableGigSheet({
       meal: true,
       notes: true,
       loadingInfo: true,
+      roomingInfo: true,
+      roomingUrl: true,
+      roomingFileName: true,
       setlistUrl: true,
       stagePlotUrl: true,
       materialsUrl: true,
@@ -474,6 +477,19 @@ export default async function PrintableGigSheet({
           </div>
         )}
 
+        {/* Rooming — typed lodging notes (the uploaded document, if any,
+            prints as a URL in the Attachments block below). */}
+        {gig.roomingInfo && (
+          <div>
+            <div className="ps-h2">Rooming</div>
+            <div className="ps-row">
+              <div className="ps-value" style={{ whiteSpace: "pre-wrap" }}>
+                {gig.roomingInfo}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Notes (condensed if present) */}
         {gig.notes && (
           <div>
@@ -489,7 +505,7 @@ export default async function PrintableGigSheet({
         {/* Attachments — bottom of sheet, just URLs as text so a printed
             copy still tells you where to fetch the setlist / stage plot
             from a different device. */}
-        {(gig.setlistUrl || gig.stagePlotUrl || gig.materialsUrl) && (
+        {(gig.setlistUrl || gig.stagePlotUrl || gig.roomingUrl || gig.materialsUrl) && (
           <div>
             <div className="ps-h2">Attachments</div>
             {gig.setlistUrl && (
@@ -500,6 +516,11 @@ export default async function PrintableGigSheet({
             {gig.stagePlotUrl && (
               <div className="ps-attach">
                 Stage plot · {gig.stagePlotUrl}
+              </div>
+            )}
+            {gig.roomingUrl && (
+              <div className="ps-attach">
+                Rooming list · {gig.roomingUrl}
               </div>
             )}
             {gig.materialsUrl && (

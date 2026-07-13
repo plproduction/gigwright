@@ -85,6 +85,9 @@ export default async function PublicGigPage({
       loadingInfo: true,
       loadingMapUrl: true,
       loadingMapLink: true,
+      roomingInfo: true,
+      roomingUrl: true,
+      roomingFileName: true,
       venue: {
         select: {
           name: true,
@@ -289,6 +292,28 @@ export default async function PublicGigPage({
                 className="text-[12px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
               >
                 Alternate map ↗
+              </a>
+            )}
+          </Section>
+        )}
+
+        {/* Rooming — hotel / lodging. Text note and/or a link to the
+            uploaded rooming-list document. */}
+        {(gig.roomingInfo || gig.roomingUrl) && (
+          <Section title="Rooming">
+            {gig.roomingInfo && (
+              <div className="mb-3 whitespace-pre-wrap text-[13.5px] leading-[1.6] text-ink-soft">
+                {gig.roomingInfo}
+              </div>
+            )}
+            {gig.roomingUrl && (
+              <a
+                href={gig.roomingUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[13px] font-medium text-accent underline decoration-accent/40 underline-offset-4 hover:decoration-accent"
+              >
+                🛏️ {gig.roomingFileName ?? "Rooming list"} ↗
               </a>
             )}
           </Section>
