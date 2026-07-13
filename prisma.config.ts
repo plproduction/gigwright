@@ -55,6 +55,27 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: databaseUrl,
+    // IMPORTANT: migrations must NOT run over Neon's pooled (`-pooler`)
+    // connection. `prisma migrate deploy` takes a session-scoped Postgres
+    // advisory lock; PgBouncer (transaction mode, which the pooler uses)
+    // multiplexes sessions and can strand that lock on an idle backend.
+    // Once stranded, every later `migrate deploy` waits 10s for the lock,
+    // times out ("Timed out trying to acquire a postgres advisory lock"),
+    // and the Netlify build fails with exit code 2.
+    //
+    // Fix: run the CLI/migrate over a DIRECT (non-pooled) connection, which
+    // is session-scoped and releases the lock cleanly on process exit. The
+    // runtime Prisma Client is unaffected — it connects via the PrismaPg
+    // adapter using the pooled DATABASE_URL directly (see lib/db.ts), which
+    // is correct for serverless. Only this CLI datasource URL changes.
+    //
+    // Prefer an explicit DIRECT_URL if the operator sets one; otherwise
+    // derive the direct host from DATABASE_URL by dropping the `-pooler`
+    // segment Neon adds to pooled endpoints
+    // (…-pooler.region.aws.neon.tech → ….region.aws.neon.tech). The
+    // `.replace` is a harmless no-op on non-Neon or already-direct URLs.
+    url:
+      process.env["DIRECT_URL"] ??
+      databaseUrl.replace("-pooler.", "."),
   },
 });
