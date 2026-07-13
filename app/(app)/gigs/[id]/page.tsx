@@ -1046,14 +1046,16 @@ function Section({
   title: string;
   children: React.ReactNode;
 }) {
-  // Ritz-Carlton section rhythm: generous vertical breathing room, no
-  // hard rule between sections (whitespace is the separator, not a
-  // line), and a serif title with wide tracking that reads like a
-  // menu heading rather than an admin form label. Sections in the
-  // same column now feel like chapters in a booklet, not tiles on a
-  // dashboard.
+  // Ritz-Carlton section framing: each section sits inside its own
+  // hairline-bordered card so the page reads as a set of composed panels
+  // rather than a wall of loose text. The border is the faintest line
+  // token (10% ink), a soft 10px radius, generous internal padding, and
+  // a barely-there shadow for a whisper of lift off the paper — the
+  // letterpress-menu feel, not a dashboard tile. Because the frame now
+  // does the separating, the between-section gap tightens from the old
+  // whitespace-only rhythm. The serif title keeps its wide tracking.
   return (
-    <section className="mb-9 last:mb-0">
+    <section className="mb-4 rounded-[10px] border border-line bg-paper px-5 py-[18px] shadow-[0_1px_2px_rgb(14_12_9_/_0.03)] last:mb-0">
       <h5 className="mb-3 font-serif text-[11.5px] font-semibold uppercase tracking-[0.22em] text-ink-mute">
         {title}
       </h5>
