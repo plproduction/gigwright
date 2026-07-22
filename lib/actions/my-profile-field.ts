@@ -23,7 +23,6 @@ type EditableField =
   | "paymentMethod"
   | "payoutAddress"
   | "notifyBySms"
-  | "notifyByEmail"
   | "w9Received";
 
 const TEXT_FIELDS: ReadonlyArray<EditableField> = [
@@ -46,9 +45,10 @@ const ENUM_FIELDS: Record<string, ReadonlyArray<string>> = {
   ],
 };
 
+// notifyByEmail is intentionally NOT editable — gig-coordination email is
+// mandatory (always on). Only text (notifyBySms) is an opt-in toggle.
 const BOOLEAN_FIELDS: ReadonlyArray<EditableField> = [
   "notifyBySms",
-  "notifyByEmail",
   "w9Received",
 ];
 

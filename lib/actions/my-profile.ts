@@ -48,7 +48,11 @@ export async function saveMyProfile(formData: FormData) {
     paymentMethod,
     payoutAddress: nullIfEmpty(formData.get("payoutAddress")),
     notifyBySms: formData.get("notifyBySms") === "on",
-    notifyByEmail: formData.get("notifyByEmail") === "on",
+    // Email is the mandatory gig-coordination channel — always on, no
+    // opt-out. The form no longer renders an email toggle, so we hard-set
+    // true here rather than reading a (now absent) checkbox that would
+    // otherwise coerce to false.
+    notifyByEmail: true,
     w9Received: formData.get("w9Received") === "on",
   };
 

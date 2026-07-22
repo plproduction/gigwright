@@ -210,11 +210,15 @@ export default async function MyProfilePage() {
             label="Yes, text me gig reminders and last-minute updates"
             sub="Msg & data rates may apply. Reply STOP anytime."
           />
-          <AutoSavingCheckbox
-            field="notifyByEmail"
-            defaultChecked={primary.notifyByEmail}
-            label="Email me about changes"
-          />
+          {/* Email is the mandatory operational channel for gig
+              coordination — call times, set lists, cancellations — so
+              it's no longer opt-out-able. Shown as a static "always on"
+              note rather than a toggle. Text (above) is the only
+              optional channel. */}
+          <span className="inline-flex items-center gap-2 text-ink-mute">
+            <span className="text-[15px] leading-none text-accent">✓</span>
+            Gig-update emails are always on
+          </span>
           <AutoSavingCheckbox
             field="w9Received"
             defaultChecked={primary.w9Received}

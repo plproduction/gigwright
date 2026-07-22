@@ -35,7 +35,9 @@ function FieldStatus({
 // callsite rather than at runtime in the action.
 type TextField = "email" | "phone" | "payoutAddress";
 type SelectField = "calendarProvider" | "paymentMethod";
-type BoolField = "notifyBySms" | "notifyByEmail" | "w9Received";
+// notifyByEmail is omitted — gig-coordination email is mandatory (always
+// on), so there's no auto-saving toggle for it. Text is the only opt-in.
+type BoolField = "notifyBySms" | "w9Received";
 
 // ── Text input wrapper ─────────────────────────────────────────────
 // Auto-saves on blur. Tracks the last-saved value so we don't fire a

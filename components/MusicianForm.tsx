@@ -222,14 +222,13 @@ export function MusicianForm({
               </span>
             </span>
           </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="notifyByEmail"
-              defaultChecked={musician?.notifyByEmail ?? true}
-            />
-            <span>Notify by email</span>
-          </label>
+          {/* Email is the mandatory gig-coordination channel — no
+              opt-out. Rendered as a static note instead of a checkbox so
+              it can't be turned off. Text (above) stays optional. */}
+          <span className="flex items-center gap-2 text-ink-mute">
+            <span className="text-[15px] leading-none text-accent">✓</span>
+            <span>Gig-update emails always on</span>
+          </span>
           <label className="flex items-center gap-2">
             <input
               type="checkbox"

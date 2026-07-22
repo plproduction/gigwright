@@ -54,7 +54,10 @@ export async function upsertMusician(
       | "OTHER",
     payoutAddress: nullIfEmpty(formData.get("payoutAddress")),
     notifyBySms: formData.get("notifyBySms") === "on",
-    notifyByEmail: formData.get("notifyByEmail") === "on",
+    // Email is mandatory for gig coordination — always on, no opt-out.
+    // The roster form no longer renders an email toggle, so hard-set true
+    // rather than reading a now-absent checkbox that would coerce false.
+    notifyByEmail: true,
     notes: nullIfEmpty(formData.get("notes")),
   };
 

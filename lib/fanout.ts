@@ -168,59 +168,69 @@ export async function fanOutGigUpdate(
 
   for (const p of gig.personnel) {
     if (!opts.includeLeader && p.musician.isLeader) continue;
-    if (!p.musician.notifyByEmail) {
-      result.emailsSkipped++;
-      continue;
-    }
+
+    // ── Email — the mandatory operational channel ──────────────────
+    // Gig-coordination email is the baseline transport and is NOT
+    // opt-out-able (musician.notifyByEmail is retained as a legacy
+    // always-true column but no longer consulted here — every musician
+    // with an address on file gets the email). We only skip someone who
+    // has no email at all.
+    //
+    // CRITICAL: this block must never `continue`. Email and SMS are two
+    // independent channels; the SMS branch below has to run regardless of
+    // whether the email sent, was skipped, or errored. A `continue` here
+    // previously blackholed a musician's text whenever they were opted
+    // out of email (they fell out of the loop before the SMS branch),
+    // which is the exact bug that left opted-out members getting nothing.
     if (!p.musician.email) {
       result.emailsSkipped++;
-      continue;
-    }
-    try {
-      // Subject prefers the event name when present so the band scans
-      // "Smith Wedding" or "Patrick Lamb Quartet" rather than "The
-      // Funky Biscuit" three times in a row. Venue is still in the
-      // body — this is just inbox-line scanning.
-      const subjectHead = gig.eventName || gig.venue?.name || "Gig";
-      const subject = opts.triggerLabel
-        ? `GigWright · ${opts.triggerLabel} · ${subjectHead} ${formatDayShort(gig.startAt)}`
-        : `GigWright · ${subjectHead} ${formatDayShort(gig.startAt)}`;
-      const emailRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          from,
-          to: p.musician.email,
-          ...(replyTo ? { reply_to: replyTo } : {}),
-          subject,
-          html: renderHtml(buildCtx({
-            firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
-          })),
-          text: renderText(buildCtx({
-            firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
-          })),
-        }),
-      });
-      if (!emailRes.ok) {
-        const detail = await emailRes.text().catch(() => "");
+    } else {
+      try {
+        // Subject prefers the event name when present so the band scans
+        // "Smith Wedding" or "Patrick Lamb Quartet" rather than "The
+        // Funky Biscuit" three times in a row. Venue is still in the
+        // body — this is just inbox-line scanning.
+        const subjectHead = gig.eventName || gig.venue?.name || "Gig";
+        const subject = opts.triggerLabel
+          ? `GigWright · ${opts.triggerLabel} · ${subjectHead} ${formatDayShort(gig.startAt)}`
+          : `GigWright · ${subjectHead} ${formatDayShort(gig.startAt)}`;
+        const emailRes = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            from,
+            to: p.musician.email,
+            ...(replyTo ? { reply_to: replyTo } : {}),
+            subject,
+            html: renderHtml(buildCtx({
+              firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
+            })),
+            text: renderText(buildCtx({
+              firstName: p.musician.name.split(" ")[0] ?? p.musician.name,
+            })),
+          }),
+        });
+        if (!emailRes.ok) {
+          const detail = await emailRes.text().catch(() => "");
+          result.errors.push({
+            name: p.musician.name,
+            channel: "email",
+            message: `Resend ${emailRes.status}: ${detail.slice(0, 240)}`,
+          });
+        } else {
+          result.emailsSent++;
+          result.recipients.push(p.musician.name);
+        }
+      } catch (err) {
         result.errors.push({
           name: p.musician.name,
           channel: "email",
-          message: `Resend ${emailRes.status}: ${detail.slice(0, 240)}`,
+          message: err instanceof Error ? err.message : "unknown",
         });
-      } else {
-        result.emailsSent++;
-        result.recipients.push(p.musician.name);
       }
-    } catch (err) {
-      result.errors.push({
-        name: p.musician.name,
-        channel: "email",
-        message: err instanceof Error ? err.message : "unknown",
-      });
     }
 
     // SMS branch — sends a short text via Twilio for any musician who has
