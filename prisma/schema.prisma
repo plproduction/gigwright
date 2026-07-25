@@ -152,6 +152,33 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+// Every /signin submission that would fire a magic-link Resend send
+// gets logged here first, then rate-limited. Without this table, the
+// sign-in form is an open Resend spigot — an attacker (or dumb bot)
+// can post any email address to /api/auth/... and burn through the
+// account's daily/monthly quota. Rows are consulted by
+// auth.ts:sendVerificationRequest; anything older than the rate-limit
+// window can be pruned.
+model MagicLinkAttempt {
+  id        String   @id @default(cuid())
+  // Lower-cased. Matches sendVerificationRequest's normalization so
+  // per-email limits can't be bypassed with mixed-case dupes.
+  email     String
+  // "sent" = we passed the email to Resend. "blocked" = we short-
+  // circuited (rate limit hit, honeypot triggered, etc). Both count
+  // toward the per-email limit so a bot mashing the form can't rack
+  // up unlimited 'blocked' rows to hide real sends.
+  outcome   String
+  // Optional low-cardinality context so we can look at the log later:
+  // "signin" (form-driven), "invite" (bandleader clicked Send Login
+  // Invite from a musician's edit page), etc.
+  source    String   @default("signin")
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([createdAt])
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Gigwright domain
 // ═══════════════════════════════════════════════════════════════

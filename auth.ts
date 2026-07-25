@@ -72,6 +72,60 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return;
         }
 
+        // ── Abuse gate ──────────────────────────────────────────────
+        // /signin has no CAPTCHA. Without this, a bot POSTing random
+        // emails to /api/auth/... would trigger a Resend send for each
+        // one, burning the daily/monthly quota and torching sender
+        // reputation. Rate-limit per email address; every attempt is
+        // logged (even blocked ones) so we can watch the pattern.
+        //
+        // Limits:
+        //   • 3 sends per email per 24h  → covers the "help I mis-typed
+        //     my email" case while stopping the observed pattern of
+        //     bots hitting the same 5-6 emails hundreds of times.
+        //   • 50 total sends per hour globally → hard cap on damage
+        //     from a distributed pattern that spreads across many
+        //     emails. Legit peak usage nowhere near this.
+        //
+        // Bots don't get feedback about being blocked — we log the
+        // attempt and silently return without calling Resend. Only the
+        // 429 responses in the Netlify function log reveal the block.
+        const normalized = email.trim().toLowerCase();
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+        const PER_EMAIL_LIMIT = 3;   // per 24h
+        const GLOBAL_HOURLY_LIMIT = 50;
+
+        const [perEmailCount, globalHourlyCount] = await Promise.all([
+          db.magicLinkAttempt.count({
+            where: { email: normalized, createdAt: { gte: oneDayAgo } },
+          }),
+          db.magicLinkAttempt.count({
+            where: { outcome: "sent", createdAt: { gte: oneHourAgo } },
+          }),
+        ]);
+
+        if (perEmailCount >= PER_EMAIL_LIMIT) {
+          await db.magicLinkAttempt.create({
+            data: { email: normalized, outcome: "blocked_per_email" },
+          });
+          console.warn(
+            `[magic-link] blocked (per-email limit reached) email=${maskEmail(normalized)} count=${perEmailCount}`,
+          );
+          return;
+        }
+        if (globalHourlyCount >= GLOBAL_HOURLY_LIMIT) {
+          await db.magicLinkAttempt.create({
+            data: { email: normalized, outcome: "blocked_global_hourly" },
+          });
+          console.warn(
+            `[magic-link] blocked (global hourly cap) email=${maskEmail(normalized)} recentSent=${globalHourlyCount}`,
+          );
+          return;
+        }
+
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
@@ -96,12 +150,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           }),
         });
         if (!res.ok) {
+          // Log the failed attempt so it doesn't get double-counted
+          // toward the per-email cap next time.
+          await db.magicLinkAttempt.create({
+            data: { email: normalized, outcome: "resend_error" },
+          });
           throw new Error(`Resend failed: ${res.status} ${await res.text()}`);
         }
+        await db.magicLinkAttempt.create({
+          data: { email: normalized, outcome: "sent" },
+        });
       },
     }),
   ],
 });
+
+// Mask the local-part of an email for structured logs so Netlify function
+// logs don't dump full inboxes. "alice.smith@example.com" → "al***@example.com"
+function maskEmail(email: string): string {
+  const at = email.indexOf("@");
+  if (at < 0) return "***";
+  return email.slice(0, 2) + "***" + email.slice(at);
+}
 
 function gigwrightSignInEmail(url: string, email: string) {
   const safeUrl = escapeHtml(url);
