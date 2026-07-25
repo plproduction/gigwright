@@ -15,6 +15,15 @@ export default async function SignInPage({
 
   async function submit(formData: FormData) {
     "use server";
+    // Honeypot: real users leave `website` empty because it's hidden
+    // via CSS + labelled off-screen. Dumb bots that auto-fill every
+    // input in a form will populate it. We silently pretend the
+    // sign-in succeeded (redirect to /signin/check-email like Auth.js
+    // would) so the bot doesn't learn the field is a trap.
+    const honeypot = formData.get("website");
+    if (typeof honeypot === "string" && honeypot.trim() !== "") {
+      redirect("/signin/check-email");
+    }
     await signIn("resend", {
       email: formData.get("email"),
       redirectTo: callbackUrl || "/dashboard",
@@ -42,6 +51,31 @@ export default async function SignInPage({
         </div>
 
         <form action={submit} className="flex flex-col gap-2.5 sm:flex-row">
+          {/* Honeypot — visually hidden, tab-index removed, autocomplete
+              off. Real users never touch it; bots that auto-fill every
+              input in a form put something here and get silently sent
+              to the check-email page without triggering Resend. */}
+          <label
+            htmlFor="website"
+            style={{
+              position: "absolute",
+              left: "-10000px",
+              width: "1px",
+              height: "1px",
+              overflow: "hidden",
+            }}
+            aria-hidden="true"
+          >
+            Website (leave this empty)
+            <input
+              type="text"
+              id="website"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              defaultValue=""
+            />
+          </label>
           <input
             type="email"
             name="email"
