@@ -13,6 +13,38 @@ export function stripe(): Stripe {
       "STRIPE_SECRET_KEY is not set. Add it to the environment to enable billing.",
     );
   }
+  // Production sanity check: fail hard if a test-mode secret key was
+  // shipped to production. Exact incident this guards against: a real
+  // customer (Debbie Pierce, 2026-07-27) hit "Start trial" on the live
+  // site and got "Your card was declined... test mode, but used a non
+  // test card." Stripe silently rejects every real card when the server
+  // is holding an sk_test_... key. Fail loudly at billing init instead
+  // of letting the error surface as a card decline the customer blames
+  // on their bank.
+  if (
+    process.env.NODE_ENV === "production" &&
+    key.startsWith("sk_test_")
+  ) {
+    throw new Error(
+      "STRIPE_SECRET_KEY is a TEST-mode key (sk_test_...) but NODE_ENV is production. " +
+        "Real credit cards will be silently rejected. Update the Netlify env var to your " +
+        "sk_live_... key and redeploy before any customer sees a checkout page.",
+    );
+  }
+  // Same guard for the publishable key — a live sk with a test pk is
+  // also broken (the frontend tokenizer would 401), and easier to catch
+  // here at the same init point than in the browser bundle.
+  const pub = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  if (
+    process.env.NODE_ENV === "production" &&
+    pub &&
+    pub.startsWith("pk_test_")
+  ) {
+    throw new Error(
+      "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is a TEST-mode key (pk_test_...) but NODE_ENV is " +
+        "production. Update to pk_live_... in Netlify and redeploy.",
+    );
+  }
   _stripe = new Stripe(key, {
     // Use the SDK's default API version pinned at build time
     typescript: true,
