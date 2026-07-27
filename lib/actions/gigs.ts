@@ -390,6 +390,55 @@ export async function saveSetlistUploaded(
   }
 }
 
+// Contract upload — same client-side commit pattern as setlist, but
+// bandleader-private. Never creates an Activity row (paperwork isn't
+// something the band's activity feed needs to see) and only
+// revalidates the bandleader-only surfaces.
+export async function saveContractUploaded(
+  gigId: string,
+  blobUrl: string,
+  fileName: string,
+) {
+  console.log(
+    `[saveContractUploaded] gigId=${gigId} url=${blobUrl} file=${fileName}`,
+  );
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    select: { id: true },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  await db.gig.update({
+    where: { id: gigId },
+    data: {
+      contractUrl: blobUrl,
+      contractFileName: fileName,
+    },
+  });
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  return { ok: true } as const;
+}
+
+// Clear the uploaded contract — sets both fields to null so the
+// bandleader can re-upload a corrected version. Same auth shape.
+export async function removeContract(gigId: string) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    select: { id: true },
+  });
+  if (!gig) throw new Error("Gig not found");
+  await db.gig.update({
+    where: { id: gigId },
+    data: { contractUrl: null, contractFileName: null },
+  });
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  return { ok: true } as const;
+}
+
 // Detach the current set list from a gig. We null out the URL +
 // filename + updated-at fields so the gig goes back to the empty
 // upload state. The Blob storage object itself is left in place —

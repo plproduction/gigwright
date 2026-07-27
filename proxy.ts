@@ -34,7 +34,7 @@ export default auth(function proxy(req) {
     // the unguessable 128-bit token instead. Must be public so the
     // calendar app's polling requests land without a /signin bounce.
     pathname.startsWith("/cal/") ||
-    pathname.startsWith("/api/") || // API routes handle their own auth
+    pathname.startsWith("/api/") || // API routes handle their own auth (cron routes are secret-gated)
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     // Static verification files served from public/ (Google Search Console,

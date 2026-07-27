@@ -18,6 +18,7 @@ import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { GuestApprovalCheckbox } from "@/components/GuestApprovalCheckbox";
 import { LeaderGuestListInput } from "@/components/LeaderGuestListInput";
 import { LineupToggle } from "@/components/LineupToggle";
+import { ContractUpload } from "@/components/ContractUpload";
 import { isPaid } from "@/lib/plan";
 import {
   formatDayNum,
@@ -507,6 +508,25 @@ export default async function GigDetailPage({
             </div>
             <div className="mt-3 text-[11px] text-ink-mute">
               Full payout worksheet below &mdash; edit every line.
+            </div>
+          </Section>
+
+          {/* Client contract — bandleader-private paperwork. Sits right
+              after Money at a glance because that's where the mental
+              model puts it (deal terms, deposit, contract). Explicitly
+              labeled "Private" so it's clear to Patrick this doesn't go
+              to the band. Never rendered on the public sheet, print
+              sheet, musician portal, or the email fanout — enforced
+              by not including contractUrl in any of those select
+              queries. */}
+          <Section title="Contract (private)">
+            <ContractUpload
+              gigId={gig.id}
+              initialUrl={gig.contractUrl}
+              initialFileName={gig.contractFileName}
+            />
+            <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
+              Only you see this — never shared with the band or the venue.
             </div>
           </Section>
           </div>

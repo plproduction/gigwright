@@ -429,6 +429,15 @@ model Gig {
   // band shouldn't see.
   privateFinanceNotes String?
 
+  // Client contract for this gig — PDF uploaded by the bandleader. Same
+  // pattern as setlistUrl / stagePlotUrl (Vercel Blob URL + original
+  // filename) but explicitly private: NEVER rendered on the public gig
+  // sheet, the print sheet, the musician portal, or the email fanout.
+  // Bandleader-only so Patrick doesn't have to search through email
+  // threads / DocuSign / Dropbox for a signed venue contract on gig night.
+  contractUrl      String?
+  contractFileName String?
+
   // Last "Send update" the bandleader fired for this gig — captures the
   // headline (lastUpdateLabel) and free-form message (lastUpdateMessage)
   // that were sent in the email/SMS fanout, plus when. Rendered at the
