@@ -8,6 +8,7 @@ const NAV = [
   { label: "Gigs", href: "/dashboard", matches: ["/dashboard", "/gigs"] },
   { label: "Roster", href: "/roster", matches: ["/roster"] },
   { label: "Venues", href: "/venues", matches: ["/venues"] },
+  { label: "Producers", href: "/producers", matches: ["/producers"] },
   { label: "Finance", href: "/finance", matches: ["/finance"] },
   { label: "Settings", href: "/settings", matches: ["/settings"] },
 ];

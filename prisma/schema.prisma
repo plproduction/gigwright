@@ -90,6 +90,7 @@ model User {
   musicians Musician[]                          // as owner (bandleader's roster)
   playsAs   Musician[]  @relation("MusicianUser") // as musician (where they play)
   gigs      Gig[]
+  producers Producer[]                          // people who book this bandleader
   qbo       QboConnection?
 }
 
@@ -233,6 +234,33 @@ model Venue {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+}
+
+// Producer — a person who books this bandleader. Populated from client
+// contacts extracted from uploaded contracts, or manually. Same shape
+// as a lightweight CRM contact. Distinct from Venue.contactName because
+// the same producer books events at many different venues (booking
+// agent, wedding planner, corporate event coordinator).
+model Producer {
+  id      String  @id @default(cuid())
+  name    String
+  email   String?
+  phone   String?
+  company String?
+  notes   String?
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  gigs Gig[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  // Case-insensitive email uniqueness is enforced in application code
+  // (Prisma doesn't do citext); dedup logic in venue-producer-match.ts.
+  @@index([ownerId, email])
 }
 
 model Musician {
@@ -465,6 +493,13 @@ model Gig {
 
   venueId String?
   venue   Venue?  @relation(fields: [venueId], references: [id])
+
+  // Producer / booker — the client-side person who booked this gig.
+  // Extracted from an uploaded contract, or attached manually. Same
+  // producer can be linked to many gigs (e.g., a wedding planner who
+  // books the band six times a year).
+  producerId String?
+  producer   Producer? @relation(fields: [producerId], references: [id])
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)

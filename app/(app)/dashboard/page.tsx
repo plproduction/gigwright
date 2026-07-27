@@ -170,12 +170,21 @@ export default async function DashboardPage({
               Upgrade to add more
             </Link>
           ) : (
-            <Link
-              href="/gigs/new"
-              className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-[7px] text-[12px] font-medium text-paper hover:bg-black"
-            >
-              + New gig
-            </Link>
+            <div className="inline-flex items-center gap-2">
+              <Link
+                href="/gigs/new/from-contract"
+                className="inline-flex items-center gap-2 rounded-md border border-line bg-paper px-3 py-[7px] text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                title="Upload a signed contract to auto-fill a new gig"
+              >
+                + From contract
+              </Link>
+              <Link
+                href="/gigs/new"
+                className="inline-flex items-center gap-2 rounded-md bg-ink px-3 py-[7px] text-[12px] font-medium text-paper hover:bg-black"
+              >
+                + New gig
+              </Link>
+            </div>
           )}
         </div>
       </div>
