@@ -39,9 +39,53 @@ export const PRO_ONLY_FEATURES = {
 
 export type ProOnlyFeature = keyof typeof PRO_ONLY_FEATURES;
 
+// Length of the one and only free window a bandleader ever gets.
+// Lives here rather than in lib/stripe.ts so lib/session.ts can grant a
+// trial without pulling in the Stripe SDK on every authenticated request.
+export const TRIAL_DAYS = 14;
+
 // Has-pro check. ADMIN and PRO both count as "paid"; FREE does not.
+//
+// A bandleader inside their 14-day trial carries plan="PRO" with a
+// trialEndingAt in the future, so every existing gate keeps working
+// untouched — trialing users are treated exactly like paid users until
+// the day the trial lapses.
 export function isPaid(plan: Plan | string | null | undefined): boolean {
   return plan === "PRO" || plan === "ADMIN";
+}
+
+// There is no free tier. plan="FREE" means "the 14 days are gone and no
+// subscription was started" — a lapsed account, not a free one.
+//
+// ADMIN is always exempt. Musicians are exempt too: they never pay, and
+// they are bounced to their own portal before this is ever consulted.
+export function hasLapsed(user: {
+  role: string;
+  plan: Plan | string;
+}): boolean {
+  if (user.role === "ADMIN" || user.plan === "ADMIN") return false;
+  if (user.role === "MUSICIAN") return false;
+  return !isPaid(user.plan);
+}
+
+// True once the trial clock has run out and no subscription took over.
+// Deliberately excludes anyone holding a stripeSubscriptionId — a real
+// subscriber whose trialEndingAt is simply in the past is a PAYING
+// customer, not an expired trial, and must never be downgraded.
+export function trialIsExpired(user: {
+  plan: Plan | string;
+  trialEndingAt: Date | null;
+  stripeSubscriptionId: string | null;
+}): boolean {
+  if (user.plan !== "PRO") return false;
+  if (user.stripeSubscriptionId) return false;
+  if (!user.trialEndingAt) return false;
+  return user.trialEndingAt.getTime() <= Date.now();
+}
+
+// The moment a fresh trial should end, counted from now.
+export function trialEndFromNow(): Date {
+  return new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
 }
 
 // Throwing gate for server actions / API routes. The caller chooses

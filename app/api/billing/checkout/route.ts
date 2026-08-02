@@ -19,7 +19,11 @@ export async function POST(req: Request) {
   // already PRO/ADMIN. Without this, a stale browser tab could create
   // a second subscription on top of an existing active one, double-
   // billing the customer. Send them to the Customer Portal instead.
-  if (user.plan === "PRO" || user.plan === "ADMIN") {
+  // Refuse only if a real subscription already exists. Trialing users now
+  // carry plan="PRO" with no stripeSubscriptionId, and they are exactly
+  // the people we most want to let through to checkout — blocking them
+  // here would make the trial impossible to convert.
+  if (user.stripeSubscriptionId || user.plan === "ADMIN") {
     const origin =
       req.headers.get("origin") ??
       process.env.AUTH_URL ??
@@ -102,6 +106,18 @@ export async function POST(req: Request) {
     });
   }
 
+  // Days left on the in-app trial. Stripe wants a whole number of days
+  // and rejects 0, so anything at or below zero means "no trial, bill
+  // now". Clamped to TRIAL_DAYS so a bad trialEndingAt in the database
+  // can never hand out a longer free ride than the policy allows.
+  const msLeft = user.trialEndingAt
+    ? user.trialEndingAt.getTime() - Date.now()
+    : 0;
+  const trialDaysRemaining = Math.min(
+    TRIAL_DAYS,
+    Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000))),
+  );
+
   // Checkout session idempotency: a fresh nonce per request, but the
   // session is keyed so a double-submit (network retry, double-click)
   // returns the SAME session instead of creating two.
@@ -112,8 +128,15 @@ export async function POST(req: Request) {
       mode: "subscription",
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
+      // The 14 free days are granted in-app at signup, not here, so this
+      // must NOT hand out a second trial. Someone subscribing mid-trial
+      // keeps whatever days they have left; someone whose trial already
+      // lapsed is charged immediately. Either way the first charge lands
+      // on day 15 of their one and only free window.
       subscription_data: {
-        trial_period_days: TRIAL_DAYS,
+        ...(trialDaysRemaining > 0
+          ? { trial_period_days: trialDaysRemaining }
+          : {}),
         metadata: { gigwrightUserId: user.id, plan: plan ?? "month" },
       },
       // Customer metadata is duplicated on the Checkout session itself

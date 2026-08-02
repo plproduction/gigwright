@@ -2,12 +2,12 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { TRIAL_DAYS } from "@/lib/stripe";
-import Link from "next/link";
 
-// First-run landing after magic-link sign-in for brand-new users.
-// Offers Free (continue to app) or Pro with a monthly/yearly choice.
-// Pro → /api/billing/checkout?plan=month|year → Stripe Checkout with
-// a 14-day trial, no charge today.
+// Paywall shown once a bandleader's 14-day trial has lapsed. There is no
+// free tier, so this is a dead end until they subscribe: requireBandleader()
+// redirects every leader surface here while plan is FREE. Anyone still
+// inside their trial carries plan="PRO" and is bounced to /dashboard below,
+// so in practice only lapsed accounts ever render this page.
 export default async function WelcomePage() {
   const session = await auth();
   const email = session?.user?.email;
@@ -16,7 +16,7 @@ export default async function WelcomePage() {
   const user = await db.user.findUnique({ where: { email } });
   if (!user) redirect("/signin");
 
-  // If they already have a paid plan, skip welcome.
+  // Paid or still trialing (trial carries plan="PRO") — nothing to sell.
   if (user.plan === "PRO" || user.plan === "ADMIN") {
     redirect("/dashboard");
   }
@@ -29,45 +29,20 @@ export default async function WelcomePage() {
             Gig<em className="font-light text-accent">Wright</em>
           </div>
           <h1 className="mt-8 font-serif text-[44px] font-light leading-[1.05] tracking-tight">
-            Welcome, <em className="text-accent">{user.name ?? email.split("@")[0]}</em>.
+            Your trial has ended, <em className="text-accent">{user.name ?? email.split("@")[0]}</em>.
           </h1>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-[1.55] text-ink-soft">
-            Pick a plan to get started. You can change anytime.
+            Your {TRIAL_DAYS} free days are up. Everything you&rsquo;ve built is
+            still here — your gigs, roster, and venues are untouched, and your
+            musicians keep their portal for free. Subscribe to pick up where
+            you left off.
           </p>
         </header>
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-[1fr_1.2fr]">
-          {/* Free */}
-          <div className="rounded-[12px] border border-line bg-surface p-8">
-            <div className="font-serif text-[24px]">Free</div>
-            <div className="mt-2 flex items-baseline gap-1">
-              <span className="font-serif text-[48px] font-light tabular-nums leading-none">
-                $0
-              </span>
-              <span className="text-[13px] text-ink-mute">forever</span>
-            </div>
-            <p className="mt-4 text-[13px] text-ink-soft">
-              Great for evaluating or running a single small group.
-            </p>
-            <ul className="mt-6 space-y-2 text-[13.5px] text-ink-soft">
-              <li className="flex gap-2"><span className="text-accent">+</span> Up to 10 musicians</li>
-              <li className="flex gap-2"><span className="text-accent">+</span> Up to 5 venues</li>
-              <li className="flex gap-2"><span className="text-accent">+</span> Up to 5 active gigs</li>
-              <li className="flex gap-2"><span className="text-accent">+</span> Payout worksheet per gig</li>
-            </ul>
-            <Link
-              href="/dashboard"
-              className="mt-7 block rounded-md border border-line-strong bg-transparent px-4 py-3 text-center text-[13px] font-semibold text-ink hover:bg-paper-warm"
-            >
-              Start free
-            </Link>
-          </div>
-
-          {/* Pro — featured */}
+        <div className="mx-auto grid max-w-[620px] grid-cols-1 gap-5">
+          {/* Pro — the only plan. There is no free tier: every account gets
+              one 14-day trial at signup, and after that it's paid. */}
           <div className="relative rounded-[12px] border border-accent bg-ink p-8 text-paper">
-            <span className="absolute right-5 top-5 rounded bg-accent px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.2em] text-paper">
-              {TRIAL_DAYS}-day free trial
-            </span>
             <div className="font-serif text-[24px]">Pro</div>
             <p className="mt-2 text-[13px] text-paper/65">
               For the working pro running their own gigs.
@@ -89,7 +64,7 @@ export default async function WelcomePage() {
                   type="submit"
                   className="mt-auto w-full rounded-md border border-paper/20 bg-transparent px-4 py-3 text-[13px] font-semibold text-paper hover:bg-paper/10"
                 >
-                  Start trial · Monthly
+                  Subscribe · Monthly
                 </button>
               </form>
               <form action="/api/billing/checkout" method="POST" className="flex flex-col">
@@ -109,7 +84,7 @@ export default async function WelcomePage() {
                   type="submit"
                   className="mt-auto w-full rounded-md bg-accent px-4 py-3 text-[13px] font-semibold text-paper hover:bg-[#611B11]"
                 >
-                  Start trial · Yearly
+                  Subscribe · Yearly
                 </button>
               </form>
             </div>
@@ -125,7 +100,7 @@ export default async function WelcomePage() {
             </ul>
 
             <p className="mt-6 text-[11px] text-paper/55">
-              No charge until day {TRIAL_DAYS + 1}. Cancel anytime before the trial ends and you won&rsquo;t be billed.
+              Billing starts today — your {TRIAL_DAYS} free days are already used. Cancel anytime from Settings &rarr; Billing.
             </p>
           </div>
         </div>

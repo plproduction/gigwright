@@ -65,7 +65,10 @@ export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 export const STRIPE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
-export const TRIAL_DAYS = 14;
+// Single source of truth lives in lib/plan.ts so session code can grant a
+// trial without importing the Stripe SDK. Re-exported here for the call
+// sites that already import it from this module.
+export { TRIAL_DAYS } from "./plan";
 
 // Resolve a Stripe price ID from a plan choice coming from the UI
 // (monthly vs yearly). Defaults to monthly if input is missing or invalid.

@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import {
+  TRIAL_DAYS,
+  hasLapsed,
+  trialEndFromNow,
+  trialIsExpired,
+} from "@/lib/plan";
 
 // Resolve the current session, looking up the User row by email (since our
 // JWT strategy carries email but not the internal user ID).
@@ -19,11 +25,57 @@ export async function requireUser() {
   const email = session?.user?.email;
   if (!email) redirect("/signin");
 
+  // Every new account starts its one and only 14-day trial right here,
+  // with full Pro access and no card. There is no free tier to fall back
+  // on — when this clock runs out they either subscribe or lose access.
   const user = await db.user.upsert({
     where: { email },
     update: {},
-    create: { email },
+    create: {
+      email,
+      plan: "PRO",
+      trialEndingAt: trialEndFromNow(),
+    },
   });
+
+  // Legacy accounts predate the trial model — they sit on the old free
+  // tier with no trialEndingAt at all. Rather than a one-off migration
+  // (which would have handed them Pro access in the window between the
+  // data change and this code shipping), adopt them on read: their 14
+  // days are measured from the day they signed up, so nobody gets extra
+  // free time and nobody who joined this week is locked out mid-session.
+  // Someone who signed up months ago simply lands already-expired and
+  // falls straight through to the paywall below.
+  if (
+    !user.trialEndingAt &&
+    !user.stripeSubscriptionId &&
+    user.plan === "FREE" &&
+    user.role !== "ADMIN"
+  ) {
+    const end = new Date(
+      user.createdAt.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const stillRunning = end.getTime() > Date.now();
+    await db.user.update({
+      where: { id: user.id },
+      data: { trialEndingAt: end, ...(stillRunning ? { plan: "PRO" } : {}) },
+    });
+    user.trialEndingAt = end;
+    if (stillRunning) user.plan = "PRO";
+  }
+
+  // Lazy trial expiry. There is no scheduler in this app, so the clock is
+  // enforced on read: the first authenticated request after trialEndingAt
+  // passes flips the account to FREE (= lapsed). trialIsExpired() ignores
+  // anyone holding a stripeSubscriptionId, so a real paying customer whose
+  // trial converted normally is never touched by this.
+  if (trialIsExpired(user)) {
+    await db.user.update({
+      where: { id: user.id },
+      data: { plan: "FREE" },
+    });
+    user.plan = "FREE";
+  }
 
   // Auto-link to any Musician rows whose email matches this user but
   // whose userId is null (hasn't been linked yet). If we find any, also
@@ -72,6 +124,12 @@ export async function requireUser() {
 export async function requireBandleader() {
   const user = await requireUser();
   if (user.role === "MUSICIAN") redirect("/my-gigs");
+  // Paywall. A bandleader whose 14 days ran out without subscribing can
+  // no longer reach any leader surface — /welcome is the upgrade page.
+  // Musicians never hit this (they were bounced one line above) and
+  // ADMIN is exempt, so the band keeps working for free regardless of
+  // whether their leader is paying.
+  if (hasLapsed(user)) redirect("/welcome");
   return user;
 }
 
