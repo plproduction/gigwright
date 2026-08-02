@@ -184,7 +184,7 @@ function Hero() {
             </a>
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px] text-ink-mute">
-            <span>No card required</span>
+            <span>No charge for 14 days</span>
             <span className="text-line-strong">·</span>
             <span>Cancel anytime</span>
             <span className="text-line-strong">·</span>
@@ -667,7 +667,8 @@ function CtaBand() {
           Stop running your gigs out of <em className="font-light text-accent-soft">email and group texts</em>.
         </h2>
         <p className="mb-8 text-[16px] text-paper/70">
-          14-day free trial. No card required. Your musicians never pay.
+          14-day free trial. No charge until day 15 — cancel anytime before
+          then and you won&rsquo;t be billed. Your musicians never pay.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link

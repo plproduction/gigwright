@@ -94,8 +94,9 @@ export default async function SignInPage({
         </form>
 
         <p className="mt-5 text-center text-[11.5px] text-ink-mute">
-          New here? You&rsquo;ll pick Free or start a 14-day Pro trial after
-          you verify your email. No card required to start.
+          New here? Verify your email first, then pick Free or start a 14-day
+          Pro trial. Free never needs a card. The Pro trial takes one and
+          charges nothing for 14 days.
         </p>
       </section>
 

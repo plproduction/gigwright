@@ -258,7 +258,7 @@ export default async function BillingPage({
               "QuickBooks sync",
               "PDF gig sheets",
             ]}
-            trialLine={`${TRIAL_DAYS}-day free trial. No credit card needed to start.`}
+            trialLine={`${TRIAL_DAYS}-day free trial. Card on file, nothing charged until day ${TRIAL_DAYS + 1}.`}
           />
         </div>
       )}

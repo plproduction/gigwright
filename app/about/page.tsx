@@ -86,7 +86,7 @@ export default function AboutPage() {
             <span className="font-serif text-[16px] font-light opacity-85">→</span>
           </Link>
           <p className="mt-3 text-[12px] text-ink-mute">
-            No credit card required.
+            No charge until day 15. Cancel anytime before then.
           </p>
         </div>
       </main>
