@@ -29,13 +29,16 @@ export default async function WelcomePage() {
             Gig<em className="font-light text-accent">Wright</em>
           </div>
           <h1 className="mt-8 font-serif text-[44px] font-light leading-[1.05] tracking-tight">
-            Your trial has ended, <em className="text-accent">{user.name ?? email.split("@")[0]}</em>.
+            I hope you enjoyed it, <em className="text-accent">{user.name ?? email.split("@")[0]}</em>.
           </h1>
           <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-[1.55] text-ink-soft">
-            Your {TRIAL_DAYS} free days are up. Everything you&rsquo;ve built is
-            still here — your gigs, roster, and venues are untouched, and your
-            musicians keep their portal for free. Subscribe to pick up where
-            you left off.
+            Your {TRIAL_DAYS} days are up. If GigWright has been useful for
+            running your gigs, I&rsquo;d love to have you keep going.
+          </p>
+          <p className="mx-auto mt-3 max-w-[520px] text-[14px] leading-[1.55] text-ink-soft">
+            Nothing has been deleted — your gigs, your roster, and your venues
+            are all exactly where you left them, and your musicians keep their
+            portal free either way.
           </p>
         </header>
 
@@ -100,7 +103,7 @@ export default async function WelcomePage() {
             </ul>
 
             <p className="mt-6 text-[11px] text-paper/55">
-              Billing starts today — your {TRIAL_DAYS} free days are already used. Cancel anytime from Settings &rarr; Billing.
+              Billing starts today, since your {TRIAL_DAYS} free days are already used. Cancel anytime from Settings &rarr; Billing — and thanks for giving it a run. &mdash; Patrick
             </p>
           </div>
         </div>
