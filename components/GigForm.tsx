@@ -3,6 +3,7 @@ import { upsertGig, deleteGig, addPersonnel, removePersonnel, updatePersonnelPay
 import { PersonnelPayEdit } from "@/components/PersonnelPayEdit";
 import { DeleteGigButton } from "@/components/DeleteGigButton";
 import { OptionalTimeInput } from "@/components/OptionalTimeInput";
+import { GigFormSubmit } from "@/components/GigFormSubmit";
 
 type GigFormData = {
   id: string;
@@ -83,12 +84,10 @@ export function GigForm({
             >
               Cancel
             </Link>
-            <button
-              type="submit"
+            <GigFormSubmit
+              idleLabel={isEdit ? "Save gig" : "Create gig"}
               className="rounded-md bg-accent px-4 py-2 text-[12.5px] font-semibold text-paper hover:bg-[#611B11]"
-            >
-              {isEdit ? "Save gig" : "Create gig"}
-            </button>
+            />
           </div>
         </div>
 
@@ -128,8 +127,8 @@ export function GigForm({
         <Field label="Date" required>
           <input type="date" name="date" required defaultValue={dateDefault} className="input" />
         </Field>
-        <Field label="Downbeat" required>
-          <input type="time" name="startTime" required defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
+        <Field label="Downbeat" help="leave blank for a placeholder gig — defaults to 8pm, edit later">
+          <input type="time" name="startTime" defaultValue={gig ? toTimeInput(gig.startAt) : ""} className="input" />
         </Field>
         <Field label="Finish time" help="when the gig ends — leave blank if open-ended">
           <OptionalTimeInput name="endTime" defaultValue={gig ? toTimeInputOpt(gig.endAt) : ""} />
@@ -289,9 +288,10 @@ export function GigForm({
         </Field>
 
         <div className="col-span-3 flex items-center gap-2 pt-4">
-          <button type="submit" className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-paper hover:bg-[#611B11]">
-            {isEdit ? "Save gig" : "Create gig"}
-          </button>
+          <GigFormSubmit
+            idleLabel={isEdit ? "Save gig" : "Create gig"}
+            className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-paper hover:bg-[#611B11]"
+          />
           <Link href={isEdit ? `/gigs/${gig!.id}` : "/dashboard"} className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-ink hover:bg-paper-warm">
             Cancel
           </Link>

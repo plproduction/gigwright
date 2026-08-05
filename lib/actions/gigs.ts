@@ -25,9 +25,12 @@ export async function upsertGig(id: string | null, formData: FormData) {
   const dateStr = String(formData.get("date") ?? "").trim();
   if (!dateStr) throw new Error("Date is required");
 
-  const startTime = String(formData.get("startTime") ?? "").trim();
-  if (!startTime) throw new Error("Downbeat time is required");
-
+  // Downbeat time is optional now — Patrick wanted to be able to drop
+  // in just a name + date for placeholder gigs (e.g., "Debbie's Wedding
+  // — Aug 22") without committing to a downbeat until the details come
+  // in. Blank time defaults to 8pm, which is a plausible default for
+  // most working gigs and easy to spot as "not yet set" on the sheet.
+  const startTime = String(formData.get("startTime") ?? "").trim() || "20:00";
   const startAt = combineDateTime(dateStr, startTime);
   const loadInAt = combineOptionalTime(dateStr, formData.get("loadInTime"));
   const soundcheckAt = combineOptionalTime(dateStr, formData.get("soundcheckTime"));
