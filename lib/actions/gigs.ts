@@ -115,11 +115,33 @@ export async function upsertGig(id: string | null, formData: FormData) {
     revalidatePath("/dashboard");
     redirect(`/gigs/${id}`);
   } else {
-    // For new gigs, also add the current user as the leader personnel if they
-    // have a "Leader" musician in their roster.
-    const leader = await db.musician.findFirst({
-      where: { ownerId: user.id, isLeader: true },
-    });
+    // For new gigs, seed the personnel section with:
+    //   1. The bandleader themselves (isLeader=true musician), if any
+    //   2. All "My Crew" members (isCrew=true), auto-populated per
+    //      Patrick's design 2026-08-06: "her new event will populate
+    //      her crew for the next event."
+    // Deduped in code so the leader isn't added twice if they're also
+    // isCrew (which is common — most bandleaders keep themselves in
+    // their own crew).
+    const [leader, crew] = await Promise.all([
+      db.musician.findFirst({
+        where: { ownerId: user.id, isLeader: true },
+        select: { id: true },
+      }),
+      db.musician.findMany({
+        where: { ownerId: user.id, isCrew: true },
+        orderBy: [{ isLeader: "desc" }, { name: "asc" }],
+        select: { id: true },
+      }),
+    ]);
+    const seedIds = new Set<string>();
+    if (leader) seedIds.add(leader.id);
+    for (const m of crew) seedIds.add(m.id);
+    const personnelSeed = Array.from(seedIds).map((id, i) => ({
+      musicianId: id,
+      payCents: 0,
+      position: i,
+    }));
 
     // Recurrence inputs from the form. Empty / "NONE" / count<=1 means a
     // one-off gig — same single-create behavior as before. Any other
@@ -138,11 +160,10 @@ export async function upsertGig(id: string | null, formData: FormData) {
       data: {
         ...data,
         ownerId: user.id,
-        personnel: leader
-          ? {
-              create: [{ musicianId: leader.id, payCents: 0, position: 0 }],
-            }
-          : undefined,
+        personnel:
+          personnelSeed.length > 0
+            ? { create: personnelSeed }
+            : undefined,
       },
     });
     await db.activity.create({
@@ -681,6 +702,92 @@ export async function addPersonnel(
   revalidatePath(`/finance`);
   revalidatePath(`/my-gigs`);
   redirect(`/gigs/${gigId}/edit`);
+}
+
+// Adds every Crew member (isCrew=true on the roster) to this gig's
+// personnel, skipping anyone already assigned. Pay defaults to $0 —
+// bandleader dials it in per-gig on the row that appears. Called from
+// the "Load My Crew" button on the gig edit page.
+export async function loadCrewIntoGig(gigId: string) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    select: { id: true },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  const [crew, alreadyOnGig, startPos] = await Promise.all([
+    db.musician.findMany({
+      where: { ownerId: user.id, isCrew: true },
+      orderBy: [{ isLeader: "desc" }, { name: "asc" }],
+      select: { id: true },
+    }),
+    db.gigPersonnel.findMany({
+      where: { gigId },
+      select: { musicianId: true },
+    }),
+    db.gigPersonnel.count({ where: { gigId } }),
+  ]);
+  const already = new Set(alreadyOnGig.map((p) => p.musicianId));
+  const toAdd = crew.filter((m) => !already.has(m.id));
+  if (toAdd.length === 0) {
+    return { ok: true, added: 0 } as const;
+  }
+
+  await db.$transaction(
+    toAdd.map((m, i) =>
+      db.gigPersonnel.create({
+        data: {
+          gigId,
+          musicianId: m.id,
+          payCents: 0,
+          position: startPos + i,
+        },
+      }),
+    ),
+  );
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "personnel_added",
+      summary: `Loaded My Crew (${toAdd.length} musician${toAdd.length === 1 ? "" : "s"})`,
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath(`/dashboard`);
+  revalidatePath(`/my-gigs`);
+  return { ok: true, added: toAdd.length } as const;
+}
+
+// Snapshots the current gig's personnel list as the bandleader's new
+// "My Crew" — everyone on the gig gets isCrew=true; everyone else on
+// the roster gets isCrew=false. Called from the "Save this lineup as
+// My Crew" button on the gig edit page.
+export async function saveCurrentGigAsCrew(gigId: string) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    include: { personnel: { select: { musicianId: true } } },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  const musicianIds = gig.personnel.map((p) => p.musicianId);
+  await db.$transaction([
+    db.musician.updateMany({
+      where: { ownerId: user.id, isCrew: true },
+      data: { isCrew: false },
+    }),
+    db.musician.updateMany({
+      where: { id: { in: musicianIds }, ownerId: user.id },
+      data: { isCrew: true },
+    }),
+  ]);
+
+  revalidatePath("/roster");
+  revalidatePath(`/gigs/${gigId}/edit`);
+  return { ok: true, count: musicianIds.length } as const;
 }
 
 // Update a personnel row's pay in place. Lets the bandleader dial in a

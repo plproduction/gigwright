@@ -4,6 +4,7 @@ import { PersonnelPayEdit } from "@/components/PersonnelPayEdit";
 import { DeleteGigButton } from "@/components/DeleteGigButton";
 import { OptionalTimeInput } from "@/components/OptionalTimeInput";
 import { GigFormSubmit } from "@/components/GigFormSubmit";
+import { CrewControls } from "@/components/CrewControls";
 
 type GigFormData = {
   id: string;
@@ -41,10 +42,17 @@ export function GigForm({
   gig,
   venues,
   musicians,
+  currentCrewCount = 0,
 }: {
   gig: GigFormData;
   venues: Venue[];
   musicians: Musician[];
+  // How many musicians are currently marked isCrew=true on this
+  // bandleader's roster. Rendered as context on the CrewControls
+  // component so the bandleader knows what "Save this lineup as My
+  // Crew" would overwrite. Only meaningful on the edit page; the new
+  // gig page defaults to 0.
+  currentCrewCount?: number;
 }) {
   const isEdit = gig != null;
   const upsert = upsertGig.bind(null, gig?.id ?? null);
@@ -382,8 +390,22 @@ export function GigForm({
                 <button type="submit" className="rounded-md bg-ink px-3 py-2 text-[13px] font-medium text-paper hover:bg-black">
                   + Add
                 </button>
+                {/* Note: the closing </form> for this Add block is a
+                    few lines below. The CrewControls twin-button
+                    (Load / Save as Crew) is rendered AFTER the </form>
+                    below, still within the personnel section. */}
               </form>
             )}
+            {/* Crew controls: Load My Crew adds every isCrew=true
+                musician to this gig (skipping any already on it); Save
+                as My Crew snapshots the current lineup as the default.
+                Sits at the bottom of personnel so it doesn't compete
+                visually with per-musician editing above. */}
+            <CrewControls
+              gigId={gig!.id}
+              personnelCount={gig!.personnel.length}
+              currentCrewCount={currentCrewCount}
+            />
           </div>
 
           {/* Danger zone — delete is destructive and irreversible, so it

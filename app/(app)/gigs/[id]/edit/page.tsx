@@ -11,7 +11,7 @@ export default async function EditGigPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const [gig, venues, musicians] = await Promise.all([
+  const [gig, venues, musicians, currentCrewCount] = await Promise.all([
     db.gig.findFirst({
       where: { id, ownerId: user.id },
       include: {
@@ -26,8 +26,16 @@ export default async function EditGigPage({
       where: { ownerId: user.id },
       orderBy: [{ isLeader: "desc" }, { name: "asc" }],
     }),
+    db.musician.count({ where: { ownerId: user.id, isCrew: true } }),
   ]);
   if (!gig) notFound();
 
-  return <GigForm gig={gig} venues={venues} musicians={musicians} />;
+  return (
+    <GigForm
+      gig={gig}
+      venues={venues}
+      musicians={musicians}
+      currentCrewCount={currentCrewCount}
+    />
+  );
 }

@@ -282,6 +282,13 @@ model Musician {
 
   isLeader Boolean @default(false)
 
+  // "My Crew" flag — this musician is in the bandleader's default
+  // lineup and pre-fills any new gig's personnel section when the
+  // bandleader clicks "Load My Crew." Managed exclusively through the
+  // gig form ("Save this lineup as My Crew" button); intentionally no
+  // roster-page toggle, per Patrick's design 2026-08-06.
+  isCrew   Boolean @default(false)
+
   calendarProvider CalendarProvider @default(NONE)
   paymentMethod    PaymentMethod?
 
