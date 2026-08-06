@@ -40,7 +40,18 @@ export async function POST(
   )}`;
 
   const apiKey = process.env.AUTH_RESEND_KEY;
-  const fallbackFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  // Extract just the bare email address from EMAIL_FROM. The env var
+  // may be set as either a bare address ("gigs@gigwright.com") or as
+  // a display-name-with-address ('"Patrick Lamb" <gigs@gigwright.com>'
+  // or 'Patrick Lamb <gigs@gigwright.com>'). We're about to wrap it in
+  // our own display-name construct below, so we need the address alone
+  // — otherwise the final `from` header is nested-angle-brackets
+  // garbage that Resend rejects with a 422 validation_error. This is
+  // exactly the bug Debbie Pierce hit on 2026-08-06 trying to invite
+  // her sax player Ezo Hernandez.
+  const emailFromRaw = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const fallbackFrom =
+    emailFromRaw.match(/<([^>]+)>/)?.[1]?.trim() ?? emailFromRaw.trim();
 
   // Match the deliverability pattern used by the gig-fanout sender so
   // invites land in inbox, not spam. Two specific moves:
