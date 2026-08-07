@@ -405,6 +405,9 @@ export function GigForm({
               gigId={gig!.id}
               personnelCount={gig!.personnel.length}
               currentCrewCount={currentCrewCount}
+              hasNonLeaderPersonnel={gig!.personnel.some(
+                (p) => !p.musician.isLeader,
+              )}
             />
           </div>
 

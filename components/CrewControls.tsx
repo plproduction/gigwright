@@ -17,15 +17,29 @@ export function CrewControls({
   gigId,
   personnelCount,
   currentCrewCount,
+  hasNonLeaderPersonnel,
 }: {
   gigId: string;
   personnelCount: number;
   currentCrewCount: number;
+  // True when the gig already has real sidemen assigned (anyone
+  // other than the bandleader themselves). If true, we DISABLE
+  // Load My Crew — an accidental click would pollute a carefully-
+  // curated wedding/corporate lineup with extra Crew members the
+  // bandleader deliberately excluded. Patrick's rule 2026-08-06.
+  // Save-as-Crew stays enabled — that's always a deliberate act.
+  hasNonLeaderPersonnel: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
   function loadCrew() {
+    if (hasNonLeaderPersonnel) {
+      alert(
+        "This gig already has musicians assigned. Remove them first if you want to reset the lineup from your Crew — this guardrail is here so a stray click can't pollute a curated lineup.",
+      );
+      return;
+    }
     startTransition(async () => {
       const res = await loadCrewIntoGig(gigId);
       router.refresh();
@@ -63,9 +77,13 @@ export function CrewControls({
       <button
         type="button"
         onClick={loadCrew}
-        disabled={pending}
-        className="rounded border border-line-strong bg-paper px-3 py-1.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
-        title="Add every Crew member to this gig, skipping anyone already assigned"
+        disabled={pending || hasNonLeaderPersonnel}
+        className="rounded border border-line-strong bg-paper px-3 py-1.5 text-[12px] font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line-strong disabled:hover:text-ink"
+        title={
+          hasNonLeaderPersonnel
+            ? "Disabled: this gig already has musicians assigned. Remove them first if you want to load Crew from scratch."
+            : "Add every Crew member to this gig"
+        }
       >
         {pending ? "…" : "⭐ Load My Crew"}
       </button>
