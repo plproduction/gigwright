@@ -1027,6 +1027,11 @@ export default async function GigDetailPage({
             // haven't set a method" workflow at the moment of action.
             email: p.musician.email ?? null,
             invitedAt: p.musician.invitedAt ?? null,
+            // Per-gig Accept/Decline invite state — feeds the
+            // GigInviteButton in each worksheet row.
+            gigInvitedAt: p.invitedAt ?? null,
+            gigInviteResponse: p.response ?? null,
+            gigInviteRespondedAt: p.respondedAt ?? null,
           }))}
           expenses={gig.expenses.map((e) => ({
             id: e.id,

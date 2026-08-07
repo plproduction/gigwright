@@ -6,6 +6,7 @@ import { savePayout, updateGigClientPay } from "@/lib/actions/gigs";
 import { PayAction } from "@/components/PayAction";
 import { MarkAllPaidButton } from "@/components/MarkAllPaidButton";
 import { MarkPaidChip } from "@/components/MarkPaidChip";
+import { GigInviteButton } from "@/components/GigInviteButton";
 import { InlineField } from "@/components/InlineField";
 import {
   IRS_MILEAGE_RATE_USD,
@@ -30,12 +31,20 @@ type PersonnelIn = {
   payoutAddress?: string | null;
   payCents: number;
   paidAt: Date | null;
-  // Email + invite history are pulled through so the worksheet row can
-  // surface a "Send invite" link inline for musicians the bandleader
-  // hasn't onboarded yet — handy for the "you owe Joe but he hasn't set
-  // a payment method" workflow. Optional so older callers still compile.
+  // Email + roster-login invite history — the worksheet row surfaces
+  // a "Send login invite" link inline for musicians who don't yet have
+  // a portal login (separate flow from the per-gig Accept/Decline
+  // invite tracked below). Optional so older callers still compile.
   email?: string | null;
   invitedAt?: Date | null;
+  // Per-gig Accept/Decline invite tracking — Patrick 2026-08-06.
+  // gigInvitedAt = when the bandleader hit "Invite" on this row;
+  // gigInviteResponse = "accepted" | "declined" | null;
+  // gigInviteRespondedAt = when the musician clicked accept/decline
+  // in their email.
+  gigInvitedAt?: Date | null;
+  gigInviteResponse?: string | null;
+  gigInviteRespondedAt?: Date | null;
 };
 
 type ExpenseKindT =
@@ -72,6 +81,11 @@ type Row = {
   // links (Invite only shown when email present and not yet invited).
   email?: string | null;
   invitedAt?: Date | null;
+  // Per-gig Accept/Decline invite state, threaded through so the
+  // GigInviteButton in each row can render the right label + chip.
+  gigInvitedAt?: Date | null;
+  gigInviteResponse?: string | null;
+  gigInviteRespondedAt?: Date | null;
   // Tax-aware expense fields (only meaningful when kind === "expense")
   taxKind?: ExpenseKindT;
   taxMiles?: number | null;
@@ -126,6 +140,9 @@ export function PayoutWorksheet({
         payoutAddress: p.payoutAddress ?? null,
         email: p.email ?? null,
         invitedAt: p.invitedAt ?? null,
+        gigInvitedAt: p.gigInvitedAt ?? null,
+        gigInviteResponse: p.gigInviteResponse ?? null,
+        gigInviteRespondedAt: p.gigInviteRespondedAt ?? null,
       })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
@@ -423,6 +440,19 @@ export function PayoutWorksheet({
                           paidDate: newPaidAt ? dateToField(newPaidAt) : "",
                         })
                       }
+                    />
+                  )}
+                  {/* Per-gig Invite (accept/decline) — Patrick 2026-08-06.
+                      Only for saved personnel rows with an email on file.
+                      GigInviteButton picks its own label + chip based on
+                      the current invite state. */}
+                  {row.id && !row.isLeader && row.musicianId && (
+                    <GigInviteButton
+                      personnelId={row.id}
+                      musicianHasEmail={!!row.email}
+                      invitedAt={row.gigInvitedAt ?? null}
+                      respondedAt={row.gigInviteRespondedAt ?? null}
+                      response={row.gigInviteResponse ?? null}
                     />
                   )}
                 </div>

@@ -615,6 +615,23 @@ model GigPersonnel {
   // approved, not what's submitted.
   approvedGuests     String[] @default([])
 
+  // Accept/Decline invitation flow — patterned after IML/Emerald
+  // Empire Band. Bandleader clicks "Invite" on the Payout Worksheet
+  // row; sendGigInvite() generates inviteToken, emails the musician
+  // with big Accept/Decline buttons pointing at
+  // /g/[gigId]/rsvp/[token]?answer=yes|no (public, no login). The
+  // musician clicks either button; response + respondedAt land on
+  // this row. Bandleader gets a notification either way.
+  //
+  // response is "accepted" or "declined" (plain string, not enum, so
+  // future values like "maybe" or "pending" don't need a migration).
+  // inviteToken is per-row so revoking one musician's link doesn't
+  // affect others.
+  invitedAt      DateTime?
+  respondedAt    DateTime?
+  response       String?
+  inviteToken    String?   @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
