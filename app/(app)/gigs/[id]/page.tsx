@@ -19,6 +19,7 @@ import { GuestApprovalCheckbox } from "@/components/GuestApprovalCheckbox";
 import { LeaderGuestListInput } from "@/components/LeaderGuestListInput";
 import { LineupToggle } from "@/components/LineupToggle";
 import { ContractUpload } from "@/components/ContractUpload";
+import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
 import {
   formatDayNum,
@@ -63,7 +64,7 @@ export default async function GigDetailPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const [gig, roster, qboConn, owner] = await Promise.all([
+  const [gig, roster, qboConn, owner, currentCrewCount] = await Promise.all([
     db.gig.findFirst({
       where: { id, ownerId: user.id },
       include: {
@@ -95,6 +96,7 @@ export default async function GigDetailPage({
       where: { id: user.id },
       select: { enabledPaymentMethods: true },
     }),
+    db.musician.count({ where: { ownerId: user.id, isCrew: true } }),
   ]);
 
   if (!gig) notFound();
@@ -480,6 +482,17 @@ export default async function GigDetailPage({
                 </div>
                 );
               })}
+            </div>
+            {/* My Crew — Load / Save-as-Crew twin buttons live at the
+                bottom of the personnel list so bandleaders can save the
+                lineup as their default without opening /edit. Same
+                component used on the edit page. */}
+            <div className="mt-4">
+              <CrewControls
+                gigId={gig.id}
+                personnelCount={gig.personnel.length}
+                currentCrewCount={currentCrewCount}
+              />
             </div>
           </div>
 
