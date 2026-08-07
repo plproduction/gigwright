@@ -483,20 +483,6 @@ export default async function GigDetailPage({
                 );
               })}
             </div>
-            {/* My Crew — Load / Save-as-Crew twin buttons live at the
-                bottom of the personnel list so bandleaders can save the
-                lineup as their default without opening /edit. Same
-                component used on the edit page. */}
-            <div className="mt-4">
-              <CrewControls
-                gigId={gig.id}
-                personnelCount={gig.personnel.length}
-                currentCrewCount={currentCrewCount}
-                hasNonLeaderPersonnel={gig.personnel.some(
-                  (p) => !p.musician.isLeader,
-                )}
-              />
-            </div>
           </div>
 
           <div className="hidden lg:block">
@@ -1061,6 +1047,22 @@ export default async function GigDetailPage({
           }))}
           enabledPaymentMethods={owner?.enabledPaymentMethods ?? []}
         />
+        {/* My Crew management lives alongside the Payout Worksheet
+            rather than up in the Personnel summary — this is where
+            the bandleader is actually setting per-musician pay and
+            (soon) firing accept/decline invites, so it's the right
+            spot for "load / save this lineup as my default." Moved
+            here 2026-08-06 per Patrick. */}
+        <div className="mt-6 max-w-[880px]">
+          <CrewControls
+            gigId={gig.id}
+            personnelCount={gig.personnel.length}
+            currentCrewCount={currentCrewCount}
+            hasNonLeaderPersonnel={gig.personnel.some(
+              (p) => !p.musician.isLeader,
+            )}
+          />
+        </div>
       </div>
 
       <div className="border-t border-line px-7 py-5">
