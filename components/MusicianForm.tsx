@@ -3,6 +3,7 @@ import { upsertMusician, deleteMusician } from "@/lib/actions/musicians";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { InviteMusicianButton } from "@/components/InviteMusicianButton";
 import { RequestW9Button } from "@/components/RequestW9Button";
+import { RolesPicker } from "@/components/RolesPicker";
 import { pickerOptions } from "@/lib/payment-methods";
 
 type M = {
@@ -113,12 +114,16 @@ export function MusicianForm({
           />
         </Field>
 
-        <Field label="Roles (comma-separated)">
-          <input
+        <Field label="Roles">
+          {/* Chip-based picker with a canonical list (Bass / Drums /
+              Guitar / Piano / Keys / Vocals / Sax / Trumpet /
+              Trombone / PRODUCER). Underlying input is still freeform
+              comma-separated text so you can type anything not in the
+              list (e.g., "Arranger"). PRODUCER is a role, not a
+              separate entity — Patrick's design 2026-08-08. */}
+          <RolesPicker
             name="roles"
             defaultValue={musician?.roles.join(", ") ?? ""}
-            placeholder="Drums, Percussion"
-            className="input"
           />
         </Field>
 
