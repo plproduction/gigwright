@@ -84,6 +84,27 @@ model User {
   // has no way to authenticate.
   icalToken String? @unique
 
+  // Referral program (Patrick 2026-08-06): refer 3 paying users and
+  // your own subscription becomes $0 via a 100%-off recurring Stripe
+  // coupon. Applied lazily — recalc runs on every subscription-state
+  // webhook event that touches a referred user.
+  //
+  //  - referralCode: your unguessable 8-char code, embedded in the
+  //    URL you share (gigwright.com/?ref=CODE). Generated lazily on
+  //    first access from /settings/billing so existing users get one
+  //    the moment they open the referral card.
+  //  - referredById: the User.id of the person whose ?ref= cookie was
+  //    set when you signed up. Immutable after signup so the credit
+  //    can't be moved after the fact.
+  //  - referralCompActive: mirror of whether the 100%-off coupon is
+  //    currently applied to your Stripe subscription. Kept locally so
+  //    the recalc doesn't hit Stripe for every no-op check.
+  referralCode       String? @unique
+  referredById       String?
+  referredBy         User?   @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals          User[]  @relation("UserReferrals")
+  referralCompActive Boolean @default(false)
+
   accounts  Account[]
   sessions  Session[]
   venues    Venue[]
@@ -92,6 +113,8 @@ model User {
   gigs      Gig[]
   producers Producer[]                          // people who book this bandleader
   qbo       QboConnection?
+
+  @@index([referredById])
 }
 
 // QuickBooks Online OAuth tokens + company pointer. Access tokens expire in

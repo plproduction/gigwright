@@ -10,6 +10,41 @@ const { auth } = NextAuth(authConfig);
 export default auth(function proxy(req) {
   const { pathname } = req.nextUrl;
 
+  // Referral cookie handoff — if the incoming request has ?ref=CODE,
+  // stash it in a 30-day cookie so the eventual signup flow can
+  // attribute the new user to the referrer. Runs BEFORE the auth
+  // gate so it works whether the visitor is signed in or not (they
+  // might click a referral link while already logged in and share
+  // it with a friend from the same tab). See lib/actions/referrals.ts
+  // for the redemption side.
+  const refCode = req.nextUrl.searchParams.get("ref");
+  if (refCode && /^[a-f0-9]{4,32}$/.test(refCode)) {
+    const res = NextResponse.next();
+    res.cookies.set("gw_ref", refCode, {
+      maxAge: 30 * 24 * 60 * 60,
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      secure: true,
+    });
+    // Still enforce the auth gate below — don't early-return here,
+    // just persist the cookie on the response object we'll return.
+    if (!req.auth && !pathIsPublic(pathname)) {
+      const signInUrl = new URL("/signin", req.nextUrl.origin);
+      signInUrl.searchParams.set("callbackUrl", pathname);
+      const redirect = NextResponse.redirect(signInUrl);
+      redirect.cookies.set("gw_ref", refCode, {
+        maxAge: 30 * 24 * 60 * 60,
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: true,
+      });
+      return redirect;
+    }
+    return res;
+  }
+
   const isPublic =
     pathname === "/" ||
     pathname.startsWith("/signin") ||
@@ -58,6 +93,26 @@ export default auth(function proxy(req) {
 
   return NextResponse.next();
 });
+
+// Extracted so the referral-cookie branch above can reuse the same
+// public-path list — kept in sync with the inline check below.
+function pathIsPublic(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/signin") ||
+    pathname.startsWith("/privacy") ||
+    pathname.startsWith("/terms") ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/changelog") ||
+    pathname.startsWith("/sms-consent") ||
+    pathname.startsWith("/sms-opt-in") ||
+    pathname.startsWith("/g/") ||
+    pathname.startsWith("/cal/") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon")
+  );
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],

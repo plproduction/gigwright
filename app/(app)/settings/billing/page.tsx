@@ -3,6 +3,8 @@ import { requireUser } from "@/lib/session";
 import { TRIAL_DAYS } from "@/lib/stripe";
 import { FREE_LIMITS, PRO_ONLY_FEATURES } from "@/lib/plan";
 import { resyncSubscriptionFromStripe } from "@/lib/actions/billing";
+import { getReferralStatus } from "@/lib/actions/referrals";
+import { ReferralCard } from "@/components/ReferralCard";
 
 // Contextual headlines for the `?upgrade=X` query param. Matches the
 // `reason` values used by UpgradeBanner and the QBO/setlist gates so
@@ -25,6 +27,7 @@ export default async function BillingPage({
 }) {
   const user = await requireUser();
   const { checkout, upgrade } = await searchParams;
+  const referral = await getReferralStatus();
 
   const plan = user.plan;
   const isAdmin = plan === "ADMIN";
@@ -227,6 +230,17 @@ export default async function BillingPage({
           </form>
         )}
       </div>
+
+      {/* Referral program: refer 3 paying friends, subscription free.
+          Rendered for everyone (Free/Pro/Admin) so people can share
+          before they've upgraded themselves — but the actual coupon
+          only applies to Pro users with a Stripe subscription. */}
+      <ReferralCard
+        shareUrl={referral.shareUrl}
+        paidCount={referral.paidCount}
+        required={referral.required}
+        compActive={referral.compActive}
+      />
 
       {/* Pricing cards */}
       {!isAdmin && (

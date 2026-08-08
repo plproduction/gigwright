@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import {
@@ -7,6 +8,7 @@ import {
   trialEndFromNow,
   trialIsExpired,
 } from "@/lib/plan";
+import { REFERRAL_COOKIE, attributeSignup } from "@/lib/actions/referrals";
 
 // Resolve the current session, looking up the User row by email (since our
 // JWT strategy carries email but not the internal user ID).
@@ -62,6 +64,19 @@ export async function requireUser() {
     });
     user.trialEndingAt = end;
     if (stillRunning) user.plan = "PRO";
+  }
+
+  // Referral attribution — if the visitor arrived via someone's ?ref=
+  // link (proxy.ts stashes the code in the gw_ref cookie), and their
+  // User row doesn't yet have a referredById, stamp it now. Idempotent
+  // and defensive — never blocks signup on failure. Only runs when
+  // both conditions are true, so existing users pay zero cost.
+  if (!user.referredById) {
+    const cookieStore = await cookies();
+    const refCookie = cookieStore.get(REFERRAL_COOKIE);
+    if (refCookie?.value) {
+      await attributeSignup(user.id, refCookie.value);
+    }
   }
 
   // Lazy trial expiry. There is no scheduler in this app, so the clock is

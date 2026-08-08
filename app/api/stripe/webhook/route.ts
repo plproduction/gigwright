@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { db } from "@/lib/db";
+import { recalcForReferredUser } from "@/lib/actions/referrals";
 
 // Stripe webhook receiver. Listens for subscription lifecycle events and
 // keeps the User.plan / stripeSubscriptionId / currentPeriodEnd in sync.
@@ -97,6 +98,10 @@ export async function POST(req: Request) {
             cancelAtPeriodEnd: false,
           },
         });
+        // Cancellation may drop this user's referrer below the 3-paid
+        // threshold — recalc so the referrer's comp gets removed on
+        // their next billing cycle.
+        await recalcForReferredUser(userId);
       }
       break;
     }
@@ -133,6 +138,11 @@ export async function POST(req: Request) {
             where: { id: userId },
             data: { paymentFailedAt: null, trialEndingAt: null },
           });
+          // First paid invoice makes this user "paid" for referral
+          // counting purposes; every subsequent paid invoice is a
+          // confirmation that they're still active. Either way, this
+          // is the moment their referrer's comp threshold may cross.
+          await recalcForReferredUser(userId);
         }
       }
       break;
@@ -153,6 +163,11 @@ export async function POST(req: Request) {
             where: { id: userId },
             data: { paymentFailedAt: new Date() },
           });
+          // Payment failure disqualifies this user from counting
+          // toward their referrer's comp (countPaidReferrals filters
+          // out paymentFailedAt != null). Recalc so the referrer's
+          // comp reflects the shortfall on next billing cycle.
+          await recalcForReferredUser(userId);
         }
       }
       break;
