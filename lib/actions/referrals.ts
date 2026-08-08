@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { stripe } from "@/lib/stripe";
+import { REFERRALS_REQUIRED } from "@/lib/referrals-shared";
 
 // Referral program (Patrick 2026-08-06).
 //
@@ -26,23 +27,12 @@ import { stripe } from "@/lib/stripe";
 //     skip the Stripe coupon step — the UI still shows progress.
 
 // ————————————————————————————————————————————————————————————————
-// Constants
-// ————————————————————————————————————————————————————————————————
-
-// Number of active paid referrals required to comp a subscription.
-export const REFERRALS_REQUIRED = 3;
-
-// Length of the referral code (8 hex chars = 4 random bytes).
-const CODE_BYTES = 4;
-
-// Cookie name — kept short, sub-domain scoped, HttpOnly is fine even
-// though it's not sensitive (we read it server-side).
-export const REFERRAL_COOKIE = "gw_ref";
-export const REFERRAL_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 days
-
-// ————————————————————————————————————————————————————————————————
 // Read-only helpers
 // ————————————————————————————————————————————————————————————————
+
+// Length of the referral code (8 hex chars = 4 random bytes). Internal
+// only — no need to export.
+const CODE_BYTES = 4;
 
 // Generate + persist a referralCode for this user if they don't have
 // one yet. Idempotent — returns the existing code on repeat calls.

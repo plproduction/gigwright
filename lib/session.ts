@@ -8,7 +8,8 @@ import {
   trialEndFromNow,
   trialIsExpired,
 } from "@/lib/plan";
-import { REFERRAL_COOKIE, attributeSignup } from "@/lib/actions/referrals";
+import { attributeSignup } from "@/lib/actions/referrals";
+import { REFERRAL_COOKIE } from "@/lib/referrals-shared";
 
 // Resolve the current session, looking up the User row by email (since our
 // JWT strategy carries email but not the internal user ID).
