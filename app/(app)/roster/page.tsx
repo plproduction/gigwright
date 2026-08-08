@@ -81,13 +81,53 @@ export default async function RosterPage() {
           .
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-px bg-line">
-          {musicians.map((m) => (
-            <MusicianRow key={m.id} m={m} />
-          ))}
-          {/* If odd count, add an empty cell so the last row still has a right border */}
-          {musicians.length % 2 === 1 && <div className="bg-surface" />}
-        </div>
+        <>
+          {/* Roster splits into two sections when any producers exist:
+              musicians on top, producers underneath in their own group
+              with an accent header. Patrick's design 2026-08-08: the
+              PRODUCER role tag doubles as visual grouping so he can
+              scan his client-side contacts at a glance without a
+              separate nav item. If no one is tagged PRODUCER yet, we
+              render the flat list unchanged. */}
+          {(() => {
+            const isProducer = (m: { roles: string[] }) =>
+              m.roles.some((r) => r.toUpperCase() === "PRODUCER");
+            const producers = musicians.filter(isProducer);
+            const players = musicians.filter((m) => !isProducer(m));
+
+            return (
+              <>
+                <div className="grid grid-cols-2 gap-px bg-line">
+                  {players.map((m) => (
+                    <MusicianRow key={m.id} m={m} />
+                  ))}
+                  {players.length % 2 === 1 && <div className="bg-surface" />}
+                </div>
+                {producers.length > 0 && (
+                  <>
+                    <div className="mt-6 flex items-baseline gap-2 border-b border-line bg-paper-warm/60 px-6 py-3">
+                      <h4 className="font-serif text-[16px] font-normal tracking-tight">
+                        <em className="not-italic text-accent">Producers</em>
+                      </h4>
+                      <span className="text-[11px] text-ink-mute">
+                        · {producers.length} · client-side contacts
+                        (invisible to musicians)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-px bg-line">
+                      {producers.map((m) => (
+                        <MusicianRow key={m.id} m={m} />
+                      ))}
+                      {producers.length % 2 === 1 && (
+                        <div className="bg-surface" />
+                      )}
+                    </div>
+                  </>
+                )}
+              </>
+            );
+          })()}
+        </>
       )}
     </div>
   );
