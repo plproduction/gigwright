@@ -8,7 +8,12 @@ const NAV = [
   { label: "Gigs", href: "/dashboard", matches: ["/dashboard", "/gigs"] },
   { label: "Roster", href: "/roster", matches: ["/roster"] },
   { label: "Venues", href: "/venues", matches: ["/venues"] },
-  { label: "Producers", href: "/producers", matches: ["/producers"] },
+  // Producers hidden from the top nav 2026-08-08 — Patrick's rolodex
+  // is nearly empty until contract extraction becomes routine, and a
+  // half-empty nav item is worse than none. The /producers page still
+  // works and contract extraction still auto-creates producers; just
+  // un-comment this line to bring it back.
+  // { label: "Producers", href: "/producers", matches: ["/producers"] },
   { label: "Finance", href: "/finance", matches: ["/finance"] },
   { label: "Settings", href: "/settings", matches: ["/settings"] },
 ];
