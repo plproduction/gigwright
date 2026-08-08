@@ -110,8 +110,8 @@ export default async function RosterPage() {
                         <em className="not-italic text-accent">Producers</em>
                       </h4>
                       <span className="text-[11px] text-ink-mute">
-                        · {producers.length} · client-side contacts
-                        (invisible to musicians)
+                        · {producers.length} · client-side contacts, only
+                        you see this section
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-px bg-line">
