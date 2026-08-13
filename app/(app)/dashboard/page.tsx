@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/session";
 import { FREE_LIMITS, isPaid } from "@/lib/plan";
 import { UpgradeBanner } from "@/components/UpgradeBanner";
 import { CalendarSubscribeCard } from "@/components/CalendarSubscribeCard";
+import { ReferralBanner } from "@/components/ReferralBanner";
 import { ensureMyIcalUrl } from "@/lib/actions/ical";
+import { getReferralStatus } from "@/lib/actions/referrals";
 import {
   formatDayNum,
   formatLongDate,
@@ -77,8 +79,21 @@ export default async function DashboardPage({
   const atGigCap = !paid && activeGigCount >= FREE_LIMITS.activeGigs;
   const nearGigCap = !paid && activeGigCount >= FREE_LIMITS.activeGigs - 1;
 
+  // Referral status — surface the compact banner at the top of the
+  // dashboard so bandleaders (and Patrick himself, who couldn't find
+  // the referral card buried in /settings/billing) see it the moment
+  // they open the app. Banner hides itself once the comp is active.
+  const referral = await getReferralStatus();
+
   return (
     <>
+      <ReferralBanner
+        shareUrl={referral.shareUrl}
+        paidCount={referral.paidCount}
+        required={referral.required}
+        compActive={referral.compActive}
+      />
+
       {/* Top row: Tonight card + Stats. On mobile, Tonight goes full-width
           and the 4 stat tiles (admin-level overview data) are hidden —
           they're not useful on a gig-day phone view. */}
