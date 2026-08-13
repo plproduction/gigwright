@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { copyToClipboard } from "@/lib/copy-to-clipboard";
 
 // Compact, prominent banner version of the referral card — one strip
 // across the top of the dashboard so bandleaders (Patrick included)
@@ -22,19 +23,24 @@ export function ReferralBanner({
   compActive: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   if (compActive) return null;
 
-  function copy() {
-    navigator.clipboard.writeText(shareUrl).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      },
-      () => {
-        alert(shareUrl);
-      },
-    );
+  async function copy() {
+    // Try programmatic copy first (works in most browsers over HTTPS).
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+    // Programmatic copy failed — select the input so the user can
+    // hit Cmd+C or right-click → Copy manually. Better than a mystery
+    // alert box.
+    inputRef.current?.focus();
+    inputRef.current?.select();
+    inputRef.current?.setSelectionRange(0, shareUrl.length);
   }
 
   return (
@@ -58,9 +64,18 @@ export function ReferralBanner({
           </span>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="hidden font-mono text-[11px] text-ink-mute md:inline">
-            {shareUrl}
-          </span>
+          {/* Read-only input rather than a plain <span> so triple-
+              click / Cmd+A / right-click → Copy all work as backstops
+              if the programmatic copy fails on this browser. */}
+          <input
+            ref={inputRef}
+            readOnly
+            value={shareUrl}
+            onFocus={(e) => e.currentTarget.select()}
+            onClick={(e) => e.currentTarget.select()}
+            className="hidden w-[280px] rounded-md border border-line-strong bg-paper px-2 py-1 font-mono text-[11px] text-ink md:inline"
+            aria-label="Your referral link"
+          />
           <button
             type="button"
             onClick={copy}

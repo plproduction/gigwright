@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { copyToClipboard } from "@/lib/copy-to-clipboard";
 
 // Referral card on /settings/billing. Shows:
 //   - The user's unique referral link with a Copy button
@@ -23,19 +24,20 @@ export function ReferralCard({
   compActive: boolean;
 }) {
   const [copied, setCopied] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  function copy() {
-    navigator.clipboard.writeText(shareUrl).then(
-      () => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      },
-      () => {
-        // Clipboard permission denied — fall back to select-all so
-        // they can Cmd+C manually.
-        alert(shareUrl);
-      },
-    );
+  async function copy() {
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+    // Programmatic copy failed — select the URL so the user can
+    // Cmd+C or right-click → Copy manually.
+    inputRef.current?.focus();
+    inputRef.current?.select();
+    inputRef.current?.setSelectionRange(0, shareUrl.length);
   }
 
   const remaining = Math.max(0, required - paidCount);
@@ -75,9 +77,19 @@ export function ReferralCard({
       </div>
 
       <div className="flex items-center gap-2 rounded-md border border-line bg-paper-warm/50 px-3 py-2">
-        <div className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-ink">
-          {shareUrl}
-        </div>
+        {/* Read-only input rather than a plain div so triple-click /
+            Cmd+A / right-click → Copy all work as backstops if the
+            programmatic copy fails. onFocus + onClick auto-select
+            the whole URL for one-tap selection. */}
+        <input
+          ref={inputRef}
+          readOnly
+          value={shareUrl}
+          onFocus={(e) => e.currentTarget.select()}
+          onClick={(e) => e.currentTarget.select()}
+          className="min-w-0 flex-1 bg-transparent font-mono text-[12.5px] text-ink outline-none"
+          aria-label="Your referral link"
+        />
         <button
           type="button"
           onClick={copy}
