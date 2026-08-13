@@ -10,6 +10,8 @@ import {
   updateEnabledPaymentMethods,
   saveLeaderPayment,
 } from "@/lib/actions/user-settings";
+import { getReferralStatus } from "@/lib/actions/referrals";
+import { ReferralCard } from "@/components/ReferralCard";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -20,7 +22,7 @@ export default async function SettingsPage() {
   // the "Your payment info" section below can show their current
   // preferred method + handle (or render empty if they don't have a
   // leader row yet — the save action upserts it on first save).
-  const [fullUser, leader] = await Promise.all([
+  const [fullUser, leader, referral] = await Promise.all([
     db.user.findUnique({
       where: { id: user.id },
       select: { enabledPaymentMethods: true },
@@ -29,6 +31,7 @@ export default async function SettingsPage() {
       where: { ownerId: user.id, isLeader: true },
       select: { paymentMethod: true, payoutAddress: true },
     }),
+    getReferralStatus(),
   ]);
   const enabled = new Set(
     effectiveEnabledMethods(fullUser?.enabledPaymentMethods),
@@ -45,6 +48,18 @@ export default async function SettingsPage() {
       <h4 className="mb-5 border-b border-line pb-3 font-serif text-[20px] font-normal tracking-tight">
         Settings
       </h4>
+
+      {/* Referral card lifted to the top of Settings — buried on
+          /settings/billing so nobody (Patrick included) could find
+          it. Prominent placement here matches how other growth-loop
+          apps surface referral programs. Same component, unchanged
+          logic. */}
+      <ReferralCard
+        shareUrl={referral.shareUrl}
+        paidCount={referral.paidCount}
+        required={referral.required}
+        compActive={referral.compActive}
+      />
 
       <div className="mb-7 rounded-[10px] border border-line bg-paper p-5">
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
