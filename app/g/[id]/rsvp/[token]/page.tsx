@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { notifyBandleaderOfRsvp } from "@/lib/notify-rsvp";
 
 // Public accept/decline landing page for gig invites. No auth required —
 // the unguessable inviteToken IS the authentication. Musicians land
@@ -86,6 +87,10 @@ export default async function RsvpPage({
       summary: `${personnel.musician.name} ${newResponse} the gig`,
     },
   });
+  // Fire-and-forget notification to the bandleader. Wrapped in a
+  // helper that never throws, so a Resend hiccup can't prevent this
+  // confirmation page from rendering. Patrick 2026-08-08.
+  await notifyBandleaderOfRsvp(personnel.id);
 
   return (
     <RsvpMessage
