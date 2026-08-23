@@ -4,6 +4,7 @@ import { AvatarUpload } from "@/components/AvatarUpload";
 import { InviteMusicianButton } from "@/components/InviteMusicianButton";
 import { RequestW9Button } from "@/components/RequestW9Button";
 import { RolesPicker } from "@/components/RolesPicker";
+import { GigFormSubmit } from "@/components/GigFormSubmit";
 import { pickerOptions } from "@/lib/payment-methods";
 
 type M = {
@@ -281,12 +282,14 @@ export function MusicianForm({
         </div>
 
         <div className="col-span-2 flex items-center gap-2 pt-5">
-          <button
-            type="submit"
+          {/* Reusing GigFormSubmit — same double-submit-guard shape
+              (useFormStatus disables while the server action runs).
+              Component name is legacy; behavior is generic. Fixed
+              the Dennis Dudley double-create bug 2026-08-08. */}
+          <GigFormSubmit
+            idleLabel={isEdit ? "Save" : "Add to roster"}
             className="rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-paper hover:bg-[#611B11]"
-          >
-            {isEdit ? "Save" : "Add to roster"}
-          </button>
+          />
           <Link
             href="/roster"
             className="rounded-md border border-line-strong bg-transparent px-3 py-2 text-[13px] font-medium text-ink hover:bg-paper-warm"
