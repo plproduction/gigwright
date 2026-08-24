@@ -21,12 +21,20 @@ export function GigInviteButton({
   invitedAt,
   respondedAt,
   response,
+  emailOpenedAt,
+  emailClickedAt,
 }: {
   personnelId: string;
   musicianHasEmail: boolean;
   invitedAt: Date | string | null;
   respondedAt: Date | string | null;
   response: string | null; // "accepted" | "declined" | null
+  // Resend-webhook tracking. Both null on brand-new sends and while
+  // waiting for the first event to fire; kept on the row after a
+  // response is recorded so Patrick can see whether they opened
+  // before making up their mind.
+  emailOpenedAt: Date | string | null;
+  emailClickedAt: Date | string | null;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -88,9 +96,38 @@ export function GigInviteButton({
     buttonLabel = "Resend";
   }
 
+  // Small delivery-status micro-chip that sits between the invite
+  // chip and the button. Renders only after invite was sent (invitedAt
+  // set) and only if we have tracking data — otherwise stays quiet so
+  // rows without opens don't imply "never opened" (Resend tracking
+  // may not be enabled yet, or the recipient's client blocks pixels).
+  let trackingChip: React.ReactNode = null;
+  if (invitedAt && (emailOpenedAt || emailClickedAt)) {
+    if (emailClickedAt) {
+      trackingChip = (
+        <span
+          className="whitespace-nowrap text-[10px] italic text-ink-soft"
+          title={`Opened${emailOpenedAt ? ` ${fmt(emailOpenedAt)}` : ""} · clicked ${fmt(emailClickedAt)}`}
+        >
+          👁 clicked
+        </span>
+      );
+    } else if (emailOpenedAt) {
+      trackingChip = (
+        <span
+          className="whitespace-nowrap text-[10px] italic text-ink-soft"
+          title={`Opened ${fmt(emailOpenedAt)}`}
+        >
+          👁 opened
+        </span>
+      );
+    }
+  }
+
   return (
     <span className="inline-flex items-center gap-2 whitespace-nowrap">
       {chip}
+      {trackingChip}
       <button
         type="button"
         onClick={invite}

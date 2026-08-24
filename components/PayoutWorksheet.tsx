@@ -45,6 +45,12 @@ type PersonnelIn = {
   gigInvitedAt?: Date | null;
   gigInviteResponse?: string | null;
   gigInviteRespondedAt?: Date | null;
+  // Resend-webhook tracking (2026-08-08): when the invite email was
+  // opened / clicked. Both null until the corresponding webhook event
+  // fires. Threaded through so GigInviteButton can render the
+  // "opened / clicked" micro-chip.
+  emailOpenedAt?: Date | null;
+  emailClickedAt?: Date | null;
 };
 
 type ExpenseKindT =
@@ -86,6 +92,8 @@ type Row = {
   gigInvitedAt?: Date | null;
   gigInviteResponse?: string | null;
   gigInviteRespondedAt?: Date | null;
+  emailOpenedAt?: Date | null;
+  emailClickedAt?: Date | null;
   // Tax-aware expense fields (only meaningful when kind === "expense")
   taxKind?: ExpenseKindT;
   taxMiles?: number | null;
@@ -143,6 +151,8 @@ export function PayoutWorksheet({
         gigInvitedAt: p.gigInvitedAt ?? null,
         gigInviteResponse: p.gigInviteResponse ?? null,
         gigInviteRespondedAt: p.gigInviteRespondedAt ?? null,
+        emailOpenedAt: p.emailOpenedAt ?? null,
+        emailClickedAt: p.emailClickedAt ?? null,
       })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
@@ -453,6 +463,8 @@ export function PayoutWorksheet({
                       invitedAt={row.gigInvitedAt ?? null}
                       respondedAt={row.gigInviteRespondedAt ?? null}
                       response={row.gigInviteResponse ?? null}
+                      emailOpenedAt={row.emailOpenedAt ?? null}
+                      emailClickedAt={row.emailClickedAt ?? null}
                     />
                   )}
                 </div>

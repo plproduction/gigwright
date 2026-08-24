@@ -135,6 +135,23 @@ export async function sendGigInvite(personnelId: string) {
     throw new Error(`Resend ${res.status}: ${errText}`);
   }
 
+  // Capture Resend's own message id so the /api/resend/webhook route
+  // can correlate later email.opened / email.clicked events back to
+  // this specific personnel row. Reset the tracking timestamps too —
+  // a resend supersedes the previous email, so old opens shouldn't
+  // pollute the new send's status.
+  const sendResponse = (await res.json().catch(() => ({}))) as {
+    id?: string;
+  };
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: {
+      resendEmailId: sendResponse.id ?? null,
+      emailOpenedAt: null,
+      emailClickedAt: null,
+    },
+  });
+
   await db.activity.create({
     data: {
       gigId: personnel.gigId,

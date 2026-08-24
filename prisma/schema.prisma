@@ -655,6 +655,19 @@ model GigPersonnel {
   response       String?
   inviteToken    String?   @unique
 
+  // Email delivery tracking (Patrick 2026-08-08). resendEmailId is
+  // the id Resend returns from POST /emails; we store it on send so
+  // later webhook events (email.opened, email.clicked, email.bounced)
+  // can be correlated back to this personnel row. emailOpenedAt is
+  // the FIRST time the tracking pixel loaded — subsequent opens don't
+  // move it. emailClickedAt is the first click on any link. Both null
+  // until Resend fires the event; null does NOT mean "didn't open" —
+  // could also mean "blocks tracking pixels" (Gmail image proxy still
+  // resolves though, so most desktop opens land).
+  resendEmailId  String?   @unique
+  emailOpenedAt  DateTime?
+  emailClickedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

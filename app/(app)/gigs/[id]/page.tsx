@@ -1032,6 +1032,8 @@ export default async function GigDetailPage({
             gigInvitedAt: p.invitedAt ?? null,
             gigInviteResponse: p.response ?? null,
             gigInviteRespondedAt: p.respondedAt ?? null,
+            emailOpenedAt: p.emailOpenedAt ?? null,
+            emailClickedAt: p.emailClickedAt ?? null,
           }))}
           expenses={gig.expenses.map((e) => ({
             id: e.id,
