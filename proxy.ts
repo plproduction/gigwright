@@ -115,5 +115,8 @@ function pathIsPublic(pathname: string): boolean {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // .netlify/functions/* are Netlify Functions (e.g. the guest-notify
+  // background drain) that gate themselves with CRON_SECRET — keep the
+  // sign-in redirect off them.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|\\.netlify/).*)"],
 };
