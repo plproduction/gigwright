@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { processDuePendingNotifications } from "@/lib/actions/guest-approval";
 
-// Cron endpoint that drains the PendingGuestNotification queue. Called
-// every minute by a Netlify Scheduled Function (see
-// netlify/functions/process-guest-notifications.mts) so the 2-minute
-// debounce on guest-approval notifications still fires even when the
-// bandleader has walked away from the app.
+// Endpoint that drains the PendingGuestNotification queue. Called by a
+// Netlify Background Function (see
+// netlify/functions/process-guest-notifications.mts) that is kicked
+// only when a notification is enqueued, so the debounce on
+// guest-approval notifications still fires even when the bandleader
+// has walked away from the app — without polling the database 24/7.
 //
 // Auth via a shared secret in the CRON_SECRET env var so random
 // internet traffic can't trigger drains. Netlify scheduled function

@@ -1,30 +1,58 @@
 import type { Config } from "@netlify/functions";
 
-// Netlify Scheduled Function. Fires the Next.js cron endpoint once a
-// minute so the PendingGuestNotification queue drains even when the
-// bandleader has left the app. Process logic lives in the Next.js
-// route — this file is just the cron tick.
+// Netlify Background Function. Kicked by toggleGuestApproval (see
+// lib/actions/guest-approval.ts) the moment a guest notification is
+// enqueued: it waits out the debounce window, then hits the Next.js
+// drain endpoint once. Nothing runs when nothing is queued.
+//
+// This replaced an every-minute scheduled function (June 2026) that
+// kept the Neon database awake 24/7 just to poll an almost-always-empty
+// queue — that alone burned through the monthly compute allowance.
+//
+// Background functions answer the caller with an immediate 202 and can
+// run up to 15 minutes, so sleeping ~65s here is fine.
 //
 // The shared secret in CRON_SECRET stops random internet traffic from
-// triggering drains. The same secret is checked on the Next.js side.
-export default async () => {
-  const base = process.env.URL ?? "https://gigwright.com";
+// kicking this (each kick would wake the database). The same secret is
+// checked on the Next.js drain route.
+
+// Must be a bit longer than NOTIFY_DELAY_MS in guest-approval.ts so the
+// row is due by the time we drain.
+const WAIT_MS = 65 * 1000;
+const RETRY_DELAYS_MS = [20 * 1000, 60 * 1000];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+export default async (req: Request) => {
   const secret = process.env.CRON_SECRET;
+  if (secret && req.headers.get("x-cron-secret") !== secret) {
+    console.warn("[guest-notify] rejected kick without valid secret");
+    return;
+  }
+
+  await sleep(WAIT_MS);
+
+  const base = process.env.URL ?? "https://gigwright.com";
   const url = `${base}/api/cron/process-guest-notifications${
     secret ? `?secret=${encodeURIComponent(secret)}` : ""
   }`;
 
-  try {
-    const res = await fetch(url, { method: "POST" });
-    const text = await res.text();
-    console.log(`[cron-tick] ${res.status} ${text}`);
-  } catch (err) {
-    console.error("[cron-tick] failed", err);
+  // One drain, retried a couple of times if the endpoint errors (e.g. a
+  // cold database). Draining is idempotent, so a retry can't double-send.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(url, { method: "POST" });
+      const text = await res.text();
+      console.log(`[guest-notify] drain ${res.status} ${text}`);
+      if (res.ok) return;
+    } catch (err) {
+      console.error("[guest-notify] drain failed", err);
+    }
+    if (attempt >= RETRY_DELAYS_MS.length) return;
+    await sleep(RETRY_DELAYS_MS[attempt]);
   }
 };
 
 export const config: Config = {
-  // Every minute. Smallest delay between user-perceived 2-min debounce
-  // and the actual notification firing.
-  schedule: "* * * * *",
+  background: true,
 };

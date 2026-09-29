@@ -97,6 +97,34 @@ export async function toggleGuestApproval(
         scheduledFor: new Date(Date.now() + NOTIFY_DELAY_MS),
       },
     });
+    // New row → start a one-off background drain for it. Updates to an
+    // existing row don't need one: its scheduledFor is pinned, so the
+    // drain kicked when it was created still covers it.
+    await kickNotificationDrain();
+  }
+}
+
+// Fire-and-forget call to the Netlify background function that waits
+// out the debounce and drains the queue (netlify/functions/
+// process-guest-notifications.mts). It answers 202 immediately. There
+// is deliberately no polling cron — that kept the database awake 24/7.
+async function kickNotificationDrain(): Promise<void> {
+  const base =
+    process.env.URL ?? process.env.AUTH_URL ?? "https://gigwright.com";
+  try {
+    const res = await fetch(
+      `${base}/.netlify/functions/process-guest-notifications`,
+      {
+        method: "POST",
+        headers: { "x-cron-secret": process.env.CRON_SECRET ?? "" },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (res.status !== 202) {
+      console.error("[guest-approval] drain kick got", res.status);
+    }
+  } catch (err) {
+    console.error("[guest-approval] drain kick failed", err);
   }
 }
 
@@ -137,26 +165,28 @@ export async function processDuePendingNotifications(): Promise<void> {
   });
 
   for (const row of due) {
+    // Claim the row by deleting it BEFORE sending. Several drains can
+    // overlap (one background kick per enqueued guest, plus the inline
+    // call in toggleGuestApproval); whichever deletes first sends, the
+    // rest find nothing and skip — so no double texts. The deleted
+    // record also carries the latest pendingState.
+    const claimed = await db.pendingGuestNotification
+      .delete({ where: { id: row.id } })
+      .catch(() => null);
+    if (!claimed) continue;
+
     try {
       // Net state changed? If not, no notification.
-      const changed = row.initialState !== row.pendingState;
+      const changed = claimed.initialState !== claimed.pendingState;
       if (changed && !row.personnel.musician.isLeader) {
         await notifyMusicianOfApprovalChange({
           personnel: row.personnel,
           guestName: row.guestName,
-          approved: row.pendingState,
+          approved: claimed.pendingState,
         });
       }
     } catch (err) {
       console.error("[guest-approval] notify failed", err);
-    } finally {
-      // Always delete — leaving the row would cause repeat sends on
-      // every cron tick.
-      try {
-        await db.pendingGuestNotification.delete({ where: { id: row.id } });
-      } catch (err) {
-        console.error("[guest-approval] delete pending failed", err);
-      }
     }
   }
 }
