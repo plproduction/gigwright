@@ -120,7 +120,8 @@ export function MusicianForm({
               Guitar / Piano / Keys / Vocals / Sax / Trumpet /
               Trombone / PRODUCER). Underlying input is still freeform
               comma-separated text so you can type anything not in the
-              list (e.g., "Arranger"). PRODUCER is a role, not a
+              list (e.g., "Arranger") via the "Other…" box at the
+              bottom of the dropdown. PRODUCER is a role, not a
               separate entity — Patrick's design 2026-08-08. */}
           <RolesPicker
             name="roles"
