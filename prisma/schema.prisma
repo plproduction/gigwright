@@ -614,6 +614,19 @@ model GigPersonnel {
   // *other* recipients' Lineup section.
   includeInLineup Boolean @default(true)
 
+  // "Do not email" — Patrick 2026-10-01, for festival-scale gigs
+  // (Legends Live) where the personnel list carries whole tribute
+  // bands and sponsors who must NOT get the band's gig alerts. When
+  // true, every email path that targets this personnel row skips it:
+  // the Send update / gig alert fanout, the per-gig Accept/Decline
+  // invite, and guest-list approval notices. Per-gig, not per-musician
+  // — the same person can be on the email list for one gig and off it
+  // for another. Independent of includeInLineup (that one only hides
+  // the row from OTHER recipients' Lineup section) and of SMS (texts
+  // still follow musician.notifyBySms). Defaults to false so existing
+  // rows keep receiving email.
+  doNotEmail Boolean @default(false)
+
   // Per-row QBO pointers so we can update/void the exact bill if the pay
   // amount changes post-push.
   qboVendorId String?

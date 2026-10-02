@@ -18,6 +18,7 @@ import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { GuestApprovalCheckbox } from "@/components/GuestApprovalCheckbox";
 import { LeaderGuestListInput } from "@/components/LeaderGuestListInput";
 import { LineupToggle } from "@/components/LineupToggle";
+import { DoNotEmailToggle } from "@/components/DoNotEmailToggle";
 import { ContractUpload } from "@/components/ContractUpload";
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
@@ -191,6 +192,11 @@ export default async function GigDetailPage({
     .reduce((s, p) => s + p.payCents, 0);
   const paidCount = gig.personnel.filter((p) => p.paidAt).length;
   const sideCount = gig.personnel.filter((p) => !p.musician.isLeader).length;
+  // Personnel rows flagged "Do not email" for this gig — surfaced as a
+  // quiet count next to the Personnel heading.
+  const doNotEmailCount = gig.personnel.filter(
+    (p) => p.doNotEmail && !p.musician.isLeader,
+  ).length;
   const net =
     (gig.clientPayCents ?? 0) - bandPayCents;
 
@@ -332,21 +338,39 @@ export default async function GigDetailPage({
             />
           </Section>
 
-          {/* Personnel — custom section so we can place a delicate "Include
-              in outgoing emails" eyebrow on the right of the title row,
-              aligned over the per-row checkbox column. Same letterpress
+          {/* Personnel — custom section so we can place two delicate
+              eyebrows on the right of the title row, each aligned over
+              its per-row checkbox column: "Show in email lineup"
+              (includeInLineup) and, at the far right, "Do not email"
+              (doNotEmail, Patrick 2026-10-01). Same letterpress
               vocabulary used elsewhere on the page. */}
           <div className="mb-[18px] border-b border-line pb-[18px]">
             <div className="mb-3 flex items-baseline justify-between gap-3">
               <h5 className="text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
                 Personnel &middot; {gig.personnel.length} on
+                {doNotEmailCount > 0 && (
+                  <span
+                    className="ml-1.5 font-medium normal-case tracking-normal text-ink-soft"
+                    title="These people are skipped by Send update, gig invites, and guest notices for this gig."
+                  >
+                    &middot; {doNotEmailCount} not contacted
+                  </span>
+                )}
               </h5>
-              <h5
-                className="max-w-[180px] text-right text-[9px] font-semibold uppercase leading-[1.35] tracking-[0.16em] text-ink-mute"
-                title="When checked, this person's name and contact info appear in the Lineup section of emails to the rest of the band."
-              >
-                Include in outgoing emails
-              </h5>
+              <div className="flex items-end gap-2.5">
+                <h5
+                  className="max-w-[150px] text-right text-[9px] font-semibold uppercase leading-[1.35] tracking-[0.16em] text-ink-mute"
+                  title="When checked, this person's name and contact info appear in the Lineup section of emails to the rest of the band."
+                >
+                  Show in email lineup
+                </h5>
+                <h5
+                  className="w-[44px] text-center text-[9px] font-semibold uppercase leading-[1.35] tracking-[0.16em] text-accent"
+                  title="When checked, this person gets NO email and NO text about this gig — no gig alerts, updates, or invites."
+                >
+                  Do not email or text
+                </h5>
+              </div>
             </div>
             <div className="flex flex-col gap-2.5">
               {gig.personnel.map((p) => {
@@ -356,7 +380,7 @@ export default async function GigDetailPage({
                   key={p.id}
                   className="flex flex-col gap-1"
                 >
-                <div className="grid grid-cols-[24px_1fr_auto_auto_auto_18px] items-center gap-2.5">
+                <div className="grid grid-cols-[24px_1fr_auto_auto_auto_18px_44px] items-center gap-2.5">
                   {/* Avatar + name + meta are a Link to the musician's
                       edit page so the bandleader can jump to their
                       profile (send invite, change contact info, etc.)
@@ -441,6 +465,21 @@ export default async function GigDetailPage({
                     initial={p.includeInLineup}
                     musicianName={p.musician.name}
                   />
+                  {/* Do not email — far-right column, centered under
+                      its eyebrow. Leader row gets a blank cell: the
+                      leader never receives the band fanout anyway. */}
+                  {p.musician.isLeader ? (
+                    <div />
+                  ) : (
+                    <div className="flex justify-center">
+                      <DoNotEmailToggle
+                        gigId={gig.id}
+                        personnelId={p.id}
+                        initial={p.doNotEmail}
+                        musicianName={p.musician.name}
+                      />
+                    </div>
+                  )}
                 </div>
                 {/* Conflict warning — soft yellow, ml-[34px] to align under
                     the name (not the avatar). Doesn't block, just informs.
@@ -1034,6 +1073,9 @@ export default async function GigDetailPage({
             gigInviteRespondedAt: p.respondedAt ?? null,
             emailOpenedAt: p.emailOpenedAt ?? null,
             emailClickedAt: p.emailClickedAt ?? null,
+            // Per-gig "Do not email" flag — the worksheet's Invite
+            // button stands down for these rows.
+            doNotEmail: p.doNotEmail,
           }))}
           expenses={gig.expenses.map((e) => ({
             id: e.id,

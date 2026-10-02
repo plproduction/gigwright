@@ -102,6 +102,9 @@ export default async function GigMessagesPage({
                   smsSent?: number;
                   smsSkipped?: number;
                   recipients?: string[];
+                  // Personnel marked "Do not email" for this gig (rows
+                  // written after 2026-10-01; older rows lack it).
+                  suppressed?: string[];
                   errors?: Array<{
                     name: string;
                     channel?: string;
@@ -175,6 +178,17 @@ export default async function GigMessagesPage({
                         </div>
                         <div className="text-[12.5px] leading-[1.55] text-ink-soft">
                           {p.recipients.join(" · ")}
+                        </div>
+                      </div>
+                    )}
+
+                    {p.suppressed && p.suppressed.length > 0 && (
+                      <div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+                          Not emailed &middot; marked do not email
+                        </div>
+                        <div className="text-[12.5px] leading-[1.55] text-ink-mute">
+                          {p.suppressed.join(" · ")}
                         </div>
                       </div>
                     )}

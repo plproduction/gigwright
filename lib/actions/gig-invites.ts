@@ -28,6 +28,14 @@ export async function sendGigInvite(personnelId: string) {
     },
   });
   if (!personnel) throw new Error("Not found");
+  // Per-gig "Do not email" flag (Patrick 2026-10-01) — the bandleader
+  // has explicitly taken this person off the email list for this gig,
+  // so even a one-off invite is refused. Uncheck the box to send.
+  if (personnel.doNotEmail) {
+    throw new Error(
+      `${personnel.musician.name} is marked "Do not email" for this gig — uncheck that box in the Personnel list to send an invite.`,
+    );
+  }
   if (!personnel.musician.email) {
     throw new Error(
       `${personnel.musician.name} doesn't have an email on file — add one on their roster row.`,

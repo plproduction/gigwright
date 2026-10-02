@@ -887,6 +887,50 @@ export async function setPersonnelIncludeInLineup(
   revalidatePath(`/gigs/${gigId}`);
 }
 
+// Toggle the per-gig "Do not email" flag on a personnel row. When true,
+// this person is skipped by every email path for this gig — the Send
+// update / gig alert fanout, the Accept/Decline invite, and guest
+// approval notices. Built for festival gigs (Legends Live) where whole
+// tribute bands and sponsors sit on the personnel list but shouldn't
+// receive the band's alerts. SMS is unaffected (follows notifyBySms).
+export async function setPersonnelDoNotEmail(
+  gigId: string,
+  personnelId: string,
+  doNotEmail: boolean,
+) {
+  const user = await requireUser();
+  const gig = await db.gig.findFirst({ where: { id: gigId, ownerId: user.id } });
+  if (!gig) throw new Error("Gig not found");
+
+  const before = await db.gigPersonnel.findFirst({
+    where: { id: personnelId, gigId },
+    include: { musician: { select: { name: true } } },
+  });
+  if (!before) throw new Error("Personnel row not found");
+
+  if (before.doNotEmail === doNotEmail) {
+    revalidatePath(`/gigs/${gigId}`);
+    return;
+  }
+
+  await db.gigPersonnel.update({
+    where: { id: personnelId },
+    data: { doNotEmail },
+  });
+
+  await db.activity.create({
+    data: {
+      gigId,
+      action: "personnel_do_not_email_changed",
+      summary: doNotEmail
+        ? `${before.musician.name} marked do not email`
+        : `${before.musician.name} back on the email list`,
+    },
+  });
+
+  revalidatePath(`/gigs/${gigId}`);
+}
+
 export async function removePersonnel(
   gigId: string,
   personnelId: string,

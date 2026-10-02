@@ -23,6 +23,7 @@ export function GigInviteButton({
   response,
   emailOpenedAt,
   emailClickedAt,
+  doNotEmail = false,
 }: {
   personnelId: string;
   musicianHasEmail: boolean;
@@ -35,6 +36,9 @@ export function GigInviteButton({
   // before making up their mind.
   emailOpenedAt: Date | string | null;
   emailClickedAt: Date | string | null;
+  // Per-gig "Do not email" flag. When set, the Invite button stands
+  // down — sendGigInvite() would refuse anyway.
+  doNotEmail?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -52,6 +56,17 @@ export function GigInviteButton({
         );
       }
     });
+  }
+
+  if (doNotEmail) {
+    return (
+      <span
+        className="text-[10px] italic text-ink-mute"
+        title="Marked Do not email or text for this gig — uncheck it in the Personnel list to send an invite"
+      >
+        do not email
+      </span>
+    );
   }
 
   if (!musicianHasEmail) {

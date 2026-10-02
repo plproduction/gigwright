@@ -9,7 +9,8 @@ import {
 } from "@/lib/email-render";
 
 // Gig-update fanout. Sends an email to every musician on the gig who has
-// notifyByEmail = true and an email on file. Writes an Activity entry
+// an email on file, EXCEPT personnel rows flagged doNotEmail for this gig
+// (festival sponsors, guest tribute bands). Writes an Activity entry
 // summarizing who got notified.
 //
 // SMS is stubbed (skipped) until Twilio 10DLC approves — when it does, the
@@ -25,6 +26,11 @@ type FanoutOpts = {
 type FanoutResult = {
   emailsSent: number;
   emailsSkipped: number;
+  // Personnel rows skipped because the bandleader checked "Do not email"
+  // for this gig. Counted separately from emailsSkipped (which means
+  // "no address on file") so the audit trail can tell the two apart.
+  emailsSuppressed: number;
+  suppressed: string[];
   smsSent: number;
   smsSkipped: number;
   recipients: string[];
@@ -134,6 +140,8 @@ export async function fanOutGigUpdate(
   const result: FanoutResult = {
     emailsSent: 0,
     emailsSkipped: 0,
+    emailsSuppressed: 0,
+    suppressed: [],
     smsSent: 0,
     smsSkipped: 0,
     recipients: [],
@@ -182,7 +190,16 @@ export async function fanOutGigUpdate(
     // previously blackholed a musician's text whenever they were opted
     // out of email (they fell out of the loop before the SMS branch),
     // which is the exact bug that left opted-out members getting nothing.
-    if (!p.musician.email) {
+    //
+    // Per-gig "Do not email" (Patrick 2026-10-01): the bandleader has
+    // taken this row off the contact list for this gig — sponsors, guest
+    // tribute bands on a festival bill. Skip the email here; the SMS
+    // branch below checks the same flag (Patrick 2026-10-02: "do not
+    // email" also means "do not text").
+    if (p.doNotEmail) {
+      result.emailsSuppressed++;
+      result.suppressed.push(p.musician.name);
+    } else if (!p.musician.email) {
       result.emailsSkipped++;
     } else {
       try {
@@ -237,6 +254,9 @@ export async function fanOutGigUpdate(
     // notifyBySms=true and a phone on file. Skips silently if Twilio creds
     // aren't fully configured (e.g. AUTH_TOKEN missing or 10DLC pending).
     if (!smsEnabled) {
+      result.smsSkipped++;
+    } else if (p.doNotEmail) {
+      // Same per-gig opt-out as the email half above — no text either.
       result.smsSkipped++;
     } else if (!p.musician.notifyBySms) {
       result.smsSkipped++;
@@ -312,9 +332,12 @@ export async function fanOutGigUpdate(
         firstName: bandleader.split(" ")[0] ?? bandleader,
       });
       const recipientLine =
-        result.recipients.length > 0
+        (result.recipients.length > 0
           ? `Sent to: ${result.recipients.join(", ")}`
-          : "No musicians on the gig had an email on file.";
+          : "No musicians on the gig had an email on file.") +
+        (result.suppressed.length > 0
+          ? ` · Not emailed or texted (marked Do not email or text): ${result.suppressed.join(", ")}`
+          : "");
       const html = renderHtml(ctx).replace(
         '<!--RECIPIENTS-->',
         `<p style="margin:24px 0 0;padding-top:16px;border-top:1px solid #E5E2D8;font-size:12px;color:#888;line-height:1.5">${escapeHtml(recipientLine)}</p>`,
@@ -396,9 +419,11 @@ export async function fanOutGigUpdate(
     data: {
       gigId: opts.gigId,
       action: "fanout_sent",
-      summary: `Emailed ${result.emailsSent} · Texted ${result.smsSent} · ${
-        opts.triggerLabel ?? "update"
-      }`,
+      summary: `Emailed ${result.emailsSent} · Texted ${result.smsSent}${
+        result.emailsSuppressed > 0
+          ? ` · ${result.emailsSuppressed} not contacted`
+          : ""
+      } · ${opts.triggerLabel ?? "update"}`,
       payload: {
         triggerLabel: opts.triggerLabel ?? null,
         message: opts.message ?? null,

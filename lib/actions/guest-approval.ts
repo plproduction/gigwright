@@ -140,6 +140,7 @@ export async function processDuePendingNotifications(): Promise<void> {
       personnel: {
         select: {
           id: true,
+          doNotEmail: true,
           musician: {
             select: {
               name: true,
@@ -198,6 +199,9 @@ export async function processDuePendingNotifications(): Promise<void> {
 // caller's catch and otherwise stays quiet.
 async function notifyMusicianOfApprovalChange(opts: {
   personnel: {
+    // Per-gig "Do not email or text" flag — suppresses both the email
+    // and the SMS half of this notice.
+    doNotEmail: boolean;
     musician: {
       name: string;
       email: string | null;
@@ -228,7 +232,7 @@ async function notifyMusicianOfApprovalChange(opts: {
   const verb = approved ? "confirmed" : "removed";
 
   // ── Email ────────────────────────────────────────────────────────
-  if (m.notifyByEmail && m.email) {
+  if (m.notifyByEmail && m.email && !personnel.doNotEmail) {
     try {
       const apiKey = process.env.AUTH_RESEND_KEY;
       const fromAddr = process.env.EMAIL_FROM ?? "gigs@gigwright.com";
@@ -270,7 +274,7 @@ async function notifyMusicianOfApprovalChange(opts: {
   }
 
   // ── SMS ──────────────────────────────────────────────────────────
-  if (m.notifyBySms && m.phone) {
+  if (m.notifyBySms && m.phone && !personnel.doNotEmail) {
     try {
       const sid = process.env.TWILIO_ACCOUNT_SID;
       const token = process.env.TWILIO_AUTH_TOKEN;

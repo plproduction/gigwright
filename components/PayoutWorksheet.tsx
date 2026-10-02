@@ -51,6 +51,10 @@ type PersonnelIn = {
   // "opened / clicked" micro-chip.
   emailOpenedAt?: Date | null;
   emailClickedAt?: Date | null;
+  // Per-gig "Do not email" flag (Patrick 2026-10-01). When true the
+  // row's GigInviteButton shows a quiet "do not email" note instead of
+  // an Invite button. Optional so older callers still compile.
+  doNotEmail?: boolean;
 };
 
 type ExpenseKindT =
@@ -94,6 +98,7 @@ type Row = {
   gigInviteRespondedAt?: Date | null;
   emailOpenedAt?: Date | null;
   emailClickedAt?: Date | null;
+  doNotEmail?: boolean;
   // Tax-aware expense fields (only meaningful when kind === "expense")
   taxKind?: ExpenseKindT;
   taxMiles?: number | null;
@@ -153,6 +158,7 @@ export function PayoutWorksheet({
         gigInviteRespondedAt: p.gigInviteRespondedAt ?? null,
         emailOpenedAt: p.emailOpenedAt ?? null,
         emailClickedAt: p.emailClickedAt ?? null,
+        doNotEmail: p.doNotEmail ?? false,
       })),
     ...expenses.map((e) => ({
       kind: "expense" as const,
@@ -465,6 +471,7 @@ export function PayoutWorksheet({
                       response={row.gigInviteResponse ?? null}
                       emailOpenedAt={row.emailOpenedAt ?? null}
                       emailClickedAt={row.emailClickedAt ?? null}
+                      doNotEmail={!!row.doNotEmail}
                     />
                   )}
                 </div>

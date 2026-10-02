@@ -42,12 +42,17 @@ export function SendUpdateButton({ gigId }: { gigId: string }) {
       const json = (await res.json()) as {
         emailsSent: number;
         emailsSkipped: number;
+        emailsSuppressed?: number;
         smsSent: number;
         smsSkipped: number;
         errors?: Array<{ name: string; message: string; channel?: "email" | "sms" }>;
       };
       const errCount = json.errors?.length ?? 0;
-      const base = `Emailed ${json.emailsSent} · Texted ${json.smsSent}`;
+      // "N not emailed" = personnel marked Do not email for this gig.
+      const suppressed = json.emailsSuppressed ?? 0;
+      const base = `Emailed ${json.emailsSent} · Texted ${json.smsSent}${
+        suppressed > 0 ? ` · ${suppressed} not contacted` : ""
+      }`;
       setResult(
         errCount > 0
           ? `${base} · ${errCount} error${errCount === 1 ? "" : "s"}`
