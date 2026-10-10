@@ -205,27 +205,27 @@ export function MusicianForm({
             />
             <span>Leader (you)</span>
           </label>
-          {/* SMS opt-in — default OFF per TCR/CTIA rule (consent for SMS
-              may not be a required condition of service). Bandleader can
-              flip this on ONLY if the musician has verbally agreed to
-              receive operational SMS. The tooltip + helper-line make the
-              consent attestation explicit so checking the box means
-              something. Musicians can also opt themselves in via
-              /my-profile, which is the cleaner consent path. */}
+          {/* SMS opt-in — pre-checked on NEW contacts at the bandleader's
+              request (band members are added after agreeing to gig texts).
+              Existing musicians keep their saved value; the DB default and
+              CSV import stay OFF. The bandleader must still uncheck it for
+              anyone who hasn't verbally agreed to receive operational SMS
+              (TCR/CTIA: consent may not be a required condition of service).
+              Musicians can also manage this themselves via /my-profile. */}
           <label
             className="flex items-start gap-2"
-            title="Only check if this musician has verbally agreed to receive gig SMS"
+            title="Uncheck unless this musician has verbally agreed to receive gig SMS"
           >
             <input
               type="checkbox"
               name="notifyBySms"
-              defaultChecked={musician?.notifyBySms ?? false}
+              defaultChecked={musician?.notifyBySms ?? true}
               className="mt-[3px]"
             />
             <span className="leading-snug">
               SMS opt-in
               <span className="ml-1 text-[11px] font-normal text-ink-mute">
-                · only check if they verbally agreed
+                · uncheck if they haven&apos;t agreed
               </span>
             </span>
           </label>
