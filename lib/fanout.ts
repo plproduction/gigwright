@@ -6,6 +6,7 @@ import {
   renderText,
   escapeHtml,
   titleCaseName,
+  bareEmail,
 } from "@/lib/email-render";
 
 // Gig-update fanout. Sends an email to every musician on the gig who has
@@ -124,9 +125,13 @@ export async function fanOutGigUpdate(
   // (and its domain is verified at Resend), send as "Name" <their@addr>.
   // Otherwise use the standardized GigWright sender with the bandleader's
   // name attributed in the display: "Name via GigWright" <gigs@gigwright.com>.
-  const fallbackFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
+  const fallbackFrom = bareEmail(
+    process.env.EMAIL_FROM ?? "onboarding@resend.dev",
+  );
   const useOwnDomain = !!gig.owner?.senderEmail;
-  const fromAddress = useOwnDomain ? gig.owner!.senderEmail! : fallbackFrom;
+  const fromAddress = useOwnDomain
+    ? bareEmail(gig.owner!.senderEmail!)
+    : fallbackFrom;
   // Title-case the display name so the sender header reads
   // "Patrick Lamb via GigWright" even if the user's profile is stored as
   // a lowercased "patrick lamb".

@@ -686,3 +686,13 @@ export function escapeHtmlWithLinks(s: string): string {
   }
   return parts.join("");
 }
+
+// Pull the bare address out of a sender value that may be either
+// "gigs@gigwright.com" or 'Patrick Lamb <gigs@gigwright.com>'. Every
+// sender wraps the result in its own display name, so passing a
+// display-name value through unchanged yields a nested-brackets header
+// that Resend rejects with a 422 validation_error.
+export function bareEmail(raw: string): string {
+  const inner = raw.match(/<([^>]+)>/)?.[1] ?? raw;
+  return inner.trim().replace(/^["']+|["']+$/g, "").trim();
+}

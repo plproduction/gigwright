@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { bareEmail } from "@/lib/email-render";
 
 // 1-minute debounce window. Bandleader has this long to undo or change
 // their mind before the email/SMS goes out. Long enough to catch the
@@ -235,7 +236,9 @@ async function notifyMusicianOfApprovalChange(opts: {
   if (m.notifyByEmail && m.email && !personnel.doNotEmail) {
     try {
       const apiKey = process.env.AUTH_RESEND_KEY;
-      const fromAddr = process.env.EMAIL_FROM ?? "gigs@gigwright.com";
+      const fromAddr = bareEmail(
+        process.env.EMAIL_FROM ?? "gigs@gigwright.com",
+      );
       if (apiKey) {
         const from = `"${leader} via GigWright" <${fromAddr}>`;
         const replyTo = g.owner.email ?? undefined;
