@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/session";
 // box. Returns up to 5 venues and gigs and up to MUSICIAN_LIMIT people,
 // filtered to the current user's data. Case-insensitive substring match on the
 // fields a bandleader would naturally remember:
-//   musician → name, email, phone, roles (see ROLE_ALIASES)
+//   musician → name, email, phone, roles, notes (see musicianMatches)
 //   venue    → name, city
 //   gig      → venue name, year, attire
 // Anything more sophisticated (full-text, ranking, tour grouping) can
@@ -43,7 +43,16 @@ type Hit =
 // might search for to the substrings that identify that instrument.
 const ROLE_ALIASES: { words: string[]; match: string[] }[] = [
   {
-    words: ["key", "keys", "keyboard", "keyboards", "keybaords", "piano", "pianist"],
+    words: [
+      "key",
+      "keys",
+      "keyboard",
+      "keyboards",
+      "keyboardist",
+      "keybaords",
+      "piano",
+      "pianist",
+    ],
     match: ["key", "piano"],
   },
   { words: ["drum", "drums", "drummer", "drummers"], match: ["drum"] },
@@ -55,18 +64,57 @@ const ROLE_ALIASES: { words: string[]; match: string[] }[] = [
     match: ["vocal", "singer"],
   },
   { words: ["perc", "percussion", "percussionist"], match: ["perc"] },
+  {
+    words: ["steel drum", "steel drums", "steel pan", "steelpan", "pan"],
+    match: ["steel"],
+  },
+  { words: ["flugel", "flugelhorn", "flugelhorns"], match: ["flugel"] },
+  {
+    words: ["horn", "horns", "horn section"],
+    match: ["sax", "trumpet", "trombone", "flugel"],
+  },
+  { words: ["fiddle", "violin", "violinist"], match: ["violin", "fiddle"] },
+  { words: ["dj", "deejay"], match: ["dj"] },
 ];
 
-// Substrings a musician's role must contain to count as a hit for q.
-// Known instrument words expand through ROLE_ALIASES; anything else
-// matches as-is plus a crude stem ("trumpets" → "trumpet") so plurals
-// and "-er"/"-ist" forms still find the tag.
-function roleNeedles(q: string): string[] {
-  const lower = q.toLowerCase();
-  const alias = ROLE_ALIASES.find((a) => a.words.includes(lower));
-  if (alias) return alias.match;
-  const stem = lower.replace(/(ists?|ers?|s)$/, "");
-  return stem.length >= 2 && stem !== lower ? [lower, stem] : [lower];
+// Substrings that count as a hit for one search term. The term itself
+// always counts; known instrument words also expand through
+// ROLE_ALIASES, and anything else gets a crude stem ("trumpets" →
+// "trumpet") so plurals and "-er"/"-ist" forms still find the tag.
+function needlesFor(term: string): string[] {
+  const alias = ROLE_ALIASES.find((a) => a.words.includes(term));
+  if (alias) return [term, ...alias.match];
+  const stem = term.replace(/(ists?|ers?|s)$/, "");
+  return stem.length >= 2 && stem !== term ? [term, stem] : [term];
+}
+
+// Everything typed about a musician is searchable: name, email, phone,
+// every role tag (which carries city, referral and band notes like
+// "Drums Florida Referred by Mark Falchook") and the notes field. The
+// whole query matching anywhere is a hit; otherwise every word must
+// match somewhere, so "drums miami" and "miami drums" both find
+// "Drums Miami".
+function musicianMatches(
+  m: {
+    name: string;
+    email: string | null;
+    phone: string | null;
+    roles: string[] | null;
+    notes: string | null;
+  },
+  q: string,
+): boolean {
+  // roles is NOT NULL in the schema but some older rows hold null.
+  const text = [m.name, m.email, m.phone, ...(m.roles ?? []), m.notes]
+    .filter(Boolean)
+    .join(" \n ")
+    .toLowerCase();
+  if (needlesFor(q).some((n) => text.includes(n))) return true;
+  const terms = q.split(/\s+/).filter(Boolean);
+  return (
+    terms.length > 1 &&
+    terms.every((t) => needlesFor(t).some((n) => text.includes(n)))
+  );
 }
 
 // Cap on People hits. High enough that "drums" returns the whole drum
@@ -100,6 +148,7 @@ export async function GET(req: Request) {
         roles: true,
         email: true,
         phone: true,
+        notes: true,
         isLeader: true,
       },
     }),
@@ -142,25 +191,14 @@ export async function GET(req: Request) {
     }),
   ]);
 
-  // Name/email/phone hits first, then people who matched on role only.
+  // Name hits first, then everyone who matched on anything else.
   const lowerQ = q.toLowerCase();
-  const needles = roleNeedles(q);
-  const byContact = musicians.filter(
-    (m) =>
-      m.name.toLowerCase().includes(lowerQ) ||
-      (m.email?.toLowerCase().includes(lowerQ) ?? false) ||
-      (m.phone?.includes(q) ?? false),
-  );
-  const byRole = musicians.filter(
-    (m) =>
-      !byContact.includes(m) &&
-      // roles is NOT NULL in the schema but some older rows hold null.
-      (m.roles ?? []).some((r) => {
-        const role = r.toLowerCase();
-        return needles.some((n) => role.includes(n));
-      }),
-  );
-  const musicianHits = [...byContact, ...byRole].slice(0, MUSICIAN_LIMIT);
+  const matched = musicians.filter((m) => musicianMatches(m, lowerQ));
+  const byName = matched.filter((m) => m.name.toLowerCase().includes(lowerQ));
+  const musicianHits = [
+    ...byName,
+    ...matched.filter((m) => !byName.includes(m)),
+  ].slice(0, MUSICIAN_LIMIT);
 
   const hits: Hit[] = [
     ...musicianHits.map(
