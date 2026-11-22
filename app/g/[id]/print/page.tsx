@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { Linkify } from "@/components/Linkify";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   formatLongDate,
   formatTime,
@@ -90,9 +91,9 @@ export default async function PrintableGigSheet({
           musician: {
             select: {
               name: true,
-              roles: true,
               phone: true,
               isLeader: true,
+              ...WITH_ROLES,
             },
           },
           position: true,
@@ -439,7 +440,7 @@ export default async function PrintableGigSheet({
             {lineup.map((p) => {
               const roleLine = [
                 p.musician.isLeader ? "Leader" : null,
-                p.musician.roles.length ? p.musician.roles.join(", ") : null,
+                roleNames(p.musician).join(", ") || null,
               ]
                 .filter(Boolean)
                 .join(" · ");

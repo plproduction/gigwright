@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { formatLongDate, formatTime, mapLink } from "@/lib/format";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   type Ctx,
   renderHtml,
@@ -47,7 +48,7 @@ export async function fanOutGigUpdate(
       venue: true,
       owner: { select: { name: true, email: true, senderEmail: true, plan: true, role: true } },
       personnel: {
-        include: { musician: true },
+        include: { musician: { include: { ...WITH_ROLES } } },
         orderBy: { position: "asc" },
       },
     },
@@ -67,7 +68,7 @@ export async function fanOutGigUpdate(
     .filter((p) => p.includeInLineup)
     .map((p) => ({
       name: p.musician.name,
-      role: p.roleLabel ?? p.musician.roles[0] ?? null,
+      role: p.roleLabel ?? roleNames(p.musician)[0] ?? null,
       isLeader: p.musician.isLeader,
       phone: p.musician.phone ?? null,
       email: p.musician.email ?? null,

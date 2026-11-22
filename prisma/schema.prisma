@@ -319,8 +319,10 @@ model Musician {
   user       User?   @relation("MusicianUser", fields: [userId], references: [id])
   invitedAt  DateTime? // when the admin sent them the login invite email
 
-  // Roles, freeform — e.g. ["Drums"], ["Sax", "Arranger"]
-  roles String[]
+  // No roles field. What a musician plays is call-list membership —
+  // see `callLists` below — so there is exactly one place to say it.
+  // Free-text roles were folded into Role/RoleMember on 2026-11-23;
+  // the originals are kept in _MusicianRolesBackup.
 
   isLeader Boolean @default(false)
 

@@ -6,7 +6,7 @@ import { GlobalSearch } from "@/components/GlobalSearch";
 
 const NAV = [
   { label: "Gigs", href: "/dashboard", matches: ["/dashboard", "/gigs"] },
-  { label: "Roster", href: "/roster", matches: ["/roster"] },
+  { label: "Band", href: "/roster", matches: ["/roster"] },
   { label: "Venues", href: "/venues", matches: ["/venues"] },
   // Producers hidden from the top nav 2026-08-08 — Patrick's rolodex
   // is nearly empty until contract extraction becomes routine, and a

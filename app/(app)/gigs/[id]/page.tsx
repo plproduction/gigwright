@@ -23,6 +23,7 @@ import { ContractUpload } from "@/components/ContractUpload";
 import { GigContractInvoicePanel } from "@/components/contracts/GigContractInvoicePanel";
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   formatDayNum,
   formatLongDate,
@@ -72,7 +73,7 @@ export default async function GigDetailPage({
       include: {
         venue: true,
         personnel: {
-          include: { musician: true },
+          include: { musician: { include: { ...WITH_ROLES } } },
           orderBy: { position: "asc" },
         },
         expenses: { orderBy: { position: "asc" } },
@@ -423,7 +424,7 @@ export default async function GigDetailPage({
                       </div>
                       <div className="text-[11px] text-ink-mute">
                         {p.musician.isLeader ? "Leader · " : ""}
-                        {p.musician.roles.join(", ")}
+                        {roleNames(p.musician).join(", ")}
                         {p.musician.paymentMethod && !p.musician.isLeader && (
                           <span className="text-ink-soft">
                             {" · "}

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { pickerOptions } from "@/lib/payment-methods";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   AutoSavingTextInput,
   AutoSavingSelect,
@@ -25,6 +26,7 @@ export default async function MyProfilePage() {
   const mine = await db.musician.findMany({
     where: { userId: user.id },
     include: {
+      ...WITH_ROLES,
       owner: {
         select: {
           name: true,
@@ -365,7 +367,7 @@ export default async function MyProfilePage() {
               <li key={m.id}>
                 {m.owner?.name ?? m.owner?.email ?? "Bandleader"}
                 {" · "}
-                {m.roles.join(", ") || "—"}
+                {roleNames(m).join(", ") || "—"}
               </li>
             ))}
           </ul>

@@ -1,9 +1,11 @@
-// Canonical list of role tags for the Musician table. Displayed as
-// suggestion chips on the roster edit form so bandleaders can tag
-// people quickly without free-typing. The underlying Musician.roles
-// field stays freeform (string[]) so anyone can still type in a role
-// that isn't listed here (e.g., "Arranger", "Music Director",
-// "Fiddle").
+// The chairs most bands book. Used once, to lay down a starting set of
+// real Role rows for a bandleader whose Band page is empty — see
+// seedSuggestedRoles(). After that they're ordinary roles: rename them,
+// re-order them, delete the ones you don't book, add your own.
+//
+// This is NOT a constraint on what a role can be. Anything can be a
+// role ("Arranger", "Music Director", "Sound Tech", "Fiddle"); it just
+// gets typed in rather than coming from here.
 //
 // PRODUCER is deliberately in this list per Patrick's design 2026-08-08:
 // the client-side people who hire him get tagged in the roster with
