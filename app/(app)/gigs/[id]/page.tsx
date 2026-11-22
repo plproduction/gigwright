@@ -23,7 +23,7 @@ import { ContractUpload } from "@/components/ContractUpload";
 import { GigContractInvoicePanel } from "@/components/contracts/GigContractInvoicePanel";
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
-import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
+import { WITH_ROLES, roleNamesBesidesLeader } from "@/lib/musician-roles";
 import {
   formatDayNum,
   formatLongDate,
@@ -424,7 +424,7 @@ export default async function GigDetailPage({
                       </div>
                       <div className="text-[11px] text-ink-mute">
                         {p.musician.isLeader ? "Leader · " : ""}
-                        {roleNames(p.musician).join(", ")}
+                        {roleNamesBesidesLeader(p.musician).join(", ")}
                         {p.musician.paymentMethod && !p.musician.isLeader && (
                           <span className="text-ink-soft">
                             {" · "}

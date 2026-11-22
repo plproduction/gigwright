@@ -143,57 +143,47 @@ export default async function BandPage() {
           )}
 
           {roles.map((role, i) => (
-            <div key={role.id} className="border-b border-line bg-paper last:border-b-0">
-              <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-                <form
-                  action={updateRole.bind(null, role.id)}
-                  className="grid flex-1 grid-cols-[minmax(0,1fr)_100px_auto] items-center gap-2"
+            // One row per role: the chair, what it pays, and the people
+            // you call for it, left to right. The call list used to sit on
+            // a second row of its own, which made every role two lines
+            // tall and left the right-hand two thirds of the page empty.
+            <div
+              key={role.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-paper px-4 py-2.5 last:border-b-0"
+            >
+              <form
+                action={updateRole.bind(null, role.id)}
+                className="flex shrink-0 items-center gap-1.5"
+              >
+                {/* .input sets width:100% and beats Tailwind width
+                    utilities on source order, so these are inline. */}
+                <input
+                  name="name"
+                  defaultValue={role.name}
+                  className="input font-medium"
+                  style={{ width: 170 }}
+                  aria-label="Role name"
+                />
+                <input
+                  name="defaultPay"
+                  defaultValue={money(role.defaultPayCents)}
+                  placeholder="Rate"
+                  className="input text-right"
+                  style={{ width: 72 }}
+                  aria-label="Default rate"
+                />
+                <button
+                  type="submit"
+                  className="text-[11px] font-medium text-accent hover:underline"
                 >
-                  <input
-                    name="name"
-                    defaultValue={role.name}
-                    className="input font-medium"
-                    aria-label="Role name"
-                  />
-                  <input
-                    name="defaultPay"
-                    defaultValue={money(role.defaultPayCents)}
-                    placeholder="Rate $"
-                    className="input text-right"
-                    aria-label="Default rate"
-                  />
-                  <button type="submit" className="text-[11px] font-medium text-accent hover:underline">
-                    Save
-                  </button>
-                </form>
+                  Save
+                </button>
+              </form>
 
-                <div className="ml-auto flex items-center gap-1.5">
-                  {i > 0 && (
-                    <form action={moveRole.bind(null, role.id, "up")}>
-                      <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
-                        ↑
-                      </button>
-                    </form>
-                  )}
-                  {i < roles.length - 1 && (
-                    <form action={moveRole.bind(null, role.id, "down")}>
-                      <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
-                        ↓
-                      </button>
-                    </form>
-                  )}
-                  <form action={deleteRole.bind(null, role.id)}>
-                    <button className="text-[11px] text-ink-mute hover:text-accent">Delete</button>
-                  </form>
-                </div>
-              </div>
+              <span className="h-4 w-px shrink-0 bg-line" />
 
               {/* Call order */}
-              <div className="flex flex-wrap items-center gap-2 border-t border-line/60 bg-paper-warm/40 px-4 py-2.5">
-                <Label>Call order</Label>
-                {role.members.length === 0 && (
-                  <span className="text-[11px] text-ink-mute">nobody yet</span>
-                )}
+              <div className="flex flex-1 flex-wrap items-center gap-1.5">
                 {role.members.map((m, j) => (
                   <span
                     key={m.id}
@@ -225,12 +215,36 @@ export default async function BandPage() {
                 <form action={addToCallList.bind(null, role.id)}>
                   <AutoSubmitSelect
                     name="musicianId"
-                    placeholder="+ add player…"
-                    className="input py-1 text-[11px]"
+                    placeholder={
+                      role.members.length === 0 ? "nobody yet — add…" : "+ add…"
+                    }
+                    className="input py-0.5 text-[11px]"
                     options={musicians
                       .filter((m) => !role.members.some((rm) => rm.musicianId === m.id))
                       .map((m) => ({ value: m.id, label: m.name }))}
                   />
+                </form>
+              </div>
+
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                {i > 0 && (
+                  <form action={moveRole.bind(null, role.id, "up")}>
+                    <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
+                      ↑
+                    </button>
+                  </form>
+                )}
+                {i < roles.length - 1 && (
+                  <form action={moveRole.bind(null, role.id, "down")}>
+                    <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
+                      ↓
+                    </button>
+                  </form>
+                )}
+                <form action={deleteRole.bind(null, role.id)}>
+                  <button className="text-[11px] text-ink-mute hover:text-accent">
+                    Delete
+                  </button>
                 </form>
               </div>
             </div>
@@ -238,10 +252,20 @@ export default async function BandPage() {
 
           <form
             action={createRole}
-            className="grid grid-cols-[minmax(0,1fr)_100px_auto] items-center gap-2 border-t border-line bg-paper-warm/60 px-4 py-3"
+            className="flex items-center gap-1.5 border-t border-line bg-paper-warm/60 px-4 py-2.5"
           >
-            <input name="name" placeholder="New role, e.g. Trumpet 1" className="input" />
-            <input name="defaultPay" placeholder="Rate $" className="input text-right" />
+            <input
+              name="name"
+              placeholder="New role, e.g. Trumpet 1"
+              className="input"
+              style={{ width: 170 }}
+            />
+            <input
+              name="defaultPay"
+              placeholder="Rate"
+              className="input text-right"
+              style={{ width: 72 }}
+            />
             <button className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-semibold text-paper">
               Add role
             </button>

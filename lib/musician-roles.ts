@@ -21,6 +21,18 @@ export function roleNames(m: MusicianWithRoles): string[] {
   return m.callLists.map((c) => c.role.name);
 }
 
+// Several places print "Leader" from the isLeader flag and then the role
+// list right after it. Plenty of bandleaders also keep a role actually
+// called Leader, which made gig sheets read "Patrick Lamb · Leader ·
+// Leader, Sax, Vocals". Drop the duplicate when the flag already said it.
+export function roleNamesBesidesLeader(
+  m: MusicianWithRoles & { isLeader: boolean },
+): string[] {
+  const names = roleNames(m);
+  if (!m.isLeader) return names;
+  return names.filter((n) => n.toLowerCase() !== "leader");
+}
+
 // The one role that isn't a chair on the stand: PRODUCER tags the
 // client-side people who hire the band. Kept as an ordinary Role so
 // there's still one list of "my people", but grouped separately in
