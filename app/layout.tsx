@@ -2,16 +2,28 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
+// Inter and Fraunces are both variable fonts. Naming explicit weights
+// makes Google serve a separate static file per weight — seven files
+// between them — and `next/font/google` fetches every one at BUILD
+// time. Three deploys in a row died there ("Module not found:
+// @vercel/turbopack-next/internal/font/google/font", which is how
+// Turbopack reports a failed font fetch) once this repo started
+// deploying several times an hour.
+//
+// Omitting `weight` fetches the variable file instead: one per family,
+// every weight in the range still available. The app only asks for
+// light/normal/medium/semibold, all well inside it, so nothing changes
+// on screen. If this ever flakes again the bulletproof fix is
+// self-hosting via next/font/local, which removes the network from the
+// build entirely.
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
 });
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
   style: ["normal"],
 });
 
