@@ -283,6 +283,147 @@ export async function addRoleToLineup(lineupId: string, formData: FormData) {
   revalidatePath(PAGE);
 }
 
+// ── Applying a lineup to a gig ───────────────────────────────────
+
+// The payoff for all of it. A lineup says "The Floor is two horns, a
+// rhythm section and a singer, and the client pays $4,500"; the call
+// lists say who you ring for each chair. Put those together and
+// booking a gig is one dropdown instead of twelve lookups.
+//
+// Rules, in the order they matter:
+//   • Chairs fill from the call list in call order — first call first.
+//   • Somebody already on the gig FILLS their chair rather than being
+//     added twice. The leader is usually already there; that shouldn't
+//     make their own chair read as empty.
+//   • Nobody takes two chairs in one pass.
+//   • Pay comes from the lineup's rate for that role, falling back to
+//     the role's default. Always editable afterwards — the rate on a
+//     casino date isn't the rate on a wedding.
+//   • A chair with nobody left on its call list is left UNFILLED and
+//     named in the activity log. GigPersonnel requires a musician, so
+//     an empty chair can't be a row; quietly handing back a short band
+//     would be worse than saying so.
+export async function applyLineupToGig(gigId: string, formData: FormData) {
+  const user = await requireBandleader();
+  const lineupId = text(formData.get("lineupId"));
+  if (!lineupId) return;
+
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    select: { id: true, clientPayCents: true },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  const lineup = await db.lineup.findFirst({
+    where: { id: lineupId, ownerId: user.id },
+    include: {
+      roles: {
+        orderBy: { position: "asc" },
+        include: {
+          role: {
+            select: {
+              id: true,
+              name: true,
+              defaultPayCents: true,
+              members: {
+                orderBy: { callOrder: "asc" },
+                select: { musicianId: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!lineup) throw new Error("Lineup not found");
+
+  const existing = await db.gigPersonnel.findMany({
+    where: { gigId },
+    select: { musicianId: true },
+  });
+  const onGig = new Set(existing.map((p) => p.musicianId));
+  const assigned = new Set<string>();
+  let position = existing.length;
+
+  const toCreate: Array<{
+    gigId: string;
+    musicianId: string;
+    roleId: string;
+    roleLabel: string;
+    payCents: number;
+    position: number;
+  }> = [];
+  const short: string[] = [];
+
+  for (const lr of lineup.roles) {
+    const rate = lr.payCents ?? lr.role.defaultPayCents ?? 0;
+    let filled = 0;
+    for (const m of lr.role.members) {
+      if (filled >= lr.count) break;
+      if (assigned.has(m.musicianId)) continue; // already took a chair
+      assigned.add(m.musicianId);
+      filled++;
+      if (onGig.has(m.musicianId)) continue; // already on the gig
+      toCreate.push({
+        gigId,
+        musicianId: m.musicianId,
+        roleId: lr.roleId,
+        roleLabel: lr.role.name,
+        payCents: rate,
+        position: position++,
+      });
+    }
+    if (filled < lr.count) {
+      const missing = lr.count - filled;
+      short.push(`${lr.role.name}${missing > 1 ? ` ×${missing}` : ""}`);
+    }
+  }
+
+  const chairs = lineup.roles.reduce((n, lr) => n + lr.count, 0);
+  const seated = chairs - short.reduce((n, s) => {
+    const m = s.match(/×(\d+)$/);
+    return n + (m ? Number(m[1]) : 1);
+  }, 0);
+
+  // The client price is a starting point, not an override — if you've
+  // already negotiated a number for this gig, the lineup doesn't get to
+  // overwrite it.
+  const setsClientPay =
+    lineup.clientPriceCents != null && !gig.clientPayCents;
+
+  await db.$transaction([
+    ...toCreate.map((data) => db.gigPersonnel.create({ data })),
+    ...(setsClientPay
+      ? [
+          db.gig.update({
+            where: { id: gigId },
+            data: { clientPayCents: lineup.clientPriceCents },
+          }),
+        ]
+      : []),
+    db.activity.create({
+      data: {
+        gigId,
+        action: "lineup_applied",
+        summary:
+          `Applied lineup "${lineup.name}" — ${seated} of ${chairs} ` +
+          `${chairs === 1 ? "chair" : "chairs"} filled` +
+          (short.length > 0
+            ? `. Nobody on the call list for: ${short.join(", ")}`
+            : "") +
+          (setsClientPay
+            ? `. Client price set to $${((lineup.clientPriceCents ?? 0) / 100).toFixed(2)}`
+            : ""),
+      },
+    }),
+  ]);
+
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath("/dashboard");
+  revalidatePath("/my-gigs");
+}
+
 export async function removeRoleFromLineup(lineupRoleId: string) {
   const user = await requireBandleader();
   const row = await db.lineupRole.findFirst({

@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
-import { AutoSubmitNumber } from "@/components/AutoSubmitSelect";
+import {
+  AutoSubmitNumber,
+  AutoSubmitMoney,
+} from "@/components/AutoSubmitSelect";
 import { Combobox } from "@/components/Combobox";
 import { FilterRows } from "@/components/FilterRows";
 import { FREE_LIMITS, isPaid } from "@/lib/plan";
@@ -393,7 +396,10 @@ export default async function BandPage() {
                       className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[11px]"
                     >
                       {lr.role.name}
-                      <form action={addRoleToLineup.bind(null, lineup.id)} className="inline-flex">
+                      <form
+                        action={addRoleToLineup.bind(null, lineup.id)}
+                        className="inline-flex items-center"
+                      >
                         <input type="hidden" name="roleId" value={lr.roleId} />
                         <span className="text-ink-mute">×</span>
                         <AutoSubmitNumber
@@ -401,6 +407,17 @@ export default async function BandPage() {
                           defaultValue={lr.count}
                           ariaLabel={`How many ${lr.role.name}`}
                           className="w-[30px] bg-transparent text-center text-[11px] outline-none"
+                        />
+                        {/* What this chair is paid IN THIS LINEUP. Blank
+                            falls back to the role's own default rate,
+                            which is why the placeholder shows it. */}
+                        <span className="text-ink-mute">@</span>
+                        <AutoSubmitMoney
+                          name="pay"
+                          defaultValue={money(lr.payCents)}
+                          placeholder={money(lr.role.defaultPayCents) || "rate"}
+                          ariaLabel={`Pay for ${lr.role.name} in this lineup`}
+                          className="w-[46px] bg-transparent text-right text-[11px] outline-none placeholder:text-ink-mute/70"
                         />
                       </form>
                       <form action={removeRoleFromLineup.bind(null, lr.id)} className="inline">
