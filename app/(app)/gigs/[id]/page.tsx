@@ -24,6 +24,8 @@ import { GigContractInvoicePanel } from "@/components/contracts/GigContractInvoi
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
 import { WITH_ROLES, roleNamesBesidesLeader } from "@/lib/musician-roles";
+import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
+import { applyLineupToGig } from "@/lib/actions/roles";
 import {
   formatDayNum,
   formatLongDate,
@@ -67,7 +69,8 @@ export default async function GigDetailPage({
   const user = await requireUser();
   const { id } = await params;
 
-  const [gig, roster, qboConn, owner, currentCrewCount] = await Promise.all([
+  const [gig, roster, qboConn, owner, currentCrewCount, lineups] =
+    await Promise.all([
     db.gig.findFirst({
       where: { id, ownerId: user.id },
       include: {
@@ -102,6 +105,18 @@ export default async function GigDetailPage({
       select: { enabledPaymentMethods: true },
     }),
     db.musician.count({ where: { ownerId: user.id, isCrew: true } }),
+    // Lineups, with enough of each to label the dropdown ("The Floor ·
+    // 7 piece · 6 chairs") without a second query per row.
+    db.lineup.findMany({
+      where: { ownerId: user.id },
+      orderBy: { position: "asc" },
+      select: {
+        id: true,
+        name: true,
+        sizeLabel: true,
+        roles: { select: { count: true } },
+      },
+    }),
   ]);
 
   if (!gig) notFound();
@@ -376,6 +391,44 @@ export default async function GigDetailPage({
                 </h5>
               </div>
             </div>
+            {/* Apply a lineup — the one control that turns roles, call
+                order and lineups into a booked band. Picking one seats
+                every chair from its call list in call order, prices each
+                row, and (on a gig with no price yet) sets what the client
+                pays. Anyone already here keeps their seat. */}
+            {lineups.length > 0 && (
+              <form
+                action={applyLineupToGig.bind(null, gig.id)}
+                className="mb-3 flex flex-wrap items-center gap-2 rounded-[8px] border border-line bg-paper-warm/50 px-3 py-2"
+              >
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-mute">
+                  Apply lineup
+                </span>
+                <AutoSubmitSelect
+                  name="lineupId"
+                  placeholder={
+                    gig.personnel.length === 0
+                      ? "Seat the band…"
+                      : "Add a lineup…"
+                  }
+                  className="input py-1 text-[11px]"
+                  options={lineups.map((l) => {
+                    const chairs = l.roles.reduce((n, r) => n + r.count, 0);
+                    const bits = [l.sizeLabel, `${chairs} chairs`].filter(
+                      Boolean,
+                    );
+                    return {
+                      value: l.id,
+                      label: `${l.name} · ${bits.join(" · ")}`,
+                    };
+                  })}
+                />
+                <span className="text-[11px] text-ink-mute">
+                  Fills from each role&rsquo;s call list, first call first.
+                </span>
+              </form>
+            )}
+
             <div className="flex flex-col gap-2.5">
               {gig.personnel.map((p) => {
                 const conflicts = conflictsByMusicianId.get(p.musicianId);

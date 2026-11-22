@@ -41,6 +41,41 @@ export function AutoSubmitSelect({
   );
 }
 
+// A money field that commits when you leave it. Deliberately NOT on
+// every keystroke — "350" passes through "3" and "35" on the way, and
+// each of those would be a save. `change` fires on blur and on Enter,
+// which is exactly when you've finished typing a number.
+//
+// Blank is meaningful here: it clears the override so the role's own
+// default rate applies again.
+export function AutoSubmitMoney({
+  name,
+  defaultValue,
+  placeholder,
+  className,
+  ariaLabel,
+}: {
+  name: string;
+  defaultValue: string;
+  placeholder?: string;
+  className?: string;
+  ariaLabel: string;
+}) {
+  return (
+    <input
+      name={name}
+      inputMode="decimal"
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      className={className}
+      onChange={(e) => {
+        e.currentTarget.form?.requestSubmit();
+      }}
+    />
+  );
+}
+
 // Same idea for the small numeric fields: commit on change rather than
 // making you find a button. Blur-and-Enter both land because `change`
 // fires on either.

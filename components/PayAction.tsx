@@ -93,32 +93,59 @@ function labelFor(m: PaymentMethod): string {
   return map[m];
 }
 
+// People put all sorts of things in the payment-address field: "@jsmith",
+// "$jsmith", "jsmith", a pasted venmo.com/jsmith profile URL, or an email
+// address. Strip the decoration down to the bare handle.
+function bareHandle(address: string): string {
+  return address
+    .trim()
+    .replace(/^https?:\/\/(www\.)?(venmo\.com|cash\.app|paypal\.me)\//i, "")
+    .replace(/[?#].*$/, "")
+    .replace(/^[@$]/, "")
+    .replace(/\/+$/, "");
+}
+
+// An email or phone number is a perfectly good thing to have on file, but
+// it is NOT a username — pasting one into the path gives you
+// paypal.me/jsmith@gmail.com/350, which is a dead link that looks alive.
+function looksLikeEmailOrPhone(s: string): boolean {
+  return s.includes("@") || /^[\d\s()+.-]{7,}$/.test(s);
+}
+
 function buildDeepLink(
   method: PaymentMethod,
   address: string,
   amount?: string,
   note?: string,
 ): string | null {
-  const cleanHandle = address.replace(/^@/, "").replace(/^\$/, "").trim();
-  const noteEnc = note ? encodeURIComponent(note) : "";
+  const handle = bareHandle(address);
+  if (!handle) return null;
+  const isContact = looksLikeEmailOrPhone(handle);
 
   switch (method) {
     case "VENMO": {
-      // Venmo handles the amount/note params; works on mobile app + web
-      const amt = amount ? `&amount=${amount}` : "";
-      const n = note ? `&note=${noteEnc}` : "";
-      return `https://venmo.com/${encodeURIComponent(cleanHandle)}?txn=pay${amt}${n}`;
+      // Venmo takes a username in the path, but an email or phone has to
+      // go through `recipients` instead.
+      const params = new URLSearchParams({ txn: "pay" });
+      if (amount) params.set("amount", amount);
+      if (note) params.set("note", note);
+      if (isContact) {
+        params.set("recipients", handle);
+        return `https://venmo.com/?${params}`;
+      }
+      return `https://venmo.com/${encodeURIComponent(handle)}?${params}`;
     }
     case "PAYPAL": {
-      // paypal.me/<user>/<amount>
-      const isUrl = /^https?:\/\//i.test(address);
-      if (isUrl) {
-        return amount ? `${address.replace(/\/$/, "")}/${amount}` : address;
-      }
-      return `https://paypal.me/${encodeURIComponent(cleanHandle)}${amount ? `/${amount}` : ""}`;
+      // paypal.me only works with a PayPal.Me handle. With an email on
+      // file there's no prefilled send link, so fall through to
+      // copy-to-clipboard rather than hand over a broken one.
+      if (isContact) return null;
+      return `https://paypal.me/${encodeURIComponent(handle)}${amount ? `/${amount}` : ""}`;
     }
     case "CASHAPP": {
-      return `https://cash.app/$${encodeURIComponent(cleanHandle)}${amount ? `/${amount}` : ""}`;
+      // Cash App takes the amount as a path segment and supports no note.
+      if (isContact) return null;
+      return `https://cash.app/$${encodeURIComponent(handle)}${amount ? `/${amount}` : ""}`;
     }
     // No reliable deep link for the rest — fall through to copy-to-clipboard
     default:
