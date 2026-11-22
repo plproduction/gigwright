@@ -36,6 +36,12 @@ type Props = {
   clientPortalToken: string | null;
   contract: ContractSummary;
   invoice: InvoiceSummary;
+  // False when the bandleader has set neither a name nor a business name.
+  // Magic-link signup never asks for a name, so this is the common state
+  // for a new account — and a contract generated without it prints
+  // "Your bandleader" across the masthead. Block generation, don't
+  // produce an unsendable document.
+  letterheadReady: boolean;
 };
 
 function dollars(cents: number): string {
@@ -61,7 +67,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function GigContractInvoicePanel({ gigId, clientPortalToken, contract, invoice }: Props) {
+export function GigContractInvoicePanel({
+  gigId,
+  clientPortalToken,
+  contract,
+  invoice,
+  letterheadReady,
+}: Props) {
   const [pending, startTransition] = useTransition();
   const [lines, setLines] = useState<InvoiceLine[]>([{ description: "", qty: "1", rate: "" }]);
   const [copied, setCopied] = useState(false);
@@ -81,6 +93,23 @@ export function GigContractInvoicePanel({ gigId, clientPortalToken, contract, in
 
   const contractLocked = contract && contract.status !== "DRAFT";
   const invoiceLocked = invoice && invoice.status !== "DRAFT";
+
+  if (!letterheadReady) {
+    return (
+      <div className="rounded-md border border-warn/30 bg-warn/5 p-3">
+        <div className="text-[12px] font-semibold text-ink">
+          Add your letterhead first
+        </div>
+        <p className="mt-1 text-[11px] leading-[1.5] text-ink-soft">
+          Contracts print your name and business at the top. Set them once in{" "}
+          <a href="/settings" className="font-medium text-accent underline">
+            Settings
+          </a>{" "}
+          and this panel turns on for every gig.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

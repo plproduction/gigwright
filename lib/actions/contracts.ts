@@ -52,6 +52,15 @@ async function nextContractNumber(): Promise<string> {
 export async function generateContract(gigId: string, formData: FormData) {
   const user = await requireBandleader();
 
+  // Backstop for the letterhead. The panel hides the generate form when
+  // this is unset, but a contract whose masthead reads "Your bandleader"
+  // is unsendable, so refuse to mint one at the source too.
+  if (!user.name && !user.businessName) {
+    throw new Error(
+      "Set your contract letterhead in Settings before generating an agreement.",
+    );
+  }
+
   const gig = await db.gig.findUnique({
     where: { id: gigId, ownerId: user.id },
     include: { venue: true, producer: true },

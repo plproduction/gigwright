@@ -93,3 +93,31 @@ export async function updateEnabledPaymentMethods(formData: FormData) {
   revalidatePath("/roster");
   revalidatePath("/my-profile");
 }
+
+// Letterhead identity for generated contracts and invoices. Separate from
+// the payment info above: this is who the agreement says the Artist IS.
+//
+// Added because the first real contract generated on production came out
+// addressed from "Your bandleader" — User.name is null for anyone who
+// signed up by magic link (we never ask for a name), and the contract
+// template had nothing else to fall back to. Nobody can send that to a
+// client.
+export async function saveContractLetterhead(formData: FormData) {
+  const user = await requireUser();
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      name: nullIfEmpty(formData.get("name")),
+      businessName: nullIfEmpty(formData.get("businessName")),
+      businessAddress: nullIfEmpty(formData.get("businessAddress")),
+      businessPhone: nullIfEmpty(formData.get("businessPhone")),
+    },
+  });
+
+  revalidatePath("/settings");
+  // Every already-generated contract reads the letterhead live off User
+  // (only the TERMS are snapshotted onto Contract), so fixing a typo here
+  // corrects every outstanding client portal immediately.
+  revalidatePath("/gigs", "layout");
+}
