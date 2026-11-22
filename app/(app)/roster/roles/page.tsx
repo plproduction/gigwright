@@ -73,7 +73,8 @@ export default async function RolesPage() {
       <div className="flex items-center gap-2 border-b border-line bg-paper-warm px-6 py-4">
         <h4 className="font-serif text-[20px] font-normal tracking-tight">Roles &amp; lineups</h4>
         <span className="text-[12px] text-ink-mute">
-          · {roles.length} roles · {lineups.length} lineups
+          · {roles.length} {roles.length === 1 ? "role" : "roles"} ·{" "}
+          {lineups.length} {lineups.length === 1 ? "lineup" : "lineups"}
         </span>
         <Link href="/roster" className="ml-auto text-[12px] text-accent hover:underline">
           Roster →
