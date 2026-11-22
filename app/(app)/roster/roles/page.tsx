@@ -99,18 +99,21 @@ export default async function RolesPage() {
           {roles.map((role, i) => (
             <div key={role.id} className="border-b border-line bg-paper last:border-b-0">
               <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-                <form action={updateRole.bind(null, role.id)} className="flex items-center gap-2">
+                <form
+                  action={updateRole.bind(null, role.id)}
+                  className="grid flex-1 grid-cols-[minmax(0,1fr)_100px_auto] items-center gap-2"
+                >
                   <input
                     name="name"
                     defaultValue={role.name}
-                    className="input w-[150px] font-medium"
+                    className="input font-medium"
                     aria-label="Role name"
                   />
                   <input
                     name="defaultPay"
                     defaultValue={money(role.defaultPayCents)}
                     placeholder="Rate $"
-                    className="input w-[90px] text-right"
+                    className="input text-right"
                     aria-label="Default rate"
                   />
                   <button type="submit" className="text-[11px] font-medium text-accent hover:underline">
@@ -174,7 +177,7 @@ export default async function RolesPage() {
                   </span>
                 ))}
                 <form action={addToCallList.bind(null, role.id)} className="flex items-center gap-1.5">
-                  <select name="musicianId" className="input w-[150px] py-1 text-[11px]" defaultValue="">
+                  <select name="musicianId" className="input w-[150px] py-1 text-[11px]" style={{ width: 150 }} defaultValue="">
                     <option value="">+ add player…</option>
                     {musicians.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -190,10 +193,10 @@ export default async function RolesPage() {
 
           <form
             action={createRole}
-            className="flex flex-wrap items-center gap-2 border-t border-line bg-paper-warm/60 px-4 py-3"
+            className="grid grid-cols-[minmax(0,1fr)_100px_auto] items-center gap-2 border-t border-line bg-paper-warm/60 px-4 py-3"
           >
-            <input name="name" placeholder="New role, e.g. Trumpet 1" className="input w-[200px]" />
-            <input name="defaultPay" placeholder="Rate $" className="input w-[90px] text-right" />
+            <input name="name" placeholder="New role, e.g. Trumpet 1" className="input" />
+            <input name="defaultPay" placeholder="Rate $" className="input text-right" />
             <button className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-semibold text-paper">
               Add role
             </button>
@@ -225,33 +228,33 @@ export default async function RolesPage() {
               <div key={lineup.id} className="border-b border-line bg-paper last:border-b-0">
                 <form
                   action={updateLineup.bind(null, lineup.id)}
-                  className="flex flex-wrap items-center gap-2 px-4 py-3"
+                  className="grid grid-cols-[minmax(0,160px)_90px_110px_minmax(0,1fr)_auto] items-center gap-2 px-4 py-3"
                 >
                   <input
                     name="name"
                     defaultValue={lineup.name}
-                    className="input w-[150px] font-medium"
+                    className="input font-medium"
                     aria-label="Lineup name"
                   />
                   <input
                     name="sizeLabel"
                     defaultValue={lineup.sizeLabel ?? ""}
                     placeholder="7 Piece"
-                    className="input w-[90px]"
+                    className="input"
                     aria-label="Size"
                   />
                   <input
                     name="clientPrice"
                     defaultValue={money(lineup.clientPriceCents)}
                     placeholder="Client $"
-                    className="input w-[100px] text-right"
+                    className="input text-right"
                     aria-label="Client price"
                   />
                   <input
                     name="description"
                     defaultValue={lineup.description ?? ""}
                     placeholder="One line for the proposal"
-                    className="input min-w-[200px] flex-1"
+                    className="input"
                     aria-label="Description"
                   />
                   <button type="submit" className="text-[11px] font-medium text-accent hover:underline">
@@ -282,7 +285,7 @@ export default async function RolesPage() {
                     action={addRoleToLineup.bind(null, lineup.id)}
                     className="flex items-center gap-1.5"
                   >
-                    <select name="roleId" className="input w-[130px] py-1 text-[11px]" defaultValue="">
+                    <select name="roleId" className="input py-1 text-[11px]" style={{ width: 130 }} defaultValue="">
                       <option value="">+ add role…</option>
                       {roles.map((r) => (
                         <option key={r.id} value={r.id}>
@@ -293,13 +296,13 @@ export default async function RolesPage() {
                     <input
                       name="count"
                       defaultValue="1"
-                      className="input w-[48px] py-1 text-center text-[11px]"
+                      className="input py-1 text-center text-[11px]" style={{ width: 48 }}
                       aria-label="How many"
                     />
                     <input
                       name="pay"
                       placeholder="$"
-                      className="input w-[70px] py-1 text-right text-[11px]"
+                      className="input py-1 text-right text-[11px]" style={{ width: 70 }}
                       aria-label="Rate for this lineup"
                     />
                     <button className="text-[11px] font-medium text-accent hover:underline">Add</button>
@@ -331,15 +334,15 @@ export default async function RolesPage() {
 
           <form
             action={createLineup}
-            className="flex flex-wrap items-center gap-2 border-t border-line bg-paper-warm/60 px-4 py-3"
+            className="grid grid-cols-[minmax(0,160px)_90px_110px_minmax(0,1fr)_auto] items-center gap-2 border-t border-line bg-paper-warm/60 px-4 py-3"
           >
-            <input name="name" placeholder="New lineup, e.g. The Floor" className="input w-[170px]" />
-            <input name="sizeLabel" placeholder="7 Piece" className="input w-[90px]" />
-            <input name="clientPrice" placeholder="Client $" className="input w-[100px] text-right" />
+            <input name="name" placeholder="New lineup, e.g. The Floor" className="input" />
+            <input name="sizeLabel" placeholder="7 Piece" className="input" />
+            <input name="clientPrice" placeholder="Client $" className="input text-right" />
             <input
               name="description"
               placeholder="One line for the proposal"
-              className="input min-w-[180px] flex-1"
+              className="input"
             />
             <button className="rounded-md bg-accent px-3 py-1.5 text-[11px] font-semibold text-paper">
               Add lineup
