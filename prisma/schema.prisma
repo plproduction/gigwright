@@ -129,6 +129,8 @@ model User {
   playsAs   Musician[]  @relation("MusicianUser") // as musician (where they play)
   gigs      Gig[]
   producers Producer[]                          // people who book this bandleader
+  roles     Role[]                              // the jobs on the stand
+  lineups   Lineup[]                            // band shapes booked repeatedly
   qbo       QboConnection?
 
   @@index([referredById])
@@ -363,6 +365,9 @@ model Musician {
   // bucket) so a musician's personal mileage never pollutes their leader's
   // gig P&L. One row per (musicianId, gigId) — see MusicianGigMileage.
   mileage   MusicianGigMileage[]
+
+  // Call lists this player sits on, with their position in each.
+  callLists RoleMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -627,6 +632,12 @@ model GigPersonnel {
   musician   Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
 
   roleLabel String? // Override of musician.roles for this specific gig, optional
+
+  // Structured role, when this slot came from a Role/Lineup rather than
+  // being typed by hand. Optional on purpose: roleLabel above still
+  // carries one-off jobs that will never justify a Role row.
+  roleId String?
+  role   Role?   @relation(fields: [roleId], references: [id], onDelete: SetNull)
   payCents  Int     @default(0)
   position  Int     @default(0)
 
@@ -738,6 +749,122 @@ model Activity {
   createdAt DateTime @default(now())
 
   @@index([gigId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Roles, call order & lineups — the shape of the band
+// ═══════════════════════════════════════════════════════════════
+
+// A named job on the stand: "Saxophone", "Trumpet 1", "Sound Tech".
+//
+// Musician.roles (a String[]) and GigPersonnel.roleLabel stay exactly as
+// they are — this does not replace them. Free text is still how a
+// one-off festival role ("Photobooth Operator", "Guest Conductor") gets
+// onto a gig without ceremony. What free text CANNOT do is hold a call
+// order or a default rate, because there's no row to hang them on. That
+// is the whole reason this model exists: Auto-Book needs an ordered list
+// of who to call for Trumpet, and the payout worksheet should not make
+// you retype the same rate every gig.
+model Role {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name     String
+  position Int    @default(0) // display order on the roles page
+
+  // What this role is usually paid. Seeds GigPersonnel.payCents when a
+  // lineup is applied; always editable per gig afterward, since the
+  // rate on a casino date isn't the rate on a wedding.
+  defaultPayCents Int?
+
+  members     RoleMember[]
+  lineupRoles LineupRole[]
+  personnel   GigPersonnel[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId, position])
+}
+
+// Who gets called for a role, in what order. The join row carries the
+// order rather than the Musician, because the same player can be first
+// call on Trumpet and third call on Flugelhorn.
+model RoleMember {
+  id String @id @default(cuid())
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  musicianId String
+  musician   Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+
+  callOrder Int @default(0) // 0 = first call
+
+  @@unique([roleId, musicianId])
+  @@index([roleId, callOrder])
+}
+
+// A band shape you book over and over — and, usually, also a thing you
+// SELL. Hit Factory's site lists The Salon (3-4pc, from $3,800), The
+// Floor (7pc, $8,500), The Horn Room (9pc, $10,000) and The Gala (14pc,
+// $13,000): one concept that is simultaneously a staffing plan and a
+// product. Modeling only the staffing half would mean typing the price
+// and the description again on every invoice and contract.
+//
+// So picking a lineup on a gig does two things at once:
+//   band side   → roster slots, one per LineupRole, at their rates
+//   client side → invoice line item and the contract's program line
+model Lineup {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name     String // "The Floor"
+  position Int    @default(0)
+
+  // Client-facing half. All optional — a lineup used purely for internal
+  // staffing ("Jazzy Christmas 5-pc") needs none of it.
+  //
+  // sizeLabel is free text rather than a number because the real ones
+  // aren't single numbers: "3–4 Piece".
+  sizeLabel        String? // "7 Piece"
+  description      String? // the one-liner that goes on the proposal
+  clientPriceCents Int?    // starting price, before travel and production
+
+  roles LineupRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([ownerId, name])
+  @@index([ownerId, position])
+}
+
+model LineupRole {
+  id String @id @default(cuid())
+
+  lineupId String
+  lineup   Lineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  // Two trumpets in a 9-piece is one row with count 2, not two rows.
+  count Int @default(1)
+
+  // Overrides Role.defaultPayCents for this lineup only — a horn on the
+  // 9-piece often isn't paid what the same horn gets in the quartet.
+  payCents Int?
+
+  position Int @default(0)
+
+  @@unique([lineupId, roleId])
+  @@index([lineupId, position])
 }
 
 // ═══════════════════════════════════════════════════════════════

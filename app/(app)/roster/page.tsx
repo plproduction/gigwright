@@ -41,6 +41,12 @@ export default async function RosterPage() {
           >
             Import CSV
           </button>
+          <Link
+            href="/roster/roles"
+            className="rounded-md border border-line-strong bg-transparent px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-paper-warm"
+          >
+            Roles &amp; lineups
+          </Link>
           {atCap ? (
             <Link
               href="/settings/billing?upgrade=musicians"
