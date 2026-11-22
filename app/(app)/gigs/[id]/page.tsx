@@ -21,6 +21,7 @@ import { LineupToggle } from "@/components/LineupToggle";
 import { DoNotEmailToggle } from "@/components/DoNotEmailToggle";
 import { ContractUpload } from "@/components/ContractUpload";
 import { GigContractInvoicePanel } from "@/components/contracts/GigContractInvoicePanel";
+import { RemoveLineupButton } from "@/components/RemoveLineupButton";
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
 import { WITH_ROLES, roleNamesBesidesLeader } from "@/lib/musician-roles";
@@ -250,6 +251,37 @@ export default async function GigDetailPage({
   const fanoutCount = gig.activity.filter(
     (a) => a.action === "fanout_sent",
   ).length;
+
+  // Every lineup apply still standing — matching removeAppliedLineup,
+  // which undoes them together. Counting only the latest would read
+  // "0 players" after applying the same lineup twice, since the second
+  // apply seats nobody new. Applies written before the payload existed
+  // carry nothing to undo and are ignored, so the button never offers
+  // to do something it can't.
+  const appliedLineup = (() => {
+    const live = gig.activity
+      .filter((a) => a.action === "lineup_applied")
+      .map((a) => (a.payload ?? {}) as {
+        lineupName?: string;
+        personnelIds?: string[];
+        undoneAt?: string | null;
+      })
+      .filter((p) => !p.undoneAt && Array.isArray(p.personnelIds));
+    if (live.length === 0) return null;
+
+    const ids = new Set(live.flatMap((p) => p.personnelIds ?? []));
+    // Only count rows still on the gig — a player removed by hand since
+    // shouldn't inflate the number in the confirm.
+    const onGig = new Set(gig.personnel.map((p) => p.id));
+    const stillHere = [...ids].filter((id) => onGig.has(id));
+    if (stillHere.length === 0) return null;
+
+    const names = [...new Set(live.map((p) => p.lineupName).filter(Boolean))];
+    return {
+      lineupName: names.length > 1 ? names.join(" + ") : (names[0] ?? "that lineup"),
+      playerCount: stillHere.length,
+    };
+  })();
 
   // ── Zone contents ────────────────────────────────────────────────
   // Every panel declares whether it has anything in it yet. Filled
@@ -895,6 +927,18 @@ export default async function GigDetailPage({
                 Fills from each role&rsquo;s call list, first call first.
               </span>
             </form>
+          )}
+
+          {/* Picked the wrong one? Take it back off. Only the rows that
+              apply created go, nobody already paid goes, and the client
+              price comes back only if that apply is still the reason
+              it's set. See removeAppliedLineup. */}
+          {appliedLineup && (
+            <RemoveLineupButton
+              gigId={gig.id}
+              lineupName={appliedLineup.lineupName}
+              playerCount={appliedLineup.playerCount}
+            />
           )}
 
           {gig.personnel.length === 0 ? (
