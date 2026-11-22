@@ -435,7 +435,14 @@ model Gig {
   // startAt is the authoritative "when is this gig" field (downbeat time).
   // The detail screen also tracks optional load-in, soundcheck, and end times.
   startAt         DateTime // Downbeat (first show)
+  // Musicians' load in — when the band is expected at the door.
+  // Kept the original column name so existing rows keep their meaning.
   loadInAt        DateTime?
+  // Sound and backline load in, usually well before the band. Optional
+  // and independent: a club date with house PA has neither, a festival
+  // has both hours apart. Renders on the run-of-show sheet ONLY when
+  // set, so the common case stays uncluttered (Patrick, 2026-11-22).
+  soundLoadInAt   DateTime?
   soundcheckAt    DateTime?
   soundcheckEndAt DateTime? // when the band is freed up after sound check
   callTimeAt      DateTime?

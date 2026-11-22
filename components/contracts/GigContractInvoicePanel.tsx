@@ -97,15 +97,21 @@ export function GigContractInvoicePanel({
   if (!letterheadReady) {
     return (
       <div className="rounded-md border border-warn/30 bg-warn/5 p-3">
+        {/* "Add your letterhead" sent people looking for a file to
+            upload (Patrick, 2026-11-22: "people are not going to know
+            exactly what that is... Or is this just a logo?"). It is four
+            typed fields and no image at all, so the copy says so. */}
         <div className="text-[12px] font-semibold text-ink">
-          Add your letterhead first
+          Type your name and business details first
         </div>
         <p className="mt-1 text-[11px] leading-[1.5] text-ink-soft">
-          Contracts print your name and business at the top. Set them once in{" "}
+          Nothing to upload — no logo, no file. Four boxes in{" "}
           <a href="/settings" className="font-medium text-accent underline">
             Settings
-          </a>{" "}
-          and this panel turns on for every gig.
+          </a>
+          : your name, business name, address and phone. They print as the
+          heading on every contract and invoice, and this panel turns on for
+          every gig once they&rsquo;re saved.
         </p>
       </div>
     );

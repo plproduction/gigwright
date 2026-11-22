@@ -193,6 +193,62 @@ export async function moveInCallList(roleMemberId: string, direction: "up" | "do
   revalidatePath(PAGE);
 }
 
+// Drop a name anywhere in the call list and renumber from scratch.
+//
+// moveInCallList above swaps two neighbours, which is right for a single
+// nudge and wrong for "Alex is my first call now" — that was eleven
+// clicks on a 9px target. The drag handler sends the whole order it
+// wants; we trust nothing in it and rebuild from the role's own rows.
+export async function reorderCallList(roleId: string, orderedIds: string[]) {
+  const user = await requireBandleader();
+  const role = await db.role.findFirst({
+    where: { id: roleId, ownerId: user.id },
+    select: { id: true },
+  });
+  if (!role) throw new Error("Role not found");
+
+  const rows = await db.roleMember.findMany({
+    where: { roleId },
+    orderBy: { callOrder: "asc" },
+    select: { id: true, callOrder: true },
+  });
+
+  // Only ids that really belong to this role, de-duplicated, in the
+  // order asked for. Anything the client left out keeps its relative
+  // place at the end rather than being silently renumbered to 0.
+  const known = new Map(rows.map((r) => [r.id, r.callOrder]));
+  const seen = new Set<string>();
+  const wanted: string[] = [];
+  for (const id of orderedIds) {
+    if (known.has(id) && !seen.has(id)) {
+      seen.add(id);
+      wanted.push(id);
+    }
+  }
+  const final = [...wanted, ...rows.map((r) => r.id).filter((id) => !seen.has(id))];
+
+  // Write only the rows that actually move. A one-place drag in a
+  // 48-name list is then two updates, not 48 round trips to us-east-1.
+  const moved = final.filter((id, i) => known.get(id) !== i);
+  if (moved.length === 0) return;
+
+  // Interactive form rather than the array form purely for the timeout:
+  // dragging the last of 48 vocalists to first renumbers all 48, and the
+  // default 5s is tight against us-east-1 on a cold connection.
+  await db.$transaction(
+    async (tx) => {
+      for (const id of moved) {
+        await tx.roleMember.update({
+          where: { id },
+          data: { callOrder: final.indexOf(id) },
+        });
+      }
+    },
+    { timeout: 20_000, maxWait: 10_000 },
+  );
+  revalidatePath(PAGE);
+}
+
 // ── Lineups ──────────────────────────────────────────────────────
 
 export async function createLineup(formData: FormData) {

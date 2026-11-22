@@ -704,7 +704,20 @@ export default async function GigDetailPage({
       <div className="border-b border-line bg-paper px-6 py-6 md:px-8">
         <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:gap-10">
           <div className="grid grid-cols-2 items-start gap-x-6 gap-y-5 sm:grid-cols-4">
-            <TimeTile label="Load in" value={formatTime(gig.loadInAt)} />
+            {/* Sound's load in appears only once you've entered one; the
+                musicians' slot always shows, blank included, because an
+                empty one is the reminder to go ask the venue. */}
+            {gig.soundLoadInAt && (
+              <TimeTile
+                label="Load in · sound"
+                value={formatTime(gig.soundLoadInAt)}
+                sub="PA and backline"
+              />
+            )}
+            <TimeTile
+              label={gig.soundLoadInAt ? "Load in · musicians" : "Load in"}
+              value={formatTime(gig.loadInAt)}
+            />
             <TimeTile
               label="Sound check"
               value={formatTime(gig.soundcheckAt)}

@@ -107,9 +107,10 @@ export default async function SettingsPage() {
           Contract letterhead
         </div>
         <p className="mb-4 text-[12px] leading-[1.5] text-ink-soft">
-          The name and contact block printed at the top of every contract
-          and invoice you send. Your name is the Artist on the agreement;
-          the business name is the entity signing it.
+          Typed text, not an image — there&rsquo;s no logo to upload. These four
+          lines print as the heading on every contract and invoice you send.
+          Your name is the Artist on the agreement; the business name is the
+          entity signing it.
         </p>
         <form action={saveContractLetterhead} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
@@ -176,10 +177,16 @@ export default async function SettingsPage() {
         <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
           Your payment info
         </div>
+        {/* The old copy here read "How clients pay you", which isn't true
+            — payoutAddress is never rendered on a contract, an invoice or
+            the client portal. Clients pay against the agreement. This
+            field only matters when somebody ELSE is paying you as a
+            player. Patrick spotted it 2026-11-22. */}
         <p className="mb-4 text-[12px] leading-[1.5] text-ink-soft">
-          How clients pay you (and how another bandleader would pay you if
-          you sub on their gig). Shows up on your gig sheets and on your
-          own roster card.
+          For when you&rsquo;re the one getting paid as a player — another
+          bandleader subbing you in on their gig sees this on their payout
+          worksheet. Clients don&rsquo;t: they pay against your contract and
+          invoice, which never show a Venmo handle.
         </p>
         <form action={saveLeaderPayment} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">

@@ -1,0 +1,11 @@
+-- Two load-ins per gig, not one.
+--
+-- Sound almost never loads in with the band: the PA goes in hours
+-- earlier so there's something to check into. One "Load in" field meant
+-- whichever number you typed was wrong for half the people reading the
+-- sheet.
+--
+-- The existing loadInAt keeps its rows and becomes the MUSICIANS' load
+-- in, because that is what it has in practice been used for on the
+-- band-facing sheet and in the email fanout. Sound gets the new column.
+ALTER TABLE "Gig" ADD COLUMN "soundLoadInAt" TIMESTAMP(3);

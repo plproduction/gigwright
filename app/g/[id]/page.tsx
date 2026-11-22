@@ -61,6 +61,7 @@ export default async function PublicGigPage({
       id: true,
       startAt: true,
       loadInAt: true,
+      soundLoadInAt: true,
       soundcheckAt: true,
       callTimeAt: true,
       endAt: true,
@@ -158,7 +159,15 @@ export default async function PublicGigPage({
             Earlier this rendered Call first, which made the schedule
             unreadable as a chronological flow. */}
         <section className="mb-10 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-line py-6 sm:grid-cols-4">
-          <TimeTile label="Load in" time={gig.loadInAt} />
+          {/* Sound load in only when it was entered — most club dates
+              have one load in and an extra empty tile is noise. */}
+          {gig.soundLoadInAt && (
+            <TimeTile label="Load in · sound" time={gig.soundLoadInAt} />
+          )}
+          <TimeTile
+            label={gig.soundLoadInAt ? "Load in · musicians" : "Load in"}
+            time={gig.loadInAt}
+          />
           <TimeTile label="Sound check" time={gig.soundcheckAt} />
           <TimeTile label="Call" time={gig.callTimeAt} />
           <TimeTile

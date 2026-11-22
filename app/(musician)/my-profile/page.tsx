@@ -11,8 +11,8 @@ import {
 } from "@/components/AutoSavingProfileField";
 import {
   formatDayNum,
-  formatLongDate,
-  formatMonthAbbr,
+  formatLongDateSmart,
+  formatMonthAbbrSmart,
   gigVenueLabel,
 } from "@/lib/format";
 
@@ -296,7 +296,7 @@ export default async function MyProfilePage() {
                         {formatDayNum(p.gig.startAt)}
                       </div>
                       <div className="mt-1 font-sans text-[9.5px] font-semibold uppercase tracking-[0.2em] text-ink-mute">
-                        {formatMonthAbbr(p.gig.startAt)}
+                        {formatMonthAbbrSmart(p.gig.startAt)}
                       </div>
                     </div>
 
@@ -311,7 +311,7 @@ export default async function MyProfilePage() {
                         </div>
                       )}
                       <div className="mt-1.5 text-[11px] leading-tight text-ink-mute">
-                        {formatLongDate(p.gig.startAt)}{" "}
+                        {formatLongDateSmart(p.gig.startAt)}{" "}
                         <span className="text-ink-mute/60">·</span> for{" "}
                         <span className="text-ink-soft">{leader}</span>
                       </div>
