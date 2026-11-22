@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
+import { AutoSubmitSelect, AutoSubmitNumber } from "@/components/AutoSubmitSelect";
 import {
   createRole,
   updateRole,
@@ -73,7 +74,8 @@ export default async function RolesPage() {
       <div className="flex items-center gap-2 border-b border-line bg-paper-warm px-6 py-4">
         <h4 className="font-serif text-[20px] font-normal tracking-tight">Roles &amp; lineups</h4>
         <span className="text-[12px] text-ink-mute">
-          · {roles.length} roles · {lineups.length} lineups
+          · {roles.length} {roles.length === 1 ? "role" : "roles"} ·{" "}
+          {lineups.length} {lineups.length === 1 ? "lineup" : "lineups"}
         </span>
         <Link href="/roster" className="ml-auto text-[12px] text-accent hover:underline">
           Roster →
@@ -176,16 +178,15 @@ export default async function RolesPage() {
                     </form>
                   </span>
                 ))}
-                <form action={addToCallList.bind(null, role.id)} className="flex items-center gap-1.5">
-                  <select name="musicianId" className="input w-[150px] py-1 text-[11px]" style={{ width: 150 }} defaultValue="">
-                    <option value="">+ add player…</option>
-                    {musicians.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button className="text-[11px] font-medium text-accent hover:underline">Add</button>
+                <form action={addToCallList.bind(null, role.id)}>
+                  <AutoSubmitSelect
+                    name="musicianId"
+                    placeholder="+ add player…"
+                    className="input py-1 text-[11px]"
+                    options={musicians
+                      .filter((m) => !role.members.some((rm) => rm.musicianId === m.id))
+                      .map((m) => ({ value: m.id, label: m.name }))}
+                  />
                 </form>
               </div>
             </div>
@@ -273,7 +274,16 @@ export default async function RolesPage() {
                       className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[11px]"
                     >
                       {lr.role.name}
-                      {lr.count > 1 && <span className="text-ink-mute">×{lr.count}</span>}
+                      <form action={addRoleToLineup.bind(null, lineup.id)} className="inline-flex">
+                        <input type="hidden" name="roleId" value={lr.roleId} />
+                        <span className="text-ink-mute">×</span>
+                        <AutoSubmitNumber
+                          name="count"
+                          defaultValue={lr.count}
+                          ariaLabel={`How many ${lr.role.name}`}
+                          className="w-[30px] bg-transparent text-center text-[11px] outline-none"
+                        />
+                      </form>
                       <form action={removeRoleFromLineup.bind(null, lr.id)} className="inline">
                         <button className="text-ink-mute hover:text-accent" title="Remove">
                           ×
@@ -281,31 +291,15 @@ export default async function RolesPage() {
                       </form>
                     </span>
                   ))}
-                  <form
-                    action={addRoleToLineup.bind(null, lineup.id)}
-                    className="flex items-center gap-1.5"
-                  >
-                    <select name="roleId" className="input py-1 text-[11px]" style={{ width: 130 }} defaultValue="">
-                      <option value="">+ add role…</option>
-                      {roles.map((r) => (
-                        <option key={r.id} value={r.id}>
-                          {r.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      name="count"
-                      defaultValue="1"
-                      className="input py-1 text-center text-[11px]" style={{ width: 48 }}
-                      aria-label="How many"
+                  <form action={addRoleToLineup.bind(null, lineup.id)}>
+                    <AutoSubmitSelect
+                      name="roleId"
+                      placeholder="+ add role…"
+                      className="input py-1 text-[11px]"
+                      options={roles
+                        .filter((r) => !lineup.roles.some((lr) => lr.roleId === r.id))
+                        .map((r) => ({ value: r.id, label: r.name }))}
                     />
-                    <input
-                      name="pay"
-                      placeholder="$"
-                      className="input py-1 text-right text-[11px]" style={{ width: 70 }}
-                      aria-label="Rate for this lineup"
-                    />
-                    <button className="text-[11px] font-medium text-accent hover:underline">Add</button>
                   </form>
 
                   <div className="ml-auto flex items-center gap-3 text-[11px] text-ink-mute">

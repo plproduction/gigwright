@@ -240,14 +240,22 @@ export async function addRoleToLineup(lineupId: string, formData: FormData) {
 
   // Adding a role that's already in the lineup updates its count —
   // that's what "two trumpets, actually three" means in practice.
+  //
+  // `pay` is only touched when the submitting form actually carried the
+  // field. The inline count control on each chip posts roleId + count
+  // and nothing else; without this guard, nudging a count from 2 to 3
+  // would silently wipe that lineup's rate override.
+  const payRaw = formData.get("pay");
+  const payPatch = payRaw === null ? {} : { payCents: centsOrNull(payRaw) };
+
   await db.lineupRole.upsert({
     where: { lineupId_roleId: { lineupId, roleId } },
-    update: { count, payCents: centsOrNull(formData.get("pay")) },
+    update: { count, ...payPatch },
     create: {
       lineupId,
       roleId,
       count,
-      payCents: centsOrNull(formData.get("pay")),
+      payCents: centsOrNull(payRaw),
       position: (last?.position ?? -1) + 1,
     },
   });
