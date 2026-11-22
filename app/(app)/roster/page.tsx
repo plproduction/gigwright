@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
-import { AutoSubmitSelect, AutoSubmitNumber } from "@/components/AutoSubmitSelect";
+import { AutoSubmitNumber } from "@/components/AutoSubmitSelect";
+import { Combobox } from "@/components/Combobox";
+import { FilterRows } from "@/components/FilterRows";
 import { FREE_LIMITS, isPaid } from "@/lib/plan";
 import {
   createRole,
@@ -120,14 +122,28 @@ export default async function BandPage() {
 
       <div className="px-6 py-6">
         {/* ── Roles ─────────────────────────────────────────── */}
-        <div className="mb-3 flex items-baseline gap-3">
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
           <h5 className="text-[12px] font-semibold text-ink">Roles</h5>
-          <span className="text-[11px] text-ink-mute">
+          <span className="hidden text-[11px] text-ink-mute sm:inline">
             The jobs on the stand. Call order is who you ring first.
           </span>
+          {/* Type "guit" and only Guitar is left. Worth having from about
+              a dozen roles up; at 28 the list is longer than the screen. */}
+          {roles.length > 6 && (
+            <div className="ml-auto">
+              <FilterRows
+                targetId="role-rows"
+                placeholder="Find a role…"
+                noun="roles"
+              />
+            </div>
+          )}
         </div>
 
-        <div className="mb-7 overflow-hidden rounded-[10px] border border-line">
+        <div
+          id="role-rows"
+          className="mb-7 overflow-hidden rounded-[10px] border border-line"
+        >
           {roles.length === 0 && (
             <div className="flex flex-wrap items-center gap-3 bg-paper px-4 py-5 text-[12px] text-ink-mute">
               <span>
@@ -149,6 +165,12 @@ export default async function BandPage() {
             // tall and left the right-hand two thirds of the page empty.
             <div
               key={role.id}
+              // The needle for the role filter above. Includes the call
+              // list, so typing a player's name finds every chair they
+              // sit on — "what have I got Tim down for?"
+              data-filter-key={`${role.name} ${role.members
+                .map((m) => m.musician.name)
+                .join(" ")}`}
               className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-paper px-4 py-2.5 last:border-b-0"
             >
               <form
@@ -213,8 +235,11 @@ export default async function BandPage() {
                   </span>
                 ))}
                 <form action={addToCallList.bind(null, role.id)}>
-                  <AutoSubmitSelect
+                  {/* Was a <select> listing all 256 people. Type three
+                      letters instead of scrolling a filing cabinet. */}
+                  <Combobox
                     name="musicianId"
+                    ariaLabel={`Add someone to the ${role.name} call list`}
                     placeholder={
                       role.members.length === 0 ? "nobody yet — add…" : "+ add…"
                     }
@@ -386,8 +411,9 @@ export default async function BandPage() {
                     </span>
                   ))}
                   <form action={addRoleToLineup.bind(null, lineup.id)}>
-                    <AutoSubmitSelect
+                    <Combobox
                       name="roleId"
+                      ariaLabel={`Add a role to ${lineup.name}`}
                       placeholder="+ add role…"
                       className="input py-1 text-[11px]"
                       options={roles
