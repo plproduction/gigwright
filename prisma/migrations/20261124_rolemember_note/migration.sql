@@ -1,0 +1,12 @@
+-- Add a note to call-list membership.
+--
+-- Purely additive: one nullable column. The role cleanup that fills it
+-- (scripts/cleanup-roles.mjs) is a separate, reviewable step run against a
+-- rehearsal branch first — it is NOT part of this migration, so deploying
+-- this file changes nothing anyone can see.
+--
+-- What the note is for: the free-text roles folded in on 2026-11-23 carried
+-- more than an instrument. "Drums Miami", "Guitar referral Dave Iula",
+-- "Vocals Turnstiles". Normalising those to "Drums"/"Guitar"/"Vocals" without
+-- somewhere to put the rest would destroy the most valuable thing in them.
+ALTER TABLE "RoleMember" ADD COLUMN "note" TEXT;

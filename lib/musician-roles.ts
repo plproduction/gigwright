@@ -9,16 +9,34 @@
 export const WITH_ROLES = {
   callLists: {
     orderBy: { role: { position: "asc" } },
-    select: { role: { select: { id: true, name: true } } },
+    select: { note: true, role: { select: { id: true, name: true } } },
   },
 } as const;
 
 export type MusicianWithRoles = {
-  callLists: { role: { id: string; name: string } }[];
+  callLists: { note: string | null; role: { id: string; name: string } }[];
 };
 
 export function roleNames(m: MusicianWithRoles): string[] {
   return m.callLists.map((c) => c.role.name);
+}
+
+// The detail the old free-text roles carried besides the instrument —
+// "Miami", "referred by Greg Parnell", "Prince tribute". Kept separate
+// from the role name so the Band page can group by role, and folded into
+// the search haystack so typing "miami" still finds a Miami bass player.
+// That worked before the cleanup only because the role was literally
+// named "Bass Miami"; it has to be deliberate now.
+export function roleNotes(m: MusicianWithRoles): string[] {
+  return m.callLists.map((c) => c.note).filter((x): x is string => Boolean(x));
+}
+
+// "Bass · Miami" — what a human wants to read in a search result or on a
+// roster row. Falls back to the bare role name when there's no note.
+export function roleLabels(m: MusicianWithRoles): string[] {
+  return m.callLists.map((c) =>
+    c.note ? `${c.role.name} · ${c.note}` : c.role.name,
+  );
 }
 
 // Several places print "Leader" from the isLeader flag and then the role
@@ -38,10 +56,15 @@ export function roleNamesBesidesLeader(
 // there's still one list of "my people", but grouped separately in
 // the UI. Patrick's design 2026-08-08, carried over from the old
 // free-text roles.
-export const PRODUCER_ROLE = "PRODUCER";
+export const PRODUCER_ROLE = "Event Producer";
 
+// Matches the canonical "Event Producer" and the older free-text spellings
+// ("PRODUCER", "Producer") that predate the 2026-11-24 cleanup. Without the
+// second case this silently stopped grouping producers the moment the role
+// was renamed, because "EVENT PRODUCER" !== "PRODUCER".
 export function isProducerRole(name: string): boolean {
-  return name.toUpperCase() === PRODUCER_ROLE;
+  const upper = name.toUpperCase();
+  return upper === "EVENT PRODUCER" || upper === "PRODUCER";
 }
 
 export function isProducer(m: MusicianWithRoles): boolean {
