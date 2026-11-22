@@ -43,6 +43,66 @@ async function nextContractNumber(): Promise<string> {
   return `${year}-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
+const PIECE_WORDS = [
+  "", "solo", "two-piece", "three-piece", "four-piece", "five-piece",
+  "six-piece", "seven-piece", "eight-piece", "nine-piece", "ten-piece",
+  "eleven-piece", "twelve-piece",
+];
+
+// What the contract says the client is buying.
+//
+// Patrick, 2026-11-22: "on the contract, I may just say six piece. I
+// don't want to put every specific thing on there because it's more
+// legally binding for me, the contractor."
+//
+// So this describes a CONFIGURATION and never names a musician. The
+// lineup is the right source for it — Lineup.sizeLabel ("6 Piece") and
+// Lineup.description exist precisely for the client-facing half, and
+// the lineup is the layer that doesn't change when you sub someone in
+// on the Thursday. GigPersonnel is staffing and stays out of this.
+//
+// It's a default, not a rule. Whatever comes back lands in an editable
+// field on the generate form: a gig with no lineup, or a one-off that
+// doesn't match any lineup, is typed over. See PERSONNEL & SUBSTITUTION
+// in the boilerplate for the clause that makes the swap safe.
+export async function defaultProgramLine(
+  gigId: string,
+  artist: string,
+): Promise<string> {
+  const applied = await db.activity.findFirst({
+    where: { gigId, action: "lineup_applied" },
+    orderBy: { createdAt: "desc" },
+    select: { payload: true },
+  });
+  const p = (applied?.payload ?? {}) as {
+    lineupId?: string;
+    undoneAt?: string | null;
+  };
+
+  if (p.lineupId && !p.undoneAt) {
+    const lineup = await db.lineup.findUnique({
+      where: { id: p.lineupId },
+      select: { name: true, sizeLabel: true, description: true },
+    });
+    if (lineup) {
+      const size = lineup.sizeLabel?.trim() || lineup.name;
+      const head = `${artist} — ${size}`;
+      return lineup.description?.trim()
+        ? `${head}. ${lineup.description.trim()}`
+        : head;
+    }
+  }
+
+  // No lineup on this gig: fall back to the size of the band actually
+  // booked. Still a count, still no names.
+  const n = await db.gigPersonnel.count({ where: { gigId } });
+  if (n >= 2) {
+    const word = PIECE_WORDS[n] ?? `${n}-piece`;
+    return `${artist} — ${word} band`;
+  }
+  return `${artist} — live performance`;
+}
+
 // Builds (or regenerates) the DRAFT contract for a gig from its current
 // Gig/Venue/Producer/GigPersonnel data, plus the performance-specific
 // terms the bandleader fills in on the "Generate contract" form. Terms
@@ -86,7 +146,7 @@ export async function generateContract(gigId: string, formData: FormData) {
 
   const program =
     nullIfEmpty(formData.get("program")) ??
-    `${user.name ?? "Artist"} — live performance`;
+    (await defaultProgramLine(gigId, user.name ?? "Artist"));
 
   const purchaserName =
     nullIfEmpty(formData.get("purchaserName")) ?? gig.producer?.name ?? "Purchaser";

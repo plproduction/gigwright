@@ -42,6 +42,11 @@ type Props = {
   // "Your bandleader" across the masthead. Block generation, don't
   // produce an unsendable document.
   letterheadReady: boolean;
+
+  // Prefill for the program line, derived from the applied lineup (or
+  // the band size) on the server. Null when there is nothing to guess
+  // from, which just leaves the field empty with its placeholder.
+  suggestedProgram?: string | null;
 };
 
 function dollars(cents: number): string {
@@ -73,6 +78,7 @@ export function GigContractInvoicePanel({
   contract,
   invoice,
   letterheadReady,
+  suggestedProgram,
 }: Props) {
   const [pending, startTransition] = useTransition();
   const [lines, setLines] = useState<InvoiceLine[]>([{ description: "", qty: "1", rate: "" }]);
@@ -165,12 +171,25 @@ export function GigContractInvoicePanel({
               placeholder="Purchaser phone"
               className="input"
             />
-            <input
-              name="program"
-              defaultValue={contract?.program ?? ""}
-              placeholder="Program, e.g. Saxophone + accompanist"
-              className="input col-span-2"
-            />
+            {/* What the client is buying, as a configuration. Prefilled
+                from the applied lineup when there is one, so it reads
+                "Six Piece" rather than six names — and editable, because
+                a food-truck wedding isn't any lineup you keep. Never
+                names a musician; PERSONNEL & SUBSTITUTION in the
+                boilerplate covers swapping one out. */}
+            <label className="col-span-2 flex flex-col gap-1">
+              <input
+                name="program"
+                defaultValue={contract?.program ?? suggestedProgram ?? ""}
+                placeholder="Six Piece · Saxophone and accompanist · Quartet"
+                className="input"
+              />
+              <span className="text-[10.5px] leading-[1.45] text-ink-mute">
+                What the client is buying. Describe the band, don&rsquo;t name
+                it — &ldquo;Six Piece&rdquo; leaves you free to sub a player
+                without touching a signed agreement.
+              </span>
+            </label>
             <input
               name="performanceWindow"
               defaultValue={contract?.performanceWindow ?? ""}

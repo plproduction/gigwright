@@ -411,15 +411,44 @@ export async function applyLineupToGig(gigId: string, formData: FormData) {
   }> = [];
   const short: string[] = [];
 
+  // Two passes, and the order matters.
+  //
+  // One pass walked each chair's call list and took the first unassigned
+  // name, skipping the create if that person was already on the gig.
+  // That quietly broke on an already-seated gig: if somebody here got
+  // consumed by an earlier chair than the one they're actually sitting
+  // in, the later chair fell through to the next name on the list and
+  // ADDED them. Re-applying Six Piece to a full six-piece band put a
+  // seventh player on it (caught on production 2026-11-22 — it added
+  // David Dyson to a gig that already had a bassist).
+  //
+  // So: seat the people already here first, across all chairs, then fill
+  // what's genuinely still empty. Re-applying the same lineup to the
+  // same band is now a no-op, which is what anyone would expect.
+  const filledCount = new Map<string, number>();
+
+  // Pass 1 — people already on the gig claim the chairs they can fill.
+  for (const lr of lineup.roles) {
+    let filled = 0;
+    for (const m of lr.role.members) {
+      if (filled >= lr.count) break;
+      if (assigned.has(m.musicianId)) continue;
+      if (!onGig.has(m.musicianId)) continue; // pass 2's problem
+      assigned.add(m.musicianId);
+      filled++;
+    }
+    filledCount.set(lr.roleId, filled);
+  }
+
+  // Pass 2 — whatever is still empty gets called, first call first.
   for (const lr of lineup.roles) {
     const rate = lr.payCents ?? lr.role.defaultPayCents ?? 0;
-    let filled = 0;
+    let filled = filledCount.get(lr.roleId) ?? 0;
     for (const m of lr.role.members) {
       if (filled >= lr.count) break;
       if (assigned.has(m.musicianId)) continue; // already took a chair
       assigned.add(m.musicianId);
       filled++;
-      if (onGig.has(m.musicianId)) continue; // already on the gig
       toCreate.push({
         gigId,
         musicianId: m.musicianId,
