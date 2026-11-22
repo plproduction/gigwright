@@ -9,7 +9,7 @@ one route. Everything here was tested end to end on 2026-11-22.
 |---|---|
 | Live database | Neon project `gigwright` (`proud-pond-49262883`), Postgres 17, AWS us-east-1, Launch plan |
 | Point-in-time restore | **7 days.** Neon can put the database back to any instant in the last week |
-| Scheduled snapshots | **Not set up.** Neon offers daily / weekly / monthly on this plan — Backup & Restore → Edit schedule |
+| Scheduled snapshots | **Daily at 09:00 UTC** (04:00 Eastern), kept 14 days. Turned on 2026-11-22 |
 | Backups you own | `npm run db:backup` → a folder outside the repo, restorable anywhere |
 | Rebuild from migrations | Works. Verified to reproduce the live structure exactly from an empty database |
 
@@ -24,8 +24,11 @@ Use Neon point-in-time restore. Neon console → project `gigwright` → branch
 then **Restore**. This is the fastest route and loses nothing else.
 
 **It happened more than 7 days ago.**
-Neon can no longer help — its history window has passed. Use the most recent
-backup folder (Route C), and expect to lose anything entered after it was taken.
+Neon's history window has passed, so try a snapshot first: same Backup & Restore
+page, under "Or restore from a snapshot". There is a daily one for the last 14
+days, plus a manual snapshot taken 2026-11-22 before the schema-repair migration
+first deployed, which never expires. Failing that, use the most recent backup
+folder (Route C) and expect to lose anything entered after it was taken.
 
 **The whole database or the whole Neon project is gone.**
 Route C, into a brand-new Neon project or any Postgres.
@@ -71,6 +74,10 @@ npm run db:backup
 Goes to `~/Documents/Claude/Projects/GigWright App/backups/gigwright-<timestamp>/`,
 or wherever `GIGWRIGHT_BACKUP_DIR` points. Take one before anything structural:
 a migration that drops or renames a column, a bulk edit, a data cleanup.
+
+Neon's point-in-time window and its daily snapshots both live inside the Neon
+account. They cover almost everything that actually goes wrong, and they are not
+a copy you hold. This is the one that survives losing the account.
 
 Each folder holds `structure.sql` (the whole schema as CREATE statements),
 `data/<Table>.jsonl` (one row per line), `migrations.json` (the migration
