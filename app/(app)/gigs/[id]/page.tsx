@@ -582,6 +582,7 @@ export default async function GigDetailPage({
             <GigContractInvoicePanel
               gigId={gig.id}
               clientPortalToken={gig.clientPortalToken}
+              letterheadReady={Boolean(user.name || user.businessName)}
               contract={
                 gig.contract
                   ? {

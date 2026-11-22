@@ -9,6 +9,7 @@ import {
 import {
   updateEnabledPaymentMethods,
   saveLeaderPayment,
+  saveContractLetterhead,
 } from "@/lib/actions/user-settings";
 import { getReferralStatus } from "@/lib/actions/referrals";
 import { ReferralCard } from "@/components/ReferralCard";
@@ -95,6 +96,75 @@ export default async function SettingsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Contract letterhead — who the generated agreement says the
+          Artist is. Sits above payment info because a contract with no
+          name on it is unsendable, and the very first contract generated
+          on production came out reading "Your bandleader". */}
+      <div className="mb-7 rounded-[10px] border border-line bg-paper p-5">
+        <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-ink-mute">
+          Contract letterhead
+        </div>
+        <p className="mb-4 text-[12px] leading-[1.5] text-ink-soft">
+          The name and contact block printed at the top of every contract
+          and invoice you send. Your name is the Artist on the agreement;
+          the business name is the entity signing it.
+        </p>
+        <form action={saveContractLetterhead} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Your name
+            </span>
+            <input
+              name="name"
+              defaultValue={user.name ?? ""}
+              placeholder="Patrick Lamb"
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Business name
+            </span>
+            <input
+              name="businessName"
+              defaultValue={user.businessName ?? ""}
+              placeholder="Patrick Lamb Productions"
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5 sm:col-span-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Address
+            </span>
+            <input
+              name="businessAddress"
+              defaultValue={user.businessAddress ?? ""}
+              placeholder="3610 S Ocean Blvd, Palm Beach, FL 33480"
+              className="input"
+            />
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
+              Phone
+            </span>
+            <input
+              name="businessPhone"
+              defaultValue={user.businessPhone ?? ""}
+              placeholder="503.267.4826"
+              className="input"
+            />
+          </label>
+          <div className="sm:col-span-2">
+            <button
+              type="submit"
+              className="rounded-md bg-ink px-4 py-2 text-[12px] font-medium text-paper hover:bg-black"
+            >
+              Save letterhead
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* Your own payment info — preferred method + handle/address.

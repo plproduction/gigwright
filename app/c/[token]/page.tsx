@@ -37,8 +37,12 @@ export default async function ClientPortalPage({ params }: { params: Promise<Par
 
   if (!gig || (!gig.contract && !gig.invoice)) notFound();
 
-  const bandleaderName = gig.owner.name ?? "Your bandleader";
-  const businessName = gig.owner.businessName ?? bandleaderName;
+  // Last-resort fallbacks only. Generation is blocked unless name or
+  // businessName is set (see generateContract), so these should never
+  // surface — but if one somehow does, the client sees an email address
+  // rather than the phrase "Your bandleader" on a legal agreement.
+  const bandleaderName = gig.owner.name ?? gig.owner.businessName ?? gig.owner.email;
+  const businessName = gig.owner.businessName ?? gig.owner.name ?? gig.owner.email;
   const address = gig.owner.businessAddress ?? "";
   const phone = gig.owner.businessPhone ?? "";
   const email = gig.owner.email;
