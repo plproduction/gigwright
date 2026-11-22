@@ -7,16 +7,15 @@ import {
 } from "@/components/AutoSubmitSelect";
 import { Combobox } from "@/components/Combobox";
 import { FilterRows } from "@/components/FilterRows";
+import { CallList } from "@/components/CallList";
+import { DeleteRoleButton } from "@/components/DeleteRoleButton";
 import { FREE_LIMITS, isPaid } from "@/lib/plan";
 import {
   createRole,
   seedSuggestedRoles,
   updateRole,
-  deleteRole,
   moveRole,
   addToCallList,
-  removeFromCallList,
-  moveInCallList,
   createLineup,
   updateLineup,
   deleteLineup,
@@ -207,36 +206,18 @@ export default async function BandPage() {
 
               <span className="h-4 w-px shrink-0 bg-line" />
 
-              {/* Call order */}
+              {/* Call order. Drag a name to move it; see CallList for why
+                  the old inline ↑/↓/× pills had to go. */}
               <div className="flex flex-1 flex-wrap items-center gap-1.5">
-                {role.members.map((m, j) => (
-                  <span
-                    key={m.id}
-                    className="inline-flex items-center gap-1 rounded-full border border-line bg-surface px-2 py-0.5 text-[11px]"
-                  >
-                    <span className="text-ink-mute">{j + 1}.</span>
-                    {m.musician.name}
-                    {j > 0 && (
-                      <form action={moveInCallList.bind(null, m.id, "up")} className="inline">
-                        <button className="text-ink-mute hover:text-accent" title="Move up">
-                          ↑
-                        </button>
-                      </form>
-                    )}
-                    {j < role.members.length - 1 && (
-                      <form action={moveInCallList.bind(null, m.id, "down")} className="inline">
-                        <button className="text-ink-mute hover:text-accent" title="Move down">
-                          ↓
-                        </button>
-                      </form>
-                    )}
-                    <form action={removeFromCallList.bind(null, m.id)} className="inline">
-                      <button className="text-ink-mute hover:text-accent" title="Remove">
-                        ×
-                      </button>
-                    </form>
-                  </span>
-                ))}
+                <CallList
+                  roleId={role.id}
+                  roleName={role.name}
+                  members={role.members.map((m) => ({
+                    id: m.id,
+                    name: m.musician.name,
+                    note: m.note,
+                  }))}
+                />
                 <form action={addToCallList.bind(null, role.id)}>
                   {/* Was a <select> listing all 256 people. Type three
                       letters instead of scrolling a filing cabinet. */}
@@ -254,26 +235,32 @@ export default async function BandPage() {
                 </form>
               </div>
 
-              <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                {i > 0 && (
-                  <form action={moveRole.bind(null, role.id, "up")}>
-                    <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
-                      ↑
-                    </button>
-                  </form>
-                )}
-                {i < roles.length - 1 && (
-                  <form action={moveRole.bind(null, role.id, "down")}>
-                    <button className="rounded border border-line px-1.5 text-[11px] text-ink-mute hover:bg-paper-warm">
-                      ↓
-                    </button>
-                  </form>
-                )}
-                <form action={deleteRole.bind(null, role.id)}>
-                  <button className="text-[11px] text-ink-mute hover:text-accent">
-                    Delete
+              {/* Role order. Same 24px floor as the call list — these
+                  were px-1.5 glyphs about 20px across. */}
+              <div className="ml-auto flex shrink-0 items-center gap-1">
+                <form action={moveRole.bind(null, role.id, "up")}>
+                  <button
+                    disabled={i === 0}
+                    aria-label={`Move ${role.name} up`}
+                    className="inline-flex h-[26px] w-[26px] items-center justify-center rounded border border-line text-[11px] text-ink-mute transition-colors hover:bg-paper-warm hover:text-accent disabled:pointer-events-none disabled:opacity-25"
+                  >
+                    ↑
                   </button>
                 </form>
+                <form action={moveRole.bind(null, role.id, "down")}>
+                  <button
+                    disabled={i === roles.length - 1}
+                    aria-label={`Move ${role.name} down`}
+                    className="inline-flex h-[26px] w-[26px] items-center justify-center rounded border border-line text-[11px] text-ink-mute transition-colors hover:bg-paper-warm hover:text-accent disabled:pointer-events-none disabled:opacity-25"
+                  >
+                    ↓
+                  </button>
+                </form>
+                <DeleteRoleButton
+                  roleId={role.id}
+                  roleName={role.name}
+                  memberCount={role.members.length}
+                />
               </div>
             </div>
           ))}

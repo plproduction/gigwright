@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import {
   formatDayNum,
-  formatMonthAbbr,
+  formatMonthAbbrSmart,
   formatMoneyCents,
   formatTime,
   gigVenueLabel,
@@ -205,7 +205,7 @@ function GigRow({
         <div className="font-serif leading-none">
           <div className="text-[20px]">{formatDayNum(gig.startAt)}</div>
           <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-            {formatMonthAbbr(gig.startAt)}
+            {formatMonthAbbrSmart(gig.startAt)}
           </div>
         </div>
         <div className="font-serif text-[16px] leading-tight">

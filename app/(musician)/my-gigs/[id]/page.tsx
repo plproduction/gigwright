@@ -9,7 +9,7 @@ import { MyGuestListInput } from "@/components/MyGuestListInput";
 import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   formatDayNum,
-  formatLongDate,
+  formatLongDateSmart,
   formatMoneyCents,
   formatTime,
   formatYear,

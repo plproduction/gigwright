@@ -33,6 +33,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
   const startTime = String(formData.get("startTime") ?? "").trim() || "20:00";
   const startAt = combineDateTime(dateStr, startTime);
   const loadInAt = combineOptionalTime(dateStr, formData.get("loadInTime"));
+  const soundLoadInAt = combineOptionalTime(dateStr, formData.get("soundLoadInTime"));
   const soundcheckAt = combineOptionalTime(dateStr, formData.get("soundcheckTime"));
   const soundcheckEndAt = combineOptionalTime(dateStr, formData.get("soundcheckEndTime"));
   const callTimeAt = combineOptionalTime(dateStr, formData.get("callTime"));
@@ -57,6 +58,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
     eventName: nullIfEmpty(formData.get("eventName")),
     startAt,
     loadInAt,
+    soundLoadInAt,
     soundcheckAt,
     soundcheckEndAt,
     callTimeAt,
@@ -97,6 +99,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
     if (before.startAt.getTime() !== updated.startAt.getTime()) diffFields.push("downbeat");
     if ((before.callTimeAt?.getTime() ?? 0) !== (updated.callTimeAt?.getTime() ?? 0)) diffFields.push("call time");
     if ((before.loadInAt?.getTime() ?? 0) !== (updated.loadInAt?.getTime() ?? 0)) diffFields.push("load in");
+    if ((before.soundLoadInAt?.getTime() ?? 0) !== (updated.soundLoadInAt?.getTime() ?? 0)) diffFields.push("sound load in");
     if (before.venueId !== updated.venueId) diffFields.push("venue");
     if (before.status !== updated.status) diffFields.push("status");
 
@@ -219,6 +222,7 @@ export async function upsertGig(id: string | null, formData: FormData) {
             ...data,
             startAt: shift(startAt, i),
             loadInAt: shiftOpt(loadInAt, i),
+            soundLoadInAt: shiftOpt(soundLoadInAt, i),
             soundcheckAt: shiftOpt(soundcheckAt, i),
             soundcheckEndAt: shiftOpt(soundcheckEndAt, i),
             callTimeAt: shiftOpt(callTimeAt, i),
@@ -293,6 +297,7 @@ export async function cloneGig(sourceId: string, newStartDateISO: string) {
       venueId: src.venueId,
       startAt: weekLater,
       loadInAt: bump(src.loadInAt),
+      soundLoadInAt: bump(src.soundLoadInAt),
       soundcheckAt: bump(src.soundcheckAt),
       soundcheckEndAt: bump(src.soundcheckEndAt),
       callTimeAt: bump(src.callTimeAt),

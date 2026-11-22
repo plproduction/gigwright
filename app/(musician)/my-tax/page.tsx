@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
-import { formatLongDate, gigVenueLabel } from "@/lib/format";
+import { formatLongDateSmart, gigVenueLabel } from "@/lib/format";
 import { STANDARD_MILEAGE_RATE_USD } from "@/lib/mileage-rate";
 
 // Year-end tax summary for the working musician — every gig they've
@@ -149,7 +149,7 @@ export default async function MyTaxPage({
                 return (
                   <tr key={r.id} className="hover:bg-paper-warm/40">
                     <td className="px-4 py-2 font-serif tabular-nums">
-                      {formatLongDate(r.gig.startAt)}
+                      {formatLongDateSmart(r.gig.startAt)}
                     </td>
                     <td className="px-4 py-2">
                       <div className="font-serif">{venue.name}</div>

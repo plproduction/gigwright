@@ -55,6 +55,7 @@ export default async function PrintableGigSheet({
       lastUpdateAt: true,
       startAt: true,
       loadInAt: true,
+      soundLoadInAt: true,
       soundcheckAt: true,
       soundcheckEndAt: true,
       callTimeAt: true,
@@ -355,7 +356,13 @@ export default async function PrintableGigSheet({
         <div>
           <div className="ps-h2">Schedule</div>
           <div className="ps-grid-2">
-            <ScheduleRow label="Load in" time={gig.loadInAt} />
+            {gig.soundLoadInAt && (
+              <ScheduleRow label="Load in · sound" time={gig.soundLoadInAt} />
+            )}
+            <ScheduleRow
+              label={gig.soundLoadInAt ? "Load in · musicians" : "Load in"}
+              time={gig.loadInAt}
+            />
             <ScheduleRow
               label="Sound check"
               time={gig.soundcheckAt}

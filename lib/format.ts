@@ -21,6 +21,54 @@ export function formatMonthAbbr(d: Date): string {
   return `${mo} · ${dow}`;
 }
 
+// True when a date doesn't fall in the year we're currently in.
+//
+// Every gig list in the app used to print "31 · DEC · FRI" with no year,
+// which is fine for the 95% of rows inside the current year and actively
+// misleading for the rest: a 2027 date read as this December, and because
+// the lists sort by date, the tail of "19 DEC / 24 JUL / 31 DEC" looked
+// like a sorting bug rather than next year's work. Patrick lost a test
+// gig for a day because of it (2026-11-22). Year-when-it-differs keeps
+// the common row short and makes the odd one honest.
+export function isOtherYear(d: Date): boolean {
+  return d.getFullYear() !== new Date().getFullYear();
+}
+
+// "Apr · Sat", or "Apr 2027 · Sat" when it isn't this year.
+export function formatMonthAbbrSmart(d: Date): string {
+  const mo = d.toLocaleDateString("en-US", { month: "short" });
+  const dow = d.toLocaleDateString("en-US", { weekday: "short" });
+  return isOtherYear(d) ? `${mo} ${d.getFullYear()} · ${dow}` : `${mo} · ${dow}`;
+}
+
+// "Apr 12", or "Apr 12, 2027" when it isn't this year. For tight spots
+// — stat chips, one-line notes — where the weekday doesn't earn room.
+export function formatShortDateSmart(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(isOtherYear(d) ? { year: "numeric" as const } : {}),
+  });
+}
+
+// "Friday, December 31", or "Friday, December 31, 2027" when it isn't
+// this year. For headings and hero cards.
+export function formatLongDateSmart(d: Date): string {
+  return isOtherYear(d) ? formatLongDateWithYear(d) : formatLongDate(d);
+}
+
+// Always carries the year. For anything that has to stand on its own
+// away from the app — contracts above all, where "Friday, December 31"
+// on a signed document is a defect, not a shorthand.
+export function formatLongDateWithYear(d: Date): string {
+  return d.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function formatTime(d: Date | null | undefined): string {
   if (!d) return "—";
   return d

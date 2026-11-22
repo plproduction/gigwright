@@ -12,6 +12,7 @@ type GigFormData = {
   eventName: string | null;
   startAt: Date;
   loadInAt: Date | null;
+  soundLoadInAt: Date | null;
   soundcheckAt: Date | null;
   soundcheckEndAt: Date | null;
   callTimeAt: Date | null;
@@ -235,7 +236,16 @@ export function GigForm({
             <option value="CANCELLED">Cancelled</option>
           </select>
         </Field>
-        <Field label="Load in">
+        {/* Two load-ins, because sound and the band almost never arrive
+            together. Both optional; a club date with house PA uses
+            neither, and neither shows on the gig sheet unless set. */}
+        <Field label="Load in · sound" help="PA and backline — usually well before the band">
+          <OptionalTimeInput
+            name="soundLoadInTime"
+            defaultValue={gig ? toTimeInputOpt(gig.soundLoadInAt) : ""}
+          />
+        </Field>
+        <Field label="Load in · musicians" help="when the band is expected at the door">
           <OptionalTimeInput name="loadInTime" defaultValue={gig ? toTimeInputOpt(gig.loadInAt) : ""} />
         </Field>
         <Field

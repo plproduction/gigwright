@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireMusician } from "@/lib/session";
 import {
   formatDayNum,
-  formatMonthAbbr,
+  formatMonthAbbrSmart,
   formatMoneyCents,
 } from "@/lib/format";
 
@@ -205,7 +205,7 @@ export default async function MyEarningsPage({
                 <div className="font-serif leading-none">
                   <div className="text-[18px]">{formatDayNum(p.gig.startAt)}</div>
                   <div className="mt-0.5 font-sans text-[9px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-                    {formatMonthAbbr(p.gig.startAt)}
+                    {formatMonthAbbrSmart(p.gig.startAt)}
                   </div>
                 </div>
                 <div>

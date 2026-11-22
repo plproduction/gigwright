@@ -9,8 +9,9 @@ import { ensureMyIcalUrl } from "@/lib/actions/ical";
 import { getReferralStatus } from "@/lib/actions/referrals";
 import {
   formatDayNum,
-  formatLongDate,
-  formatMonthAbbr,
+  formatLongDateSmart,
+  formatMonthAbbrSmart,
+  formatShortDateSmart,
   formatTime,
   gigVenueLabel,
   isToday,
@@ -135,7 +136,7 @@ export default async function DashboardPage({
             href={toConfirm[0] ? `/gigs/${toConfirm[0].id}` : undefined}
             note={
               toConfirm[0]
-                ? `Next: ${formatMonthAbbr(toConfirm[0].startAt)} ${formatDayNum(toConfirm[0].startAt)} · ${shorten(toConfirm[0].venue?.name ?? "TBD", 22)}`
+                ? `Next: ${formatShortDateSmart(toConfirm[0].startAt)} · ${shorten(toConfirm[0].venue?.name ?? "TBD", 22)}`
                 : "All confirmed"
             }
           />
@@ -285,7 +286,7 @@ function TonightCard({
         <div className="mb-2.5 text-[10px] font-medium uppercase tracking-[0.24em] text-[#D49B84]">
           <span className="mr-1.5 text-accent">●</span>
           {today ? "Tonight" : "Next up"} ·{" "}
-          <span>{formatLongDate(gig.startAt)}</span>
+          <span>{formatLongDateSmart(gig.startAt)}</span>
           {countdown && (
             <span className="text-[#8A8373]"> · {countdown}</span>
           )}
@@ -502,7 +503,7 @@ function GigList({
                   {formatDayNum(g.startAt)}
                 </div>
                 <div className="mt-1 text-[9px] font-medium uppercase tracking-[0.14em] text-ink-mute">
-                  {formatMonthAbbr(g.startAt)}
+                  {formatMonthAbbrSmart(g.startAt)}
                 </div>
               </div>
               <div className="min-w-0 flex-1">
@@ -574,7 +575,7 @@ function GigList({
               <div className="font-serif leading-none">
                 <div className="text-[20px]">{formatDayNum(g.startAt)}</div>
                 <div className="mt-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-ink-mute">
-                  {formatMonthAbbr(g.startAt)}
+                  {formatMonthAbbrSmart(g.startAt)}
                 </div>
               </div>
               <div className="font-serif text-[16px] leading-tight">

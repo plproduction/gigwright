@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
-import { formatLongDate, formatTime } from "@/lib/format";
+import { formatLongDateWithYear, formatTime } from "@/lib/format";
 import type { ContractSection } from "@/lib/contracts/boilerplate";
 
 function nullIfEmpty(v: FormDataEntryValue | null): string | null {
@@ -120,7 +120,11 @@ export async function generateContract(gigId: string, formData: FormData) {
     venueAddress: gig.venue
       ? [gig.venue.addressL1, gig.venue.city, gig.venue.state].filter(Boolean).join(", ")
       : null,
-    eventDateLong: formatLongDate(gig.startAt),
+    // Always with the year. formatLongDate drops it, which is a
+    // shorthand in a list and a defect on a document somebody signs:
+    // every contract generated before 2026-11-22 reads "Friday,
+    // December 31" with no year at all.
+    eventDateLong: formatLongDateWithYear(gig.startAt),
     performanceWindow,
     program,
     feeCents,
