@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { Linkify } from "@/components/Linkify";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   formatDayNum,
   formatLongDate,
@@ -103,7 +104,7 @@ export default async function PublicGigPage({
       },
       personnel: {
         select: {
-          musician: { select: { name: true, roles: true, phone: true } },
+          musician: { select: { name: true, phone: true, ...WITH_ROLES } },
           position: true,
         },
         orderBy: { position: "asc" },
@@ -236,9 +237,9 @@ export default async function PublicGigPage({
                       <em className="font-serif text-[15px] not-italic text-ink">
                         {p.musician.name}
                       </em>
-                      {p.musician.roles.length > 0 && (
+                      {roleNames(p.musician).length > 0 && (
                         <span className="text-[12px] text-ink-mute">
-                          {p.musician.roles.join(" · ")}
+                          {roleNames(p.musician).join(" · ")}
                         </span>
                       )}
                     </div>

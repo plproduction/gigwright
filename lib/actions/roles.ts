@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
+import { SUGGESTED_ROLES } from "@/lib/roles";
 
 // Roles, call order and lineups all live on one page, so they share one
 // actions file. Everything here is scoped by ownerId — a bandleader can
 // only ever touch their own band's shape.
 
-const PAGE = "/roster/roles";
+const PAGE = "/roster";
 
 function text(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();
@@ -63,6 +64,26 @@ export async function createRole(formData: FormData) {
       defaultPayCents: centsOrNull(formData.get("defaultPay")),
       position: (last?.position ?? -1) + 1,
     },
+  });
+  revalidatePath(PAGE);
+}
+
+// Starting from an empty page is the worst part of a tool like this.
+// One click lays down the usual chairs; they're ordinary roles after
+// that — rename them, re-order them, delete the ones you don't book.
+// No-op if any role already exists, so a double-click can't duplicate.
+export async function seedSuggestedRoles() {
+  const user = await requireBandleader();
+  const existing = await db.role.count({ where: { ownerId: user.id } });
+  if (existing > 0) return;
+
+  await db.role.createMany({
+    data: SUGGESTED_ROLES.map((name, i) => ({
+      ownerId: user.id,
+      name,
+      position: i,
+    })),
+    skipDuplicates: true,
   });
   revalidatePath(PAGE);
 }

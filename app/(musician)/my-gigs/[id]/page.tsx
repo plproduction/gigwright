@@ -6,6 +6,7 @@ import { requireMusician } from "@/lib/session";
 import { LatestUpdateBanner } from "@/components/LatestUpdateBanner";
 import { Linkify } from "@/components/Linkify";
 import { MyGuestListInput } from "@/components/MyGuestListInput";
+import { WITH_ROLES, roleNames } from "@/lib/musician-roles";
 import {
   formatDayNum,
   formatLongDate,
@@ -48,7 +49,7 @@ export default async function MyGigDetailPage({
     include: {
       venue: true,
       personnel: {
-        include: { musician: true },
+        include: { musician: { include: { ...WITH_ROLES } } },
         orderBy: { position: "asc" },
       },
       owner: { select: { name: true, email: true } },
@@ -297,7 +298,7 @@ export default async function MyGigDetailPage({
                       <span className="text-[11px] text-ink-mute">
                         {p.musician.isLeader
                           ? "Leader"
-                          : p.musician.roles.slice(0, 1).join("")}
+                          : roleNames(p.musician)[0] ?? ""}
                       </span>
                       {isMe && (
                         <span className="rounded-full bg-accent-soft px-1.5 py-0 text-[9px] font-semibold uppercase tracking-[0.1em] text-accent">

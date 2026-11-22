@@ -147,7 +147,6 @@ export async function POST(req: Request) {
       email: m.email ?? undefined,
       phone: m.phone ?? undefined,
       notes: m.notes ?? undefined,
-      roles: m.roles ?? [],
       initials: deriveInitials(m.name),
     };
     if (existing) {
@@ -168,6 +167,46 @@ export async function POST(req: Request) {
       });
       musicianByKey.set(m.name.toLowerCase().trim(), created.id);
       result.membersCreated++;
+    }
+
+    // WTG sends roles as free text. We don't store free text any more —
+    // each one becomes a real Role (matched case-insensitively against
+    // the owner's existing roles) and the musician joins its call list
+    // at the end. Already on the list → left where they are.
+    const musicianId = musicianByKey.get(m.name.toLowerCase().trim())!;
+    for (const raw of m.roles ?? []) {
+      const name = String(raw).trim();
+      if (!name) continue;
+      const role =
+        (await db.role.findFirst({
+          where: { ownerId: owner.id, name: { equals: name, mode: "insensitive" } },
+          select: { id: true },
+        })) ??
+        (await db.role.create({
+          data: {
+            ownerId: owner.id,
+            name,
+            position:
+              ((
+                await db.role.findFirst({
+                  where: { ownerId: owner.id },
+                  orderBy: { position: "desc" },
+                  select: { position: true },
+                })
+              )?.position ?? -1) + 1,
+          },
+          select: { id: true },
+        }));
+      const last = await db.roleMember.findFirst({
+        where: { roleId: role.id },
+        orderBy: { callOrder: "desc" },
+        select: { callOrder: true },
+      });
+      await db.roleMember.upsert({
+        where: { roleId_musicianId: { roleId: role.id, musicianId } },
+        update: {},
+        create: { roleId: role.id, musicianId, callOrder: (last?.callOrder ?? -1) + 1 },
+      });
     }
   }
 

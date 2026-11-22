@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { assertCanAdd } from "@/lib/plan";
+import { syncMusicianRoles } from "@/lib/role-sync";
 
 export async function upsertMusician(
   id: string | null,
@@ -24,7 +25,10 @@ export async function upsertMusician(
     await assertCanAdd(user, "musicians");
   }
 
-  const roles = String(formData.get("roles") ?? "")
+  // Roles are call-list membership, applied after the row exists (a new
+  // musician has no id to attach memberships to yet).
+  const roleIds = formData.getAll("roleIds").map(String).filter(Boolean);
+  const newRoleNames = String(formData.get("newRoles") ?? "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
@@ -34,7 +38,6 @@ export async function upsertMusician(
     email: nullIfEmpty(formData.get("email")),
     phone: nullIfEmpty(formData.get("phone")),
     initials: nullIfEmpty(formData.get("initials")),
-    roles,
     isLeader: formData.get("isLeader") === "on",
     calendarProvider:
       (String(formData.get("calendarProvider") ?? "NONE") as
@@ -63,12 +66,13 @@ export async function upsertMusician(
 
   const w9Received = formData.get("w9Received") === "on";
 
+  let musicianId: string;
   if (id) {
     const existing = await db.musician.findFirst({
       where: { id, ownerId: user.id },
     });
     const transitioning = w9Received && !existing?.w9Received;
-    await db.musician.update({
+    const updated = await db.musician.update({
       where: { id, ownerId: user.id },
       data: {
         ...data,
@@ -80,8 +84,9 @@ export async function upsertMusician(
             : null,
       },
     });
+    musicianId = updated.id;
   } else {
-    await db.musician.create({
+    const created = await db.musician.create({
       data: {
         ...data,
         ownerId: user.id,
@@ -89,9 +94,13 @@ export async function upsertMusician(
         w9ReceivedAt: w9Received ? new Date() : null,
       },
     });
+    musicianId = created.id;
   }
 
+  await syncMusicianRoles(user.id, musicianId, roleIds, newRoleNames);
+
   revalidatePath("/roster");
+  revalidatePath("/roster/all");
   redirect("/roster");
 }
 

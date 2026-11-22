@@ -14,7 +14,6 @@ type M = {
   phone: string | null;
   initials: string | null;
   avatarUrl: string | null;
-  roles: string[];
   isLeader: boolean;
   calendarProvider: string;
   paymentMethod: string | null;
@@ -31,11 +30,17 @@ type M = {
 export function MusicianForm({
   musician,
   enabledPaymentMethods,
+  allRoles,
+  selectedRoleIds,
 }: {
   musician: M;
   // Payment methods the bandleader actually offers. Empty array falls
   // back to "all except Zelle" inside pickerOptions().
   enabledPaymentMethods: string[];
+  // Every role this bandleader books, in Band-page order, and the ones
+  // this musician is currently on the call list for.
+  allRoles: { id: string; name: string }[];
+  selectedRoleIds: string[];
 }) {
   const isEdit = musician != null;
   const upsert = upsertMusician.bind(null, musician?.id ?? null);
@@ -115,18 +120,15 @@ export function MusicianForm({
           />
         </Field>
 
-        <Field label="Roles">
-          {/* Chip-based picker with a canonical list (Bass / Drums /
-              Guitar / Piano / Keys / Vocals / Sax / Trumpet /
-              Trombone / PRODUCER). Underlying input is still freeform
-              comma-separated text so you can type anything not in the
-              list (e.g., "Arranger") via the "Other…" box at the
-              bottom of the dropdown. PRODUCER is a role, not a
-              separate entity — Patrick's design 2026-08-08. */}
-          <RolesPicker
-            name="roles"
-            defaultValue={musician?.roles.join(", ") ?? ""}
-          />
+        <Field
+          span
+          label="Roles"
+          help="These are the call lists this person sits on. Re-order who you ring first on the Band page."
+        >
+          {/* PRODUCER is a role here too, not a separate entity —
+              Patrick's design 2026-08-08, carried over when roles
+              became real rows instead of free text. */}
+          <RolesPicker roles={allRoles} selected={selectedRoleIds} />
         </Field>
 
         <Field label="Email">

@@ -57,6 +57,9 @@ async function main() {
   await db.activity.deleteMany({ where: { gig: { ownerId: user.id } } });
   await db.gig.deleteMany({ where: { ownerId: user.id } });
   await db.musician.deleteMany({ where: { ownerId: user.id } });
+  // Roles go too — RoleMember cascades off both sides, so wiping roles
+  // and musicians leaves no orphaned call-list rows behind.
+  await db.role.deleteMany({ where: { ownerId: user.id } });
   await db.venue.deleteMany({ where: { ownerId: user.id } });
 
   // Roster
@@ -68,7 +71,6 @@ async function main() {
           name: m.name,
           email: m.email,
           initials: m.initials,
-          roles: m.roles,
           isLeader: m.isLeader ?? false,
           calendarProvider: m.calendarProvider,
           paymentMethod: m.paymentMethod,
@@ -77,6 +79,30 @@ async function main() {
     ),
   );
   console.log(`• musicians: ${createdMusicians.length}`);
+
+  // Roles and call lists. A musician's roles ARE their call-list
+  // memberships — there's no Musician.roles column — so the seed has to
+  // create the Role rows and attach people to them.
+  const roleNamesInSeed = [...new Set(ROSTER.flatMap((m) => m.roles))];
+  const createdRoles = await Promise.all(
+    roleNamesInSeed.map((name, i) =>
+      db.role.create({ data: { ownerId: user.id, name, position: i } }),
+    ),
+  );
+  const roleIdByName = new Map(createdRoles.map((r) => [r.name, r.id]));
+  const callOrderByRole = new Map<string, number>();
+  for (const m of ROSTER) {
+    const musician = createdMusicians.find((c) => c.name === m.name)!;
+    for (const roleName of m.roles) {
+      const roleId = roleIdByName.get(roleName)!;
+      const next = callOrderByRole.get(roleId) ?? 0;
+      callOrderByRole.set(roleId, next + 1);
+      await db.roleMember.create({
+        data: { roleId, musicianId: musician.id, callOrder: next },
+      });
+    }
+  }
+  console.log(`• roles: ${createdRoles.length}`);
 
   const find = (name: string) =>
     createdMusicians.find((m) => m.name === name)!;

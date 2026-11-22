@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import {
+  WITH_ROLES,
+  roleNames,
+  type MusicianWithRoles,
+} from "@/lib/musician-roles";
 
 // GET /api/search?q=foo → small unified typeahead for the AppNav search
 // box. Returns up to 5 venues and gigs and up to MUSICIAN_LIMIT people,
@@ -99,13 +104,11 @@ function musicianMatches(
     name: string;
     email: string | null;
     phone: string | null;
-    roles: string[] | null;
     notes: string | null;
-  },
+  } & MusicianWithRoles,
   q: string,
 ): boolean {
-  // roles is NOT NULL in the schema but some older rows hold null.
-  const text = [m.name, m.email, m.phone, ...(m.roles ?? []), m.notes]
+  const text = [m.name, m.email, m.phone, ...roleNames(m), m.notes]
     .filter(Boolean)
     .join(" \n ")
     .toLowerCase();
@@ -145,11 +148,11 @@ export async function GET(req: Request) {
       select: {
         id: true,
         name: true,
-        roles: true,
         email: true,
         phone: true,
         notes: true,
         isLeader: true,
+        ...WITH_ROLES,
       },
     }),
     db.venue.findMany({
@@ -207,7 +210,7 @@ export async function GET(req: Request) {
         id: m.id,
         title: m.name,
         sub:
-          [m.isLeader ? "Leader" : null, (m.roles ?? []).slice(0, 2).join(", ") || null]
+          [m.isLeader ? "Leader" : null, roleNames(m).slice(0, 2).join(", ") || null]
             .filter(Boolean)
             .join(" · ") || null,
         href: `/roster/${m.id}/edit`,
