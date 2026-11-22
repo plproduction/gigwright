@@ -806,6 +806,14 @@ model RoleMember {
 
   callOrder Int @default(0) // 0 = first call
 
+  // What the free-text role used to carry besides the instrument: a city
+  // ("Miami"), a referral ("referred by Greg Parnell"), a tribute act
+  // ("Prince tribute"). Normalising "Drums Miami" into the Drums role
+  // would have thrown that away, and it is the most useful thing in the
+  // old data — it is how you find a drummer in Florida at short notice.
+  // Searchable from the top-right box; see app/api/search/route.ts.
+  note String?
+
   @@unique([roleId, musicianId])
   @@index([roleId, callOrder])
 }
