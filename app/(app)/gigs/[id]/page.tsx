@@ -27,6 +27,7 @@ import { isPaid } from "@/lib/plan";
 import { WITH_ROLES, roleNamesBesidesLeader } from "@/lib/musician-roles";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { applyLineupToGig } from "@/lib/actions/roles";
+import { defaultProgramLine } from "@/lib/actions/contracts";
 import {
   formatDayNum,
   formatMoneyCents,
@@ -252,6 +253,15 @@ export default async function GigDetailPage({
     (a) => a.action === "fanout_sent",
   ).length;
 
+  // Prefill for the contract's program line. Describes the band as a
+  // configuration ("Six Piece"), never as a list of names, so swapping a
+  // player never contradicts a signed agreement. Only computed when
+  // there's no contract yet — an existing one carries its own frozen
+  // snapshot and must not be second-guessed here.
+  const suggestedProgram = gig.contract
+    ? null
+    : await defaultProgramLine(gig.id, user.name ?? "Artist");
+
   // Every lineup apply still standing — matching removeAppliedLineup,
   // which undoes them together. Counting only the latest would read
   // "0 players" after applying the same lineup twice, since the second
@@ -314,6 +324,7 @@ export default async function GigDetailPage({
           gigId={gig.id}
           clientPortalToken={gig.clientPortalToken}
           letterheadReady={Boolean(user.name || user.businessName)}
+          suggestedProgram={suggestedProgram}
           contract={
             gig.contract
               ? {

@@ -16,6 +16,26 @@ export type ContractSection = {
 export function boilerplateSections(): ContractSection[] {
   return [
     {
+      // Patrick, 2026-11-22: "I may just say six piece. I don't want to
+      // put every specific thing on there because it's more legally
+      // binding for me, the contractor. I'd like the ability to swap out
+      // players, inevitably, if there's an issue."
+      //
+      // He was already safe on the first half — a GigWright contract has
+      // never listed personnel; the band is one free-text line. The half
+      // that was missing is this clause. Naming nobody doesn't give you
+      // the right to substitute; saying so does. It sits first because
+      // it's the clause that governs what the band actually is.
+      //
+      // Standard engagement-contract language, not legal advice — worth
+      // having his own attorney read once.
+      title: "PERSONNEL & SUBSTITUTION",
+      body: [
+        "Artist shall furnish musicians in the instrumentation described above. Artist retains sole discretion over the selection of individual musicians and reserves the right to substitute any musician with another of comparable professional calibre, at any time and without prior notice to or consent of Purchaser. No such substitution shall constitute a breach of this Agreement or entitle Purchaser to any reduction in the fee.",
+        "Any individual musician named in this Agreement or in any related correspondence is identified for reference only and is not a condition of performance, unless this Agreement expressly provides otherwise in a writing signed by both Parties.",
+      ],
+    },
+    {
       title: "LIABILITY & INDEMNITY",
       body: [
         "Purchaser shall be responsible for compliance with any requirements of the venue, including any certificate of insurance the venue may require; Purchaser shall notify Artist in writing of any such venue requirement no later than fourteen (14) days prior to the performance date.",
