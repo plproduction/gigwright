@@ -53,3 +53,8 @@ wtg-*.json
 
 # Local Netlify folder
 .netlify
+
+# Database backups. They carry session tokens, OAuth tokens and every
+# musician and client contact on the platform — never commit one.
+backups/
+*.jsonl
