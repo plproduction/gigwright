@@ -300,20 +300,12 @@ export default async function GigDetailPage({
   // panels instead of twenty-two mostly-blank ones. Nothing is
   // removed — the editor for an empty panel is one click away, and it
   // is the same editor either way.
-  const advancePanels: Panel[] = [
-    {
-      key: "event-name",
-      title: "Event name",
-      filled: Boolean(gig.eventName),
-      node: (
-        <InlineField
-          gigId={gig.id}
-          field="eventName"
-          initialValue={gig.eventName}
-          placeholder="Patrick Lamb Quartet · Smith Wedding · NYE Show…"
-        />
-      ),
-    },
+  // Zone 1 · Book. The paperwork that turns an enquiry into a gig,
+  // pulled out of Advance 2026-11-22. A contract is not something you
+  // advance — it is what happens before there is anything to advance,
+  // and burying it under the band's tech notes had it reading as an
+  // afterthought to work you only do once the deal exists.
+  const bookPanels: Panel[] = [
     {
       key: "client-paper",
       title: "Client contract & invoice",
@@ -369,6 +361,22 @@ export default async function GigDetailPage({
             shared with the band or the venue.
           </div>
         </>
+      ),
+    },
+  ];
+
+  const advancePanels: Panel[] = [
+    {
+      key: "event-name",
+      title: "Event name",
+      filled: Boolean(gig.eventName),
+      node: (
+        <InlineField
+          gigId={gig.id}
+          field="eventName"
+          initialValue={gig.eventName}
+          placeholder="Patrick Lamb Quartet · Smith Wedding · NYE Show…"
+        />
       ),
     },
   ];
@@ -849,15 +857,30 @@ export default async function GigDetailPage({
         </div>
       </div>
 
-      {/* ── Zone 1 · Advance ─────────────────────────────────────────
+      {/* ── Zone 1 · Book ────────────────────────────────────────────
+          The deal itself, and it comes first because that is the order
+          the work happens in: the client calls, you quote, you paper
+          it, and only then is there a date worth hiring a band for.
+          This lived at the bottom of Advance until 2026-11-22, which
+          put the agreement under the set list and the rooming notes —
+          work you only do once the contract already exists. */}
+      <Zone
+        step="Book"
+        title="Paper the deal"
+        blurb="The agreement, the invoice, and anything they sent you."
+      >
+        <PanelGrid panels={bookPanels} />
+      </Zone>
+
+      {/* ── Zone 2 · Advance ─────────────────────────────────────────
           Everything you do between "they called" and "we're playing":
-          book the chairs, paper the deal. Personnel leads because it
-          is the one thing on this page you touch on every single gig,
-          and it finally gets the full width its row grid needs. */}
+          book the chairs and settle the details. Personnel leads
+          because it is the one thing on this page you touch on every
+          single gig, and it gets the full width its row grid needs. */}
       <Zone
         step="Advance"
-        title="Book the band, paper the deal"
-        blurb="Who's playing and what's signed."
+        title="Book the band"
+        blurb="Who's playing, and what each chair is paid."
       >
         <div className="mb-4 max-w-[920px] rounded-[10px] border border-line bg-paper px-5 py-[18px] shadow-[0_1px_2px_rgb(14_12_9_/_0.03)]">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-2">
@@ -1098,7 +1121,7 @@ export default async function GigDetailPage({
         <PanelGrid panels={advancePanels} />
       </Zone>
 
-      {/* ── Zone 2 · On the day ──────────────────────────────────────
+      {/* ── Zone 3 · On the day ──────────────────────────────────────
           What the band needs in hand when they walk in the door.
           Everything here surfaces on the public sheet, the print
           sheet, the musician portal and the email fanout. */}
@@ -1110,7 +1133,7 @@ export default async function GigDetailPage({
         <PanelGrid panels={dayPanels} />
       </Zone>
 
-      {/* ── Zone 3 · Settle up ───────────────────────────────────────
+      {/* ── Zone 4 · Settle up ───────────────────────────────────────
           After the downbeat: pay everyone, log the expenses, push to
           the books. The worksheet gets the full page width it always
           needed. */}
