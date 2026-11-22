@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/session";
 import {
   WITH_ROLES,
   roleNames,
+  roleNotes,
+  roleLabels,
   type MusicianWithRoles,
 } from "@/lib/musician-roles";
 
@@ -42,10 +44,12 @@ type Hit =
       href: string;
     };
 
-// Roles are freeform ("Drums Miami", "Keybaords", "Piano / Engineer"),
-// so a bandleader typing an instrument should get everyone who plays it
-// regardless of how the tag was typed. Each group maps the words someone
-// might search for to the substrings that identify that instrument.
+// Role names are canonical since the 2026-11-24 cleanup, but what a
+// bandleader types is not: "pianist", "fiddle", "gtr", "horns". Each group
+// maps the words someone might search for to the substrings that identify
+// the instrument. These matter MORE after the cleanup, not less — the role
+// is now called "Keyboards", so "piano" and "pianist" only find it through
+// this table. The misspellings stay too: old notes still carry them.
 const ROLE_ALIASES: { words: string[]; match: string[] }[] = [
   {
     words: [
@@ -94,11 +98,16 @@ function needlesFor(term: string): string[] {
 }
 
 // Everything typed about a musician is searchable: name, email, phone,
-// every role tag (which carries city, referral and band notes like
-// "Drums Florida Referred by Mark Falchook") and the notes field. The
-// whole query matching anywhere is a hit; otherwise every word must
-// match somewhere, so "drums miami" and "miami drums" both find
-// "Drums Miami".
+// every role, every call-list NOTE, and the notes field. The whole query
+// matching anywhere is a hit; otherwise every word must match somewhere,
+// so "drums miami" and "miami drums" both find the Miami drummer.
+//
+// roleNotes is load-bearing and easy to drop by accident. Before the
+// 2026-11-24 cleanup the role was literally named "Drums Miami", so
+// searching "miami" worked for free off the role name. Now the role is
+// "Drums" and "Miami" lives in the note — leave roleNotes out of this
+// array and Patrick quietly loses the ability to find a Miami player,
+// which is the single most useful thing the old messy data carried.
 function musicianMatches(
   m: {
     name: string;
@@ -108,7 +117,14 @@ function musicianMatches(
   } & MusicianWithRoles,
   q: string,
 ): boolean {
-  const text = [m.name, m.email, m.phone, ...roleNames(m), m.notes]
+  const text = [
+    m.name,
+    m.email,
+    m.phone,
+    ...roleNames(m),
+    ...roleNotes(m),
+    m.notes,
+  ]
     .filter(Boolean)
     .join(" \n ")
     .toLowerCase();
@@ -209,8 +225,11 @@ export async function GET(req: Request) {
         kind: "musician",
         id: m.id,
         title: m.name,
+        // "Bass · Miami, Guitar" — the note is why this person came back
+        // for a city search, so showing the role alone would look like a
+        // wrong result.
         sub:
-          [m.isLeader ? "Leader" : null, roleNames(m).slice(0, 2).join(", ") || null]
+          [m.isLeader ? "Leader" : null, roleLabels(m).slice(0, 2).join(", ") || null]
             .filter(Boolean)
             .join(" · ") || null,
         href: `/roster/${m.id}/edit`,
