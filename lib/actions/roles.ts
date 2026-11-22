@@ -447,32 +447,154 @@ export async function applyLineupToGig(gigId: string, formData: FormData) {
   const setsClientPay =
     lineup.clientPriceCents != null && !gig.clientPayCents;
 
-  await db.$transaction([
-    ...toCreate.map((data) => db.gigPersonnel.create({ data })),
-    ...(setsClientPay
-      ? [
-          db.gig.update({
-            where: { id: gigId },
-            data: { clientPayCents: lineup.clientPriceCents },
-          }),
-        ]
-      : []),
-    db.activity.create({
+  // Interactive transaction so the activity row can record the ids of
+  // the personnel rows this apply created. That payload is the whole
+  // undo: without it "take the lineup back off" can only guess which
+  // people came from the lineup and which were already yours.
+  await db.$transaction(
+    async (tx) => {
+      const createdIds: string[] = [];
+      for (const data of toCreate) {
+        const row = await tx.gigPersonnel.create({ data, select: { id: true } });
+        createdIds.push(row.id);
+      }
+      if (setsClientPay) {
+        await tx.gig.update({
+          where: { id: gigId },
+          data: { clientPayCents: lineup.clientPriceCents },
+        });
+      }
+      await tx.activity.create({
+        data: {
+          gigId,
+          action: "lineup_applied",
+          summary:
+            `Applied lineup "${lineup.name}" — ${seated} of ${chairs} ` +
+            `${chairs === 1 ? "chair" : "chairs"} filled` +
+            (short.length > 0
+              ? `. Nobody on the call list for: ${short.join(", ")}`
+              : "") +
+            (setsClientPay
+              ? `. Client price set to $${((lineup.clientPriceCents ?? 0) / 100).toFixed(2)}`
+              : ""),
+          payload: {
+            lineupId: lineup.id,
+            lineupName: lineup.name,
+            personnelIds: createdIds,
+            // Only set when THIS apply moved the number, so an undo
+            // doesn't wipe a price that was already negotiated.
+            clientPaySetTo: setsClientPay ? lineup.clientPriceCents : null,
+            undoneAt: null,
+          },
+        },
+      });
+    },
+    { timeout: 60_000, maxWait: 15_000 },
+  );
+
+  revalidatePath(`/gigs/${gigId}`);
+  revalidatePath(`/gigs/${gigId}/edit`);
+  revalidatePath("/dashboard");
+  revalidatePath("/my-gigs");
+}
+
+// Take a lineup back off a gig.
+//
+// Patrick, 2026-11-22: "let's say I add the wrong lineup and I want to
+// just take the lineup off." Applying one seats a whole band in a click,
+// so picking the wrong one has to be one click back — otherwise it's six
+// manual deletions and a client price you have to remember was changed.
+//
+// This undoes exactly what that apply did and nothing else:
+//   • Removes only the personnel rows that apply CREATED. People who
+//     were already on the gig stayed put at apply time and stay put now.
+//   • Never removes anyone already paid. That row is an accounting fact;
+//     it's reported back instead.
+//   • Restores the client price only if the apply set it AND nobody has
+//     changed it since.
+// The activity row is then stamped undone so the button goes away.
+export async function removeAppliedLineup(gigId: string) {
+  const user = await requireBandleader();
+
+  const gig = await db.gig.findFirst({
+    where: { id: gigId, ownerId: user.id },
+    select: { id: true, clientPayCents: true },
+  });
+  if (!gig) throw new Error("Gig not found");
+
+  // Every apply still standing, not just the last one. Applying the same
+  // lineup twice makes the second a no-op that records zero rows, and
+  // undoing only that would leave the six players from the first apply
+  // sitting there while the button disappeared. Applying two different
+  // lineups is the same problem. So: undo all of them together.
+  const entries = await db.activity.findMany({
+    where: { gigId, action: "lineup_applied" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, payload: true },
+  });
+
+  type Payload = {
+    lineupName?: string;
+    personnelIds?: string[];
+    clientPaySetTo?: number | null;
+    undoneAt?: string | null;
+  };
+  const live = entries
+    .map((e) => ({ id: e.id, p: (e.payload ?? {}) as Payload }))
+    .filter((e) => !e.p.undoneAt && Array.isArray(e.p.personnelIds));
+  if (live.length === 0) return;
+
+  const ids = [...new Set(live.flatMap((e) => e.p.personnelIds ?? []))];
+  const lineupName = live[0]!.p.lineupName ?? "that lineup";
+  // The newest apply that actually moved the price owns the restore.
+  const priceEntry = live.find((e) => e.p.clientPaySetTo != null);
+  const p = {
+    lineupName,
+    clientPaySetTo: priceEntry?.p.clientPaySetTo ?? null,
+  };
+
+  // Scope every id back to this gig before deleting anything.
+  const rows = await db.gigPersonnel.findMany({
+    where: { id: { in: ids }, gigId },
+    select: { id: true, paidAt: true, musician: { select: { name: true } } },
+  });
+  const removable = rows.filter((r) => !r.paidAt);
+  const kept = rows.filter((r) => r.paidAt).map((r) => r.musician.name);
+
+  // Only give the price back if this apply is still the reason it's set.
+  const restorePrice =
+    p.clientPaySetTo != null && gig.clientPayCents === p.clientPaySetTo;
+
+  await db.$transaction(async (tx) => {
+    if (removable.length > 0) {
+      await tx.gigPersonnel.deleteMany({
+        where: { id: { in: removable.map((r) => r.id) } },
+      });
+    }
+    if (restorePrice) {
+      await tx.gig.update({ where: { id: gigId }, data: { clientPayCents: null } });
+    }
+    const stamp = new Date().toISOString();
+    for (const e of live) {
+      await tx.activity.update({
+        where: { id: e.id },
+        data: { payload: { ...e.p, undoneAt: stamp } },
+      });
+    }
+    await tx.activity.create({
       data: {
         gigId,
-        action: "lineup_applied",
+        action: "lineup_removed",
         summary:
-          `Applied lineup "${lineup.name}" — ${seated} of ${chairs} ` +
-          `${chairs === 1 ? "chair" : "chairs"} filled` +
-          (short.length > 0
-            ? `. Nobody on the call list for: ${short.join(", ")}`
+          `Took lineup "${p.lineupName ?? "?"}" back off — removed ` +
+          `${removable.length} ${removable.length === 1 ? "player" : "players"}` +
+          (kept.length > 0
+            ? `. Kept ${kept.join(", ")} — already paid`
             : "") +
-          (setsClientPay
-            ? `. Client price set to $${((lineup.clientPriceCents ?? 0) / 100).toFixed(2)}`
-            : ""),
+          (restorePrice ? ". Client price cleared" : ""),
       },
-    }),
-  ]);
+    });
+  });
 
   revalidatePath(`/gigs/${gigId}`);
   revalidatePath(`/gigs/${gigId}/edit`);
