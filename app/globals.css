@@ -22,6 +22,20 @@
   /* Font families wired to next/font CSS variables set in layout.tsx */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-fraunces), Georgia, serif;
+
+  /* Contract/invoice letterhead palette — Patrick's existing white-stock
+     performance-agreement style (see make_brennan_contract.py in the
+     Contract Maker Template project). Deliberately separate from the
+     warm-cream app-shell tokens above: contract pages are white, not
+     --color-paper, per Patrick's own direction. Used only inside
+     <ContractDocument> / <InvoiceDocument>. */
+  --color-contract-paper: #FFFFFF;
+  --color-contract-gold: #B8945E;
+  --color-contract-ink: #2B2B2B;
+  --color-contract-soft: #5A5A5A;
+  --color-contract-mute: #7A7A7A;
+  --color-contract-rule: #DDD6CA;
+  --font-contract-serif: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
 }
 
 html,

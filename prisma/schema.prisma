@@ -76,6 +76,23 @@ model User {
   // method their leader doesn't pay with.
   enabledPaymentMethods String[] @default([])
 
+  // Letterhead fields for generated contracts/invoices — distinct from
+  // `name` (the artist's own name, e.g. "Patrick Lamb") since the
+  // business entity signing the agreement is often a loan-out company
+  // ("Patrick Lamb Productions"). All optional: the contract template
+  // falls back to `name` alone when businessName is unset, and simply
+  // omits the address/phone lines when those are blank.
+  businessName    String?
+  businessAddress String?
+  businessPhone   String?
+
+  // PayPal address this bandleader's CLIENTS pay into (distinct from
+  // enabledPaymentMethods above, which is how this bandleader pays their
+  // OWN musicians). Set from /settings/billing. Null = invoicing is
+  // display-only for this user until they link an address; the client
+  // portal then shows the amount due without a Pay button.
+  paypalEmail String?
+
   // Calendar subscription token. Random unguessable string the user
   // pastes into Apple/Google/Outlook to subscribe to their gigs as a
   // live .ics feed. Generated on first request and cached; null until
@@ -541,6 +558,20 @@ model Gig {
   // mileage on this gig (see MusicianGigMileage).
   musicianMileage  MusicianGigMileage[]
 
+  // Generated outbound contract + invoice for this gig — distinct from
+  // contractUrl above, which is a venue's own contract the bandleader
+  // uploads. These are GigWright's own documents, built from this gig's
+  // data and sent to the client for e-signature and payment.
+  contract Contract?
+  invoice  Invoice?
+
+  // Unguessable token for the public client-facing page (/c/[token]) that
+  // shows the contract and invoice together — same pattern as
+  // Musician.icalToken: tokenized, not login-gated, because the client
+  // has no GigWright account. Null until the bandleader first generates
+  // a contract or invoice for this gig.
+  clientPortalToken String? @unique
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -707,6 +738,147 @@ model Activity {
   createdAt DateTime @default(now())
 
   @@index([gigId, createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Contracts & invoicing — the outbound, client-facing documents
+// ═══════════════════════════════════════════════════════════════
+
+enum ContractStatus {
+  DRAFT // generated, not yet sent
+  SENT // client has the link
+  SIGNED
+  VOID // superseded or cancelled — kept for the record, never deleted
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID // deposit in, balance still due
+  PAID
+  VOID
+}
+
+// A generated Performance Agreement for one gig, in Patrick's own
+// Ritz-Carlton letterhead style (white stock, Inter + Cormorant Garamond,
+// gold rule accents — see docs/specs/ for the reference template this
+// was built from). Terms are a SNAPSHOT taken at generation time rather
+// than read live off Gig/Venue/Producer: once a contract is sent (and
+// especially once signed), it must never silently change just because
+// the bandleader later edits the gig. Regenerating replaces the
+// snapshot and resets status to DRAFT.
+model Contract {
+  id String @id @default(cuid())
+
+  gigId String @unique
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  status ContractStatus @default(DRAFT)
+
+  // Human-facing contract number, e.g. "7911.PLP · 2027" — matches the
+  // numbering convention on Patrick's existing PDF contracts.
+  contractNumber String @unique
+
+  // --- snapshot of terms, frozen at generation time ---
+  purchaserName  String
+  purchaserEmail String?
+  purchaserPhone String?
+  // What the engagement IS ("Brennan Wedding Welcome Party — Private
+  // Event"), as distinct from where it is. Falls back to the venue name
+  // when the gig has no eventName set.
+  eventName        String
+  venueName        String
+  venueAddress     String?
+  eventDateLong    String // pre-formatted, e.g. "January 29th, 2027 (Friday)"
+  performanceWindow String // e.g. "7:00 PM – 9:00 PM (two hours)"
+  program          String // e.g. "PATRICK LAMB — Saxophone, with one (1) accompanist"
+  feeCents         Int
+  depositCents     Int
+  balanceCents     Int
+
+  // Freeform paragraphs for the sections that vary gig-to-gig
+  // (performance requirements, travel, cancellation, etc). The fixed
+  // boilerplate sections (jurisdiction, entire agreement, independent
+  // contractor) are NOT stored here — they render from one shared
+  // template so a legal-language fix applies to every contract at once.
+  customSections Json? // [{ title: string, body: string[] }]
+
+  sentAt   DateTime?
+  signedAt DateTime?
+
+  // E-signature capture — typed name + drawn signature, not a
+  // third-party DocuSign round-trip. signatureDataUrl is a base64 PNG
+  // from the on-page signature canvas.
+  signerName       String?
+  signerEmail      String?
+  signerIp         String?
+  signatureDataUrl String?
+
+  // Finalized signed PDF snapshot (Vercel Blob URL), generated once
+  // signedAt is set. Null before signing.
+  pdfUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A client-facing invoice for one gig. One invoice per gig in v1 (matches
+// how Patrick invoices today — a single deposit + balance on one
+// document) rather than separate deposit/balance invoices.
+model Invoice {
+  id String @id @default(cuid())
+
+  gigId String @unique
+  gig   Gig    @relation(fields: [gigId], references: [id], onDelete: Cascade)
+
+  status        InvoiceStatus @default(DRAFT)
+  invoiceNumber String        @unique
+
+  subtotalCents Int
+  taxCents      Int @default(0)
+  discountCents Int @default(0)
+  totalCents    Int
+
+  // Deposit terms — mirrors the "Require Deposit" toggle pattern seen on
+  // competitor invoices. depositDueCents = 0 means no deposit required,
+  // full balance due on dueDate.
+  depositDueCents Int       @default(0)
+  depositPaidAt   DateTime?
+
+  paidCents Int       @default(0) // running total actually received
+  paidAt    DateTime? // set when paidCents reaches totalCents
+
+  dueDate          DateTime?
+  messageOnInvoice String? // freeform note shown above the line items
+
+  // Payment collection — PayPal per bandleader (User.paypalEmail, added
+  // below), matching how working bandleaders already expect to get paid
+  // (see docs/specs — client payment methods). Stripe is intentionally
+  // NOT reused here: GigWright's own Stripe account bills bandleaders
+  // for their GigWright subscription; a bandleader's client paying THEM
+  // needs to land in the bandleader's own PayPal, not Patrick's Stripe.
+  paypalOrderId String? @unique
+
+  lineItems InvoiceLineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model InvoiceLineItem {
+  id        String  @id @default(cuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  qty         Int @default(1)
+  rateCents   Int
+  amountCents Int // qty * rateCents, stored rather than computed so an
+                  // edited rate/qty later doesn't retroactively change a
+                  // sent invoice's displayed amount
+  position    Int @default(0)
+
+  @@index([invoiceId])
 }
 
 // ═══════════════════════════════════════════════════════════════

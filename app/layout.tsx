@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Fraunces, Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,6 +13,17 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
   style: ["normal"],
+});
+
+// Used only inside <ContractDocument> — Patrick's existing letterhead
+// contract typography (white-stock performance agreements), kept
+// separate from the app shell's Fraunces/cream-paper look. See
+// docs/specs/ritz-carlton-contracts.md.
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -81,7 +92,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${inter.variable} ${fraunces.variable} ${cormorant.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-paper text-ink font-sans">
         {children}
