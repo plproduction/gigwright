@@ -132,6 +132,7 @@ export default async function DashboardPage({
             label="To confirm"
             value={toConfirm.length}
             valueEm="open"
+            href={toConfirm[0] ? `/gigs/${toConfirm[0].id}` : undefined}
             note={
               toConfirm[0]
                 ? `Next: ${formatMonthAbbr(toConfirm[0].startAt)} ${formatDayNum(toConfirm[0].startAt)} · ${shorten(toConfirm[0].venue?.name ?? "TBD", 22)}`
@@ -263,6 +264,20 @@ function TonightCard({
   const venue = gigVenueLabel(gig.venue);
   const personnelCount = gig.personnel.length;
   const today = isToday(gig.startAt);
+  // "Friday, November 27" doesn't tell you how soon it is — you have to
+  // work that out against today's date every time you look at the
+  // dashboard. The whole point of this card is "what's next and how
+  // close is it", so say it.
+  const daysAway = Math.round(
+    (startOfDay(gig.startAt).getTime() - startOfDay(new Date()).getTime()) /
+      86_400_000,
+  );
+  const countdown =
+    daysAway <= 0
+      ? null
+      : daysAway === 1
+        ? "Tomorrow"
+        : `In ${daysAway} days`;
 
   return (
     <div className="flex w-full flex-col gap-4 overflow-hidden rounded-[10px] bg-ink p-5 text-paper md:grid md:grid-cols-[1fr_auto] md:p-[22px_24px]">
@@ -271,6 +286,14 @@ function TonightCard({
           <span className="mr-1.5 text-accent">●</span>
           {today ? "Tonight" : "Next up"} ·{" "}
           <span>{formatLongDate(gig.startAt)}</span>
+          {countdown && (
+            <span className="text-[#8A8373]"> · {countdown}</span>
+          )}
+          {gig.status !== "CONFIRMED" && (
+            <span className="ml-2 rounded-full border border-white/25 px-1.5 py-px text-[9px] tracking-[0.14em]">
+              {gig.status}
+            </span>
+          )}
         </div>
         <h3 className="font-serif text-[22px] font-light leading-[1.1] tracking-tight break-words md:text-[26px]">
           {venue.name.split(" ").length > 1 ? (
@@ -295,30 +318,37 @@ function TonightCard({
             it lives only on the per-gig Payout Worksheet (private
             financials). */}
         <div className="flex flex-wrap gap-5 border-t border-white/10 pt-3.5 md:gap-7">
-          <Meta label="Call" value={formatTime(gig.callTimeAt)} />
+          {/* A slot with nothing in it printed a bare "—", so the card's
+              most prominent row led with a dash. If the call time isn't
+              set, the slot simply isn't there. */}
+          {gig.callTimeAt && (
+            <Meta label="Call" value={formatTime(gig.callTimeAt)} />
+          )}
+          {gig.loadInAt && (
+            <Meta label="Load in" value={formatTime(gig.loadInAt)} />
+          )}
           <Meta label="Downbeat" value={formatTime(gig.startAt)} />
-          <div className="hidden md:block">
-            <Meta label="On stage" value={String(personnelCount)} />
-          </div>
+          {/* Headcount was desktop-only, which is backwards: the phone is
+              what you have in your hand on the way to the gig. */}
+          <Meta label="On stage" value={String(personnelCount)} />
         </div>
       </div>
 
-      {/* Action column. On mobile only the Open button; Send / Email are
-          desktop-only until the SMS fanout is live. */}
-      <div className="flex w-full flex-col gap-1.5 md:min-w-[170px] md:justify-between">
+      {/* Actions. "Send gig alert" and "Email gig sheet" used to sit here
+          permanently greyed out, pointing at href="#", behind a comment
+          saying they were waiting on the SMS fanout — which has been live
+          for months. A disabled button teaches you to stop looking at
+          that corner of the screen. Both are gone; sending an alert needs
+          a message and a confirm step, so it belongs on the gig itself,
+          where SendUpdateButton already does it properly.
+
+          What's left is two real destinations: the record you edit, and
+          the sheet the band sees. */}
+      <div className="flex w-full flex-col gap-1.5 md:min-w-[170px]">
         <TonightButton href={`/gigs/${gig.id}`} primary>
-          Open record
+          Open
         </TonightButton>
-        <div className="hidden md:block">
-          <TonightButton href="#" disabled>
-            Send gig alert
-          </TonightButton>
-        </div>
-        <div className="hidden md:block">
-          <TonightButton href="#" disabled>
-            Email gig sheet
-          </TonightButton>
-        </div>
+        <TonightButton href={`/g/${gig.id}`}>Gig sheet</TonightButton>
       </div>
     </div>
   );
@@ -335,52 +365,70 @@ function Meta({ label, value }: { label: string; value: string }) {
   );
 }
 
+// No `disabled` variant on purpose. Every button on this card goes
+// somewhere; if an action isn't ready, it doesn't get a button.
 function TonightButton({
   href,
   children,
   primary,
-  disabled,
 }: {
   href: string;
   children: React.ReactNode;
   primary?: boolean;
-  disabled?: boolean;
 }) {
   const base =
     "flex items-center justify-between rounded-md border px-3 py-[9px] text-[12px] font-medium text-paper transition-colors";
   const variant = primary
     ? "border-accent bg-accent hover:bg-[#9B2D1E]"
     : "border-white/15 bg-white/[0.06] hover:bg-white/[0.12] hover:border-white/30";
-  const dim = disabled ? "opacity-50 pointer-events-none" : "";
   return (
-    <Link href={href} className={`${base} ${variant} ${dim}`}>
+    <Link href={href} className={`${base} ${variant}`}>
       <span>{children}</span>
       <span className="font-serif text-[15px] opacity-75">→</span>
     </Link>
   );
 }
 
+// A number that tells you something needs doing should take you to the
+// thing. `href` makes the whole tile the target; without one it stays a
+// plain readout.
 function Stat({
   label,
   value,
   valueEm,
   note,
+  href,
 }: {
   label: string;
   value: number | string;
   valueEm: string;
   note: string;
+  href?: string;
 }) {
-  return (
-    <div className="rounded-[10px] border border-line bg-paper p-[16px_18px]">
+  const body = (
+    <>
       <div className="mb-2 text-[10px] font-medium uppercase tracking-[0.2em] text-ink-mute">
         {label}
       </div>
       <div className="font-serif text-[32px] font-light leading-none tracking-tight">
         {value} <em className="font-light text-accent">{valueEm}</em>
       </div>
-      <div className="mt-1.5 text-[11px] text-ink-mute">{note}</div>
-    </div>
+      {/* Fixed two-line well. Notes vary from "All confirmed" to
+          "11 confirmed · 2 to confirm", and letting each tile size to its
+          own note left the 2x2 grid with four different heights. */}
+      <div className="mt-1.5 line-clamp-2 min-h-[30px] text-[11px] leading-[1.35] text-ink-mute">
+        {note}
+      </div>
+    </>
+  );
+
+  const shell = "block rounded-[10px] border border-line bg-paper p-[16px_18px]";
+  return href ? (
+    <Link href={href} className={`${shell} transition-colors hover:border-line-strong hover:bg-paper-warm/50`}>
+      {body}
+    </Link>
+  ) : (
+    <div className={shell}>{body}</div>
   );
 }
 
