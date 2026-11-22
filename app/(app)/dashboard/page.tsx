@@ -50,18 +50,35 @@ export default async function DashboardPage({
   const visible = view === "past" ? past : upcoming;
   const tonight = upcoming.find((g) => isToday(g.startAt)) ?? upcoming[0];
 
-  // Stats: simple derived values. Will become richer later.
-  const thisMonth = gigs.filter(
-    (g) =>
-      g.startAt.getFullYear() === now.getFullYear() &&
-      g.startAt.getMonth() === now.getMonth(),
+  // Stats. Three of these used to be wrong or useless:
+  //
+  //   "This month" counted the whole calendar month, so by the 22nd it
+  //   was mostly gigs already behind you — and it bucketed with
+  //   Date#getMonth(), which runs in the SERVER's timezone. Netlify runs
+  //   UTC, so a 9pm Pacific show on the last of the month counted into
+  //   the next one. Replaced with the next 30 days, which is a forward
+  //   window and compares instants, so no timezone bucketing at all.
+  //
+  //   "Holds to confirm" counted HOLD only. An INQUIRY is equally
+  //   unconfirmed and equally needs chasing, so a diary holding two
+  //   unanswered inquiries reported "All clear." Counts both now.
+  //
+  //   "Year to date" counted status === PLAYED. Nothing in the app ever
+  //   sets PLAYED — there's no "mark it played" step — so it read 1
+  //   against a year with dozens of shows behind it. A gig in the past
+  //   that wasn't cancelled is a gig you played; that's what it counts.
+  const in30Days = new Date(startOfDay(now));
+  in30Days.setDate(in30Days.getDate() + 30);
+  const next30 = upcoming.filter((g) => g.startAt < in30Days);
+  const next30Confirmed = next30.filter((g) => g.status === "CONFIRMED").length;
+
+  const toConfirm = upcoming.filter(
+    (g) => g.status === "HOLD" || g.status === "INQUIRY",
   );
-  const confirmedCount = thisMonth.filter((g) => g.status === "CONFIRMED").length;
-  const holdCount = thisMonth.filter((g) => g.status === "HOLD").length;
-  const inquiryCount = thisMonth.filter((g) => g.status === "INQUIRY").length;
-  const ytdCount = gigs.filter(
-    (g) =>
-      g.startAt.getFullYear() === now.getFullYear() && g.status === "PLAYED",
+
+  const startOfYear = new Date(now.getFullYear(), 0, 1);
+  const playedThisYear = past.filter(
+    (g) => g.startAt >= startOfYear && g.status !== "CANCELLED",
   ).length;
 
   // Brand-new account: nobody's added a gig yet. Show a welcoming onboarding
@@ -102,29 +119,29 @@ export default async function DashboardPage({
 
         <div className="hidden grid-cols-2 gap-3 lg:grid">
           <Stat
-            label="This month"
-            value={thisMonth.length}
-            valueEm="gigs"
+            label="Next 30 days"
+            value={next30.length}
+            valueEm={next30.length === 1 ? "gig" : "gigs"}
             note={
-              thisMonth.length > 0
-                ? `${confirmedCount} confirmed · ${holdCount} holds · ${inquiryCount} inquiries`
-                : "No gigs this month yet"
+              next30.length > 0
+                ? `${next30Confirmed} confirmed · ${next30.length - next30Confirmed} to confirm`
+                : "Nothing in the next month"
             }
           />
           <Stat
-            label="Holds to confirm"
-            value={holdCount}
+            label="To confirm"
+            value={toConfirm.length}
             valueEm="open"
             note={
-              holdCount > 0
-                ? "Follow up with clients for contracts"
-                : "All clear"
+              toConfirm[0]
+                ? `Next: ${formatMonthAbbr(toConfirm[0].startAt)} ${formatDayNum(toConfirm[0].startAt)} · ${shorten(toConfirm[0].venue?.name ?? "TBD", 22)}`
+                : "All confirmed"
             }
           />
           <Stat
-            label="Year to date"
-            value={ytdCount}
-            valueEm="played"
+            label="Played this year"
+            value={playedThisYear}
+            valueEm={playedThisYear === 1 ? "gig" : "gigs"}
             note={`Through ${now.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
           />
           <Stat
@@ -627,6 +644,12 @@ function startOfDay(d: Date): Date {
   const copy = new Date(d);
   copy.setHours(0, 0, 0, 0);
   return copy;
+}
+
+// Venue names run long ("Sunset Cove Amphitheater", "Salem's Historic
+// Grand Theatre") and a stat tile's note is one short line.
+function shorten(s: string, n: number): string {
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
 }
 
 // Type helpers so our row/tonight components inherit the Prisma shape.
