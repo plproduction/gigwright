@@ -20,6 +20,7 @@ import { LeaderGuestListInput } from "@/components/LeaderGuestListInput";
 import { LineupToggle } from "@/components/LineupToggle";
 import { DoNotEmailToggle } from "@/components/DoNotEmailToggle";
 import { ContractUpload } from "@/components/ContractUpload";
+import { GigContractInvoicePanel } from "@/components/contracts/GigContractInvoicePanel";
 import { CrewControls } from "@/components/CrewControls";
 import { isPaid } from "@/lib/plan";
 import {
@@ -76,6 +77,8 @@ export default async function GigDetailPage({
         },
         expenses: { orderBy: { position: "asc" } },
         activity: { orderBy: { createdAt: "desc" } },
+        contract: true,
+        invoice: true,
       },
     }),
     db.musician.findMany({
@@ -569,6 +572,42 @@ export default async function GigDetailPage({
             <div className="mt-2 text-[11px] leading-[1.4] text-ink-mute">
               Only you see this — never shared with the band or the venue.
             </div>
+          </Section>
+
+          {/* Client-facing paperwork — the mirror image of the private
+              upload above. That one is a contract the VENUE sent us;
+              this is the agreement and invoice WE generate and send to
+              the client, signed and paid at /c/[clientPortalToken]. */}
+          <Section title="Client contract & invoice">
+            <GigContractInvoicePanel
+              gigId={gig.id}
+              clientPortalToken={gig.clientPortalToken}
+              contract={
+                gig.contract
+                  ? {
+                      status: gig.contract.status,
+                      contractNumber: gig.contract.contractNumber,
+                      purchaserName: gig.contract.purchaserName,
+                      purchaserEmail: gig.contract.purchaserEmail,
+                      purchaserPhone: gig.contract.purchaserPhone,
+                      feeCents: gig.contract.feeCents,
+                      depositCents: gig.contract.depositCents,
+                      performanceWindow: gig.contract.performanceWindow,
+                      program: gig.contract.program,
+                    }
+                  : null
+              }
+              invoice={
+                gig.invoice
+                  ? {
+                      status: gig.invoice.status,
+                      invoiceNumber: gig.invoice.invoiceNumber,
+                      totalCents: gig.invoice.totalCents,
+                      paidCents: gig.invoice.paidCents,
+                    }
+                  : null
+              }
+            />
           </Section>
           </div>
         </div>

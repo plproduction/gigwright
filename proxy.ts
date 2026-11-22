@@ -69,6 +69,12 @@ export default auth(function proxy(req) {
     // the unguessable 128-bit token instead. Must be public so the
     // calendar app's polling requests land without a /signin bounce.
     pathname.startsWith("/cal/") ||
+    // Client portal — the contract/invoice page a bandleader sends their
+    // CLIENT (/c/[clientPortalToken]). Clients have no GigWright account
+    // and never will, so the unguessable token is the authorization,
+    // same model as /cal/ and the /g/ RSVP links. Auth-gating this would
+    // make every contract we send unopenable.
+    pathname.startsWith("/c/") ||
     pathname.startsWith("/api/") || // API routes handle their own auth (cron routes are secret-gated)
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
@@ -108,6 +114,7 @@ function pathIsPublic(pathname: string): boolean {
     pathname.startsWith("/sms-opt-in") ||
     pathname.startsWith("/g/") ||
     pathname.startsWith("/cal/") ||
+    pathname.startsWith("/c/") ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon")
