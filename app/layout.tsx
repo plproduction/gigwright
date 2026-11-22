@@ -19,10 +19,16 @@ const fraunces = Fraunces({
 // contract typography (white-stock performance agreements), kept
 // separate from the app shell's Fraunces/cream-paper look. See
 // docs/specs/ritz-carlton-contracts.md.
+// Only 400 is ever used (the contract sets no weight on serif type), and
+// italic appears in three places. Declaring 500 and 600 fetched four
+// extra font files at build time for nothing — and every extra file is
+// another chance for `next/font/google` to fail the whole build when
+// Google throttles the fetch, which is exactly what started happening
+// once this repo was deploying several times an hour.
 const cormorant = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400"],
   style: ["normal", "italic"],
 });
 
