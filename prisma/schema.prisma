@@ -590,6 +590,11 @@ model Gig {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId, startAt])
+  // Exists on the database and has since the producer relation was added,
+  // but was never declared here. Undeclared meant `prisma migrate dev` saw
+  // it as a stray and would have generated a DROP alongside whatever change
+  // was actually wanted. Declared 2026-11-22.
+  @@index([producerId])
 }
 
 // Freeform line items for a gig — flights, hotels, ad spend, transportation,
@@ -1063,4 +1068,29 @@ model SmsOptIn {
 
   @@index([phone])
   @@index([createdAt])
+}
+
+// Frozen copy of Musician.roles as it was typed, taken by
+// 20261123_derive_roles_from_call_lists before that free-text column was
+// folded into real Role / RoleMember records. It is the ONLY copy of what
+// was actually typed, for 289 musicians, and the derivation that replaced it
+// (case-folding, fuzzy-matching against existing roles) was a judgement call.
+// scripts/verify-role-search.ts reads it to check that derivation.
+//
+// Declared here only so Prisma knows it exists. Until 2026-11-22 it was not
+// in this schema, so the next `prisma migrate dev` would have generated a
+// DROP for it — quietly, folded into an unrelated migration.
+//
+// @@ignore keeps it out of the generated client: nothing should write to it,
+// and it has no primary key, so Prisma could not expose it anyway. The table
+// has served its purpose once the derived roles have been checked against it;
+// remove this model and add a migration that drops the table, deliberately.
+model MusicianRolesBackup {
+  musicianId String?
+  ownerId    String?
+  roles      String[]
+  backedUpAt DateTime? @db.Timestamptz(6)
+
+  @@map("_MusicianRolesBackup")
+  @@ignore
 }
