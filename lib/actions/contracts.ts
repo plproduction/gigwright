@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
 import { formatLongDateWithYear, formatTime } from "@/lib/format";
 import type { ContractSection } from "@/lib/contracts/boilerplate";
+import { sendClientPortalEmail } from "@/lib/notify-client-portal";
 
 function nullIfEmpty(v: FormDataEntryValue | null): string | null {
   const s = v == null ? "" : String(v).trim();
@@ -231,38 +232,84 @@ export async function sendContract(gigId: string) {
   if (!gig?.contract) throw new Error("No contract to send");
   if (!gig.clientPortalToken) throw new Error("Missing client portal token");
 
+  // Flip the status FIRST so the DB is the source of truth even if
+  // the email has trouble. The admin can still copy the client link
+  // manually from the preview page in that case.
   await db.contract.update({
     where: { gigId },
     data: { status: "SENT", sentAt: new Date() },
   });
 
-  const apiKey = process.env.AUTH_RESEND_KEY;
   const to = gig.contract.purchaserEmail;
-  if (apiKey && to) {
+  const bandleaderName =
+    user.name ?? user.businessName ?? user.email ?? "GigWright";
+
+  let emailError: string | null = null;
+  if (to) {
     const h = await headers();
     const origin = h.get("origin") ?? `https://${h.get("host")}`;
     const portalUrl = `${origin}/c/${gig.clientPortalToken}`;
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM ?? "onboarding@resend.dev",
-        to,
-        subject: `Performance agreement · ${gig.contract.eventDateLong}`,
-        html: `<p>Hi ${gig.contract.purchaserName},</p><p>Here's the performance agreement for ${gig.contract.eventDateLong}. Please review and sign at the link below.</p><p><a href="${portalUrl}">${portalUrl}</a></p>`,
-        text: `Here's the performance agreement for ${gig.contract.eventDateLong}. Review and sign: ${portalUrl}`,
-      }),
-    }).catch(() => {
-      // Swallow — the DB state (SENT) is the source of truth; a failed
-      // send just means the bandleader needs to share the link manually.
+    const firstName = gig.contract.purchaserName.split(/\s+/)[0] ?? "there";
+    const result = await sendClientPortalEmail({
+      to,
+      bandleaderName,
+      bandleaderReplyEmail: user.email ?? null,
+      subject: `Performance agreement · ${gig.contract.eventDateLong}`,
+      text: `Hi ${firstName},
+
+Here's the performance agreement for ${gig.contract.eventDateLong}. Please review and sign at the link below — no account needed, just click and sign.
+
+${portalUrl}
+
+Reply to this email with any questions.
+
+— ${bandleaderName}
+`,
+      html: `<!DOCTYPE html><html><body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
+  <div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
+    <p style="margin:0 0 12px 0;font-size:15px;">Hi ${escapeHtml(firstName)},</p>
+    <p style="margin:0 0 16px 0;font-size:14px;line-height:1.55;color:#3A3833;">Here's the performance agreement for <strong>${escapeHtml(gig.contract.eventDateLong)}</strong>. Please review and sign at the link below — no account needed, just click and sign.</p>
+    <div style="margin:24px 0;">
+      <a href="${portalUrl}" style="display:inline-block;background:#7E2418;color:#FFFFFF;padding:12px 24px;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">Review &amp; sign the agreement</a>
+    </div>
+    <p style="margin:16px 0 0 0;font-size:13px;color:#3A3833;">Reply to this email with any questions.</p>
+    <p style="margin:24px 0 0 0;font-size:14px;color:#0E0C09;">— ${escapeHtml(bandleaderName)}</p>
+  </div>
+</body></html>`,
     });
+    if (!result.ok) emailError = result.error;
   }
 
   await db.activity.create({
-    data: { gigId, action: "contract_sent", summary: "Contract sent to client" },
+    data: {
+      gigId,
+      action: "contract_sent",
+      summary: emailError
+        ? `Contract sent — email failed (${emailError.slice(0, 80)})`
+        : to
+          ? "Contract sent to client"
+          : "Contract marked sent (no purchaser email on file)",
+    },
   });
 
   revalidatePath(`/gigs/${gigId}`);
+  // Surface the email failure so the admin knows to share the link
+  // manually. The status is already SENT, so a resend from the admin
+  // preview will retry the email.
+  if (emailError) {
+    throw new Error(
+      `Contract status set to SENT, but the email failed: ${emailError}. Copy the client link from the preview page and send it manually, or retry.`,
+    );
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Public action — called from /c/[token], no bandleader session. The

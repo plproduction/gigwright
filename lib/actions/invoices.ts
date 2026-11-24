@@ -1,10 +1,12 @@
 "use server";
 
 import { randomBytes } from "crypto";
+import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
+import { sendClientPortalEmail } from "@/lib/notify-client-portal";
 
 function dollarsToCents(v: FormDataEntryValue | null): number {
   const n = Number.parseFloat(String(v ?? "0").replace(/[^0-9.\-]/g, ""));
@@ -150,19 +152,100 @@ export async function generateInvoice(gigId: string, formData: FormData) {
 
 export async function sendInvoice(gigId: string) {
   const user = await requireBandleader();
-  const gig = await db.gig.findUnique({ where: { id: gigId, ownerId: user.id } });
+  const gig = await db.gig.findUnique({
+    where: { id: gigId, ownerId: user.id },
+    include: {
+      invoice: true,
+      contract: { select: { purchaserName: true, purchaserEmail: true } },
+    },
+  });
   if (!gig) throw new Error("Gig not found");
+  if (!gig.invoice) throw new Error("No invoice on this gig to send");
+  if (!gig.clientPortalToken)
+    throw new Error("Missing client portal token — regenerate the invoice first");
 
   await db.invoice.update({
     where: { gigId },
     data: { status: "SENT" },
   });
 
+  // Patrick 2026-11-23: "Make sure the emails go out correctly on the
+  // server." sendInvoice previously only updated DB status and sent
+  // NOTHING to the client. Now mirrors sendContract: personal note
+  // with a big link to the client portal where they see the invoice
+  // (and the contract if there is one) in the Ritz-Carlton layout.
+  const to = gig.contract?.purchaserEmail ?? null;
+  const purchaserName = gig.contract?.purchaserName ?? "there";
+  const bandleaderName =
+    user.name ?? user.businessName ?? user.email ?? "GigWright";
+  const dollars = (c: number) => (c / 100).toFixed(2);
+  const totalDisplay = dollars(gig.invoice.totalCents);
+  const balanceCents = gig.invoice.totalCents - gig.invoice.paidCents;
+  const balanceDisplay = dollars(balanceCents);
+
+  let emailError: string | null = null;
+  if (to) {
+    const h = await headers();
+    const origin = h.get("origin") ?? `https://${h.get("host")}`;
+    const portalUrl = `${origin}/c/${gig.clientPortalToken}`;
+    const firstName = purchaserName.split(/\s+/)[0] ?? "there";
+    const result = await sendClientPortalEmail({
+      to,
+      bandleaderName,
+      bandleaderReplyEmail: user.email ?? null,
+      subject: `Invoice ${gig.invoice.invoiceNumber} · $${totalDisplay}`,
+      text: `Hi ${firstName},
+
+Here is invoice ${gig.invoice.invoiceNumber} for $${totalDisplay}${balanceCents < gig.invoice.totalCents ? ` ($${balanceDisplay} remaining)` : ""}.
+
+${portalUrl}
+
+Reply to this email with any questions.
+
+— ${bandleaderName}
+`,
+      html: `<!DOCTYPE html><html><body style="margin:0;padding:32px;background:#F3EFE6;font-family:-apple-system,system-ui,Helvetica,Arial,sans-serif;color:#0E0C09;">
+  <div style="max-width:520px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(14,12,9,0.10);border-radius:10px;padding:32px;">
+    <p style="margin:0 0 12px 0;font-size:15px;">Hi ${escapeHtml(firstName)},</p>
+    <p style="margin:0 0 16px 0;font-size:14px;line-height:1.55;color:#3A3833;">Here is <strong>invoice ${escapeHtml(gig.invoice.invoiceNumber)}</strong> for <strong style="color:#7E2418;">$${escapeHtml(totalDisplay)}</strong>${balanceCents < gig.invoice.totalCents ? ` <span style="color:#7A776E;">(balance due $${escapeHtml(balanceDisplay)})</span>` : ""}.</p>
+    <div style="margin:24px 0;">
+      <a href="${portalUrl}" style="display:inline-block;background:#7E2418;color:#FFFFFF;padding:12px 24px;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">View the invoice</a>
+    </div>
+    <p style="margin:16px 0 0 0;font-size:13px;color:#3A3833;">Reply to this email with any questions.</p>
+    <p style="margin:24px 0 0 0;font-size:14px;color:#0E0C09;">— ${escapeHtml(bandleaderName)}</p>
+  </div>
+</body></html>`,
+    });
+    if (!result.ok) emailError = result.error;
+  }
+
   await db.activity.create({
-    data: { gigId, action: "invoice_sent", summary: "Invoice sent to client" },
+    data: {
+      gigId,
+      action: "invoice_sent",
+      summary: emailError
+        ? `Invoice sent — email failed (${emailError.slice(0, 80)})`
+        : to
+          ? "Invoice sent to client"
+          : "Invoice marked sent (no purchaser email on file — share the client link manually)",
+    },
   });
 
   revalidatePath(`/gigs/${gigId}`);
+  if (emailError) {
+    throw new Error(
+      `Invoice status set to SENT, but the email failed: ${emailError}. Copy the client link from the preview page and send it manually, or retry.`,
+    );
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 // Manual "mark paid" for now — stands in for the PayPal capture webhook
