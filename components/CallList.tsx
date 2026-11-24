@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useOptimistic, useState, useTransition } from "react";
 import { moveInCallList, removeFromCallList, reorderCallList } from "@/lib/actions/roles";
 
@@ -16,7 +17,17 @@ import { moveInCallList, removeFromCallList, reorderCallList } from "@/lib/actio
 // real 24px for keyboard users and single-step nudges, and the delete
 // pulled out of the cluster and behind a confirm so a near-miss can't
 // quietly drop a player from the list.
-type Member = { id: string; name: string; note: string | null };
+type Member = {
+  id: string;
+  // Musician.id — distinct from the RoleMember id above. Needed so
+  // the name can link to /roster/[musicianId]/edit, where the
+  // bandleader toggles role chips to fix a mis-categorised player
+  // (Patrick 2026-11-24: "Britnee is a vocalist but she's in the
+  // bass player or guitar player").
+  musicianId: string;
+  name: string;
+  note: string | null;
+};
 
 export function CallList({
   roleId,
@@ -145,7 +156,23 @@ export function CallList({
               ⠿
             </button>
             <span className="tabular-nums text-ink-mute">{i + 1}.</span>
-            <span className="whitespace-nowrap">{m.name}</span>
+            {/* Clicking the name jumps straight to the musician's edit
+                page, where their role tags live. One click to move a
+                mis-categorised player (Britnee from Guitar to Vocals).
+                stopPropagation keeps the chip's onClick (touch-drop
+                handler) from firing on a plain click. draggable on the
+                <li> starts on mousedown-plus-motion, so a plain click
+                doesn't initiate a drag. */}
+            <Link
+              href={`/roster/${m.musicianId}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              className="whitespace-nowrap font-medium hover:underline hover:decoration-accent/50 hover:underline-offset-4"
+              title={`Edit ${m.name} (change roles, contact, pay)`}
+              draggable={false}
+            >
+              {m.name}
+            </Link>
             {m.note && (
               <span className="whitespace-nowrap text-ink-mute/70">· {m.note}</span>
             )}

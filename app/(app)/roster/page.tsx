@@ -214,6 +214,7 @@ export default async function BandPage() {
                   roleName={role.name}
                   members={role.members.map((m) => ({
                     id: m.id,
+                    musicianId: m.musicianId,
                     name: m.musician.name,
                     note: m.note,
                   }))}
