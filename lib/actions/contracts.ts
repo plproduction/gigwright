@@ -3,6 +3,7 @@
 import { randomBytes } from "crypto";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
 import { formatLongDateWithYear, formatTime } from "@/lib/format";
@@ -208,6 +209,13 @@ export async function generateContract(gigId: string, formData: FormData) {
   });
 
   revalidatePath(`/gigs/${gigId}`);
+  // Patrick 2026-11-23: after clicking Generate, open the document so
+  // he can see it, review it, and decide to send or edit. Previously
+  // this left him staring at a tiny updated panel with no visible
+  // output — "goes nowhere, does nothing." The redirect goes outside
+  // the try so the DB write is already committed before we throw the
+  // NEXT_REDIRECT internal exception.
+  redirect(`/gigs/${gigId}/contract`);
 }
 
 // Marks the contract SENT (client link is now considered "live") and

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   generateContract,
@@ -133,18 +134,16 @@ export function GigContractInvoicePanel({
         </div>
 
         {contractLocked ? (
-          <div className="text-[12px] text-ink-mute">
-            N&deg; {contract!.contractNumber} &middot; {dollars(contract!.feeCents)} fee
-            {contract!.status === "SENT" && (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => startTransition(() => sendContract(gigId))}
-                className="ml-2 text-accent underline"
-              >
-                Resend
-              </button>
-            )}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-mute">
+            <span>
+              N&deg; {contract!.contractNumber} &middot; {dollars(contract!.feeCents)} fee
+            </span>
+            <Link
+              href={`/gigs/${gigId}/contract`}
+              className="font-medium text-accent underline"
+            >
+              View / send
+            </Link>
           </div>
         ) : (
           <form
@@ -220,14 +219,22 @@ export function GigContractInvoicePanel({
         )}
 
         {contract && contract.status === "DRAFT" && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => startTransition(() => sendContract(gigId))}
-            className="mt-2 w-full rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-[12px] font-semibold text-accent disabled:opacity-50"
-          >
-            Send to client for signature
-          </button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              href={`/gigs/${gigId}/contract`}
+              className="rounded-md border border-line-strong bg-paper px-3 py-2 text-center text-[12px] font-semibold text-ink hover:border-accent hover:text-accent"
+            >
+              Preview
+            </Link>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => startTransition(() => sendContract(gigId))}
+              className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-[12px] font-semibold text-accent disabled:opacity-50"
+            >
+              Send to client
+            </button>
+          </div>
         )}
       </div>
 
@@ -240,9 +247,17 @@ export function GigContractInvoicePanel({
 
         {invoiceLocked ? (
           <div className="space-y-2 text-[12px] text-ink-mute">
-            <div>
-              {invoice!.invoiceNumber} &middot; {dollars(invoice!.totalCents)} total &middot;{" "}
-              {dollars(invoice!.paidCents)} paid
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>
+                {invoice!.invoiceNumber} &middot; {dollars(invoice!.totalCents)} total &middot;{" "}
+                {dollars(invoice!.paidCents)} paid
+              </span>
+              <Link
+                href={`/gigs/${gigId}/invoice`}
+                className="font-medium text-accent underline"
+              >
+                View / send
+              </Link>
             </div>
             {invoice!.paidCents < invoice!.totalCents && (
               <form
@@ -337,14 +352,22 @@ export function GigContractInvoicePanel({
         )}
 
         {invoice && invoice.status === "DRAFT" && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => startTransition(() => sendInvoice(gigId))}
-            className="mt-2 w-full rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-[12px] font-semibold text-accent disabled:opacity-50"
-          >
-            Send invoice to client
-          </button>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              href={`/gigs/${gigId}/invoice`}
+              className="rounded-md border border-line-strong bg-paper px-3 py-2 text-center text-[12px] font-semibold text-ink hover:border-accent hover:text-accent"
+            >
+              Preview
+            </Link>
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => startTransition(() => sendInvoice(gigId))}
+              className="rounded-md border border-accent/30 bg-accent-soft px-3 py-2 text-[12px] font-semibold text-accent disabled:opacity-50"
+            >
+              Send to client
+            </button>
+          </div>
         )}
       </div>
 

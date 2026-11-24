@@ -2,6 +2,7 @@
 
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireBandleader } from "@/lib/session";
 
@@ -117,6 +118,10 @@ export async function generateInvoice(gigId: string, formData: FormData) {
   });
 
   revalidatePath(`/gigs/${gigId}`);
+  // Patrick 2026-11-23: open the invoice after Generate so the admin
+  // can see what was made and decide to send/edit/record payment,
+  // same rule as contracts above.
+  redirect(`/gigs/${gigId}/invoice`);
 }
 
 export async function sendInvoice(gigId: string) {
