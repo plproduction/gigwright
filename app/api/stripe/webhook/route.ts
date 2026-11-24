@@ -4,6 +4,7 @@ import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { recalcForReferredUser } from "@/lib/actions/referrals";
 import { sendPaymentFailedEmail } from "@/lib/notify-payment-failed";
+import { sendTrialEndingEmail } from "@/lib/notify-trial-ending";
 
 // Stripe webhook receiver. Listens for subscription lifecycle events and
 // keeps the User.plan / stripeSubscriptionId / currentPeriodEnd in sync.
@@ -15,7 +16,9 @@ import { sendPaymentFailedEmail } from "@/lib/notify-payment-failed";
 //   - customer.subscription.deleted          → cancellation → drop to FREE
 //   - customer.subscription.trial_will_end   → fires 3 days before charge,
 //                                              used to surface a "card on
-//                                              file?" nudge in the UI
+//                                              file?" nudge in the UI, and
+//                                              email them once
+//                                              (lib/notify-trial-ending)
 //   - invoice.paid                           → confirms paid status (no-op;
 //                                              subscription events carry it)
 //   - invoice.payment_failed                 → renewal card declined; flag
@@ -112,16 +115,47 @@ export async function POST(req: Request) {
       // Fires ~3 days before the trial ends. We surface this on the
       // billing page so users get a nudge to confirm payment before
       // the first charge instead of getting a payment-failed email
-      // a few days later.
+      // a few days later, and we email them once directly — a silent
+      // first charge is a worse first impression than a reminder.
       const sub = event.data.object as Stripe.Subscription;
-      const userId = await findUserByCustomer(
-        typeof sub.customer === "string" ? sub.customer : sub.customer.id,
-      );
-      if (userId) {
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      const user = await db.user.findFirst({
+        where: { stripeCustomerId: customerId },
+        select: { id: true, email: true, name: true, trialEndingAt: true },
+      });
+      if (user) {
+        // Stripe only fires this once per trial, but a slow/erroring
+        // response here could cause a webhook retry delivery of the same
+        // event. Guard against double-emailing the same reminder.
+        const alreadyNotified = !!user.trialEndingAt;
+
         await db.user.update({
-          where: { id: userId },
+          where: { id: user.id },
           data: { trialEndingAt: new Date() },
         });
+
+        if (!alreadyNotified) {
+          const item = sub.items?.data?.[0];
+          const unitAmount = item?.price?.unit_amount ?? 0;
+          const interval = item?.price?.recurring?.interval ?? "month";
+          const trialEnd =
+            typeof sub.trial_end === "number"
+              ? new Date(sub.trial_end * 1000)
+              : new Date();
+          const result = await sendTrialEndingEmail({
+            to: user.email,
+            name: user.name,
+            trialEnd,
+            amount: unitAmount / 100,
+            interval,
+          });
+          if (!result.ok) {
+            console.error(
+              `[stripe webhook] trial-ending email not sent for user=${user.id}: ${result.error}`,
+            );
+          }
+        }
       }
       break;
     }
