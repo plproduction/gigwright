@@ -49,6 +49,15 @@ export default async function InvoicePreviewPage({
     ? `/c/${gig.clientPortalToken}`
     : null;
   const boundSend = sendInvoice.bind(null, id);
+  // recordInvoicePayment takes (gigId, amount) — bind gigId so the
+  // inline form can just pass the amount FormDataEntryValue. Keeping
+  // this at the top of the component rather than inline avoids the
+  // Next 16 "closure-captured inline use-server action" footgun that
+  // Patrick hit 2026-11-23 (invoice preview wasn't rendering).
+  const boundRecordPayment = async (formData: FormData) => {
+    "use server";
+    await recordInvoicePayment(id, formData.get("amount"));
+  };
 
   const isDraft = gig.invoice.status === "DRAFT";
   const isSent = gig.invoice.status === "SENT";
@@ -122,10 +131,7 @@ export default async function InvoicePreviewPage({
             admin is looking at the paid/unpaid totals. */}
         {(isSent || isPartial) && balanceDueCents > 0 && (
           <form
-            action={async (formData) => {
-              "use server";
-              await recordInvoicePayment(id, formData.get("amount"));
-            }}
+            action={boundRecordPayment}
             className="mx-auto mt-2 flex max-w-[840px] flex-wrap items-center justify-end gap-2 border-t border-line pt-2"
           >
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-mute">
