@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { stripe, STRIPE_WEBHOOK_SECRET } from "@/lib/stripe";
 import { db } from "@/lib/db";
 import { recalcForReferredUser } from "@/lib/actions/referrals";
+import { sendPaymentFailedEmail } from "@/lib/notify-payment-failed";
 
 // Stripe webhook receiver. Listens for subscription lifecycle events and
 // keeps the User.plan / stripeSubscriptionId / currentPeriodEnd in sync.
@@ -19,7 +20,9 @@ import { recalcForReferredUser } from "@/lib/actions/referrals";
 //                                              subscription events carry it)
 //   - invoice.payment_failed                 → renewal card declined; flag
 //                                              the user record so billing
-//                                              page can show a nudge
+//                                              page can show a nudge, and
+//                                              email them once per dunning
+//                                              cycle (lib/notify-payment-failed)
 export async function POST(req: Request) {
   if (!STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json(
@@ -157,17 +160,39 @@ export async function POST(req: Request) {
           ? inv.customer
           : inv.customer?.id ?? null;
       if (customerId) {
-        const userId = await findUserByCustomer(customerId);
-        if (userId) {
+        const user = await db.user.findFirst({
+          where: { stripeCustomerId: customerId },
+          select: { id: true, email: true, name: true, paymentFailedAt: true },
+        });
+        if (user) {
+          // Stripe fires this event again on every automatic retry (we've
+          // seen up to five for one invoice). Only email on the first
+          // failure of a dunning cycle — paymentFailedAt already being set
+          // means the customer was already notified and hasn't paid since.
+          const isFirstFailureThisCycle = !user.paymentFailedAt;
+
           await db.user.update({
-            where: { id: userId },
+            where: { id: user.id },
             data: { paymentFailedAt: new Date() },
           });
           // Payment failure disqualifies this user from counting
           // toward their referrer's comp (countPaidReferrals filters
           // out paymentFailedAt != null). Recalc so the referrer's
           // comp reflects the shortfall on next billing cycle.
-          await recalcForReferredUser(userId);
+          await recalcForReferredUser(user.id);
+
+          if (isFirstFailureThisCycle) {
+            const result = await sendPaymentFailedEmail({
+              to: user.email,
+              name: user.name,
+              amount: (inv.amount_due ?? 0) / 100,
+            });
+            if (!result.ok) {
+              console.error(
+                `[stripe webhook] payment-failed email not sent for user=${user.id}: ${result.error}`,
+              );
+            }
+          }
         }
       }
       break;
