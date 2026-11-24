@@ -30,7 +30,31 @@ type InvoiceSummary = {
   invoiceNumber: string;
   totalCents: number;
   paidCents: number;
+  // Existing draft values so returning to the panel re-hydrates the
+  // form instead of showing empty boxes. Patrick 2026-11-23: "if you
+  // click back to the gig, then the information you put in disappears
+  // on the invoice." All optional so a sparse legacy row still works.
+  lineItems?: Array<{
+    description: string;
+    qty: number;
+    rateCents: number;
+  }>;
+  taxCents?: number;
+  discountCents?: number;
+  depositDueCents?: number;
+  dueDateIso?: string | null;
+  messageOnInvoice?: string | null;
 } | null;
+
+// Defaults derived from the gig itself so a brand-new invoice form
+// comes pre-filled with "Performance on [date] at [venue]" and the
+// gig's client pay — otherwise Patrick clicks Generate on an empty
+// form, every line is dropped (description empty), and the invoice
+// renders $0.00 across the board.
+type InvoiceDefaults = {
+  description: string;
+  rateCents: number;
+};
 
 type Props = {
   gigId: string;
@@ -48,6 +72,10 @@ type Props = {
   // the band size) on the server. Null when there is nothing to guess
   // from, which just leaves the field empty with its placeholder.
   suggestedProgram?: string | null;
+
+  // Prefill for the invoice's first line item. Server derives this
+  // from the gig date + venue + clientPayCents.
+  invoiceDefaults?: InvoiceDefaults | null;
 };
 
 function dollars(cents: number): string {
@@ -80,9 +108,35 @@ export function GigContractInvoicePanel({
   invoice,
   letterheadReady,
   suggestedProgram,
+  invoiceDefaults,
 }: Props) {
   const [pending, startTransition] = useTransition();
-  const [lines, setLines] = useState<InvoiceLine[]>([{ description: "", qty: "1", rate: "" }]);
+
+  // Seed order for the editable line rows:
+  //   1. If a DRAFT invoice already exists, re-hydrate its line items
+  //      so going back to the gig and reopening the form shows what's
+  //      saved (not an empty row).
+  //   2. Else if the server passed invoiceDefaults, prefill one row
+  //      with "Performance on … · $client pay" so Generate on an
+  //      untouched form produces a meaningful invoice.
+  //   3. Else a single blank row to type into.
+  const seededLines: InvoiceLine[] =
+    invoice?.lineItems && invoice.lineItems.length > 0
+      ? invoice.lineItems.map((li) => ({
+          description: li.description,
+          qty: String(li.qty),
+          rate: (li.rateCents / 100).toFixed(2),
+        }))
+      : invoiceDefaults
+        ? [
+            {
+              description: invoiceDefaults.description,
+              qty: "1",
+              rate: (invoiceDefaults.rateCents / 100).toFixed(2),
+            },
+          ]
+        : [{ description: "", qty: "1", rate: "" }];
+  const [lines, setLines] = useState<InvoiceLine[]>(seededLines);
   const [copied, setCopied] = useState(false);
 
   const portalUrl =
@@ -330,14 +384,43 @@ export function GigContractInvoicePanel({
               + Add line
             </button>
             <div className="grid grid-cols-2 gap-2">
-              <input name="depositDueDollars" placeholder="Deposit due ($)" className="input" />
-              <input name="dueDate" type="date" className="input" />
-              <input name="taxDollars" placeholder="Tax ($)" className="input" />
-              <input name="discountDollars" placeholder="Discount ($)" className="input" />
+              <input
+                name="depositDueDollars"
+                placeholder="Deposit due ($)"
+                defaultValue={
+                  invoice?.depositDueCents
+                    ? dollars(invoice.depositDueCents)
+                    : ""
+                }
+                className="input"
+              />
+              <input
+                name="dueDate"
+                type="date"
+                defaultValue={invoice?.dueDateIso ?? ""}
+                className="input"
+              />
+              <input
+                name="taxDollars"
+                placeholder="Tax ($)"
+                defaultValue={
+                  invoice?.taxCents ? dollars(invoice.taxCents) : ""
+                }
+                className="input"
+              />
+              <input
+                name="discountDollars"
+                placeholder="Discount ($)"
+                defaultValue={
+                  invoice?.discountCents ? dollars(invoice.discountCents) : ""
+                }
+                className="input"
+              />
             </div>
             <textarea
               name="messageOnInvoice"
               placeholder="Message on invoice (optional)"
+              defaultValue={invoice?.messageOnInvoice ?? ""}
               className="input"
               rows={2}
             />

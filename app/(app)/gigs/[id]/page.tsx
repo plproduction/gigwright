@@ -83,7 +83,7 @@ export default async function GigDetailPage({
           expenses: { orderBy: { position: "asc" } },
           activity: { orderBy: { createdAt: "desc" } },
           contract: true,
-          invoice: true,
+          invoice: { include: { lineItems: { orderBy: { position: "asc" } } } },
         },
       }),
       db.musician.findMany({
@@ -339,6 +339,33 @@ export default async function GigDetailPage({
                   invoiceNumber: gig.invoice.invoiceNumber,
                   totalCents: gig.invoice.totalCents,
                   paidCents: gig.invoice.paidCents,
+                  lineItems: gig.invoice.lineItems.map((li) => ({
+                    description: li.description,
+                    qty: li.qty,
+                    rateCents: li.rateCents,
+                  })),
+                  taxCents: gig.invoice.taxCents,
+                  discountCents: gig.invoice.discountCents,
+                  depositDueCents: gig.invoice.depositDueCents,
+                  dueDateIso: gig.invoice.dueDate
+                    ? gig.invoice.dueDate.toISOString().slice(0, 10)
+                    : null,
+                  messageOnInvoice: gig.invoice.messageOnInvoice,
+                }
+              : null
+          }
+          // Prefill a single line item from the gig data so the first
+          // Generate click produces a real invoice (not a $0 shell).
+          // Patrick 2026-11-23: "Showing up all zero." was the form
+          // dropping empty-description lines on submit.
+          invoiceDefaults={
+            gig.clientPayCents
+              ? {
+                  description: `Performance on ${gig.startAt.toLocaleDateString(
+                    "en-US",
+                    { month: "long", day: "numeric", year: "numeric" },
+                  )}${gig.venue?.name ? ` at ${gig.venue.name}` : ""}`,
+                  rateCents: gig.clientPayCents,
                 }
               : null
           }

@@ -43,7 +43,10 @@ async function ensureClientPortalToken(gigId: string): Promise<void> {
 // same rule as Contract.
 export async function generateInvoice(gigId: string, formData: FormData) {
   const user = await requireBandleader();
-  const gig = await db.gig.findUnique({ where: { id: gigId, ownerId: user.id } });
+  const gig = await db.gig.findUnique({
+    where: { id: gigId, ownerId: user.id },
+    include: { venue: { select: { name: true } } },
+  });
   if (!gig) throw new Error("Gig not found");
 
   const existing = await db.invoice.findUnique({ where: { gigId } });
@@ -55,7 +58,7 @@ export async function generateInvoice(gigId: string, formData: FormData) {
   const qtys = formData.getAll("lineQty").map((v) => Math.max(1, Number.parseInt(String(v), 10) || 1));
   const rates = formData.getAll("lineRate").map(dollarsToCents);
 
-  const lineItems = descriptions
+  let lineItems = descriptions
     .map((description, i) => ({
       description: description.trim(),
       qty: qtys[i] ?? 1,
@@ -64,6 +67,27 @@ export async function generateInvoice(gigId: string, formData: FormData) {
       position: i,
     }))
     .filter((li) => li.description.length > 0);
+
+  // Fallback: if the form came back with no usable lines but the gig
+  // itself has a client pay amount, synthesize one sensible line so
+  // the invoice doesn't render $0 across the board. Patrick's bug
+  // 2026-11-23: "Showing up all zero."
+  if (lineItems.length === 0 && gig.clientPayCents) {
+    const date = gig.startAt.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+    lineItems = [
+      {
+        description: `Performance on ${date}${gig.venue?.name ? ` at ${gig.venue.name}` : ""}`,
+        qty: 1,
+        rateCents: gig.clientPayCents,
+        amountCents: gig.clientPayCents,
+        position: 0,
+      },
+    ];
+  }
 
   const subtotalCents = lineItems.reduce((sum, li) => sum + li.amountCents, 0);
   const discountCents = dollarsToCents(formData.get("discountDollars"));
